@@ -69,3 +69,8 @@
 2026-10-18 | developer | [테스트] 분리 전후 reg 38·pose 0·극성 0·레시피 35·홍보 12/12·기준값 동일·오류 0, 옛 스크립트도 동일 (D-33)
 2026-10-18 | developer | [이슈] file://로 열면 이제 안내 문구만 뜸(예전 단일 파일은 열렸음). 제안서의 JSON 줄바꿈 저장 대신 한 줄 유지 (D-33)
 2026-10-18 | user | [결정] 푸시는 단계 3 뒤 한 번에, file:// 미지원 수용, lock·기준 스크린샷 미보관, tester는 기존과 같은 모델·노력 (D-35)
+2026-10-18 | developer | [구현] 단계 2: 순수 로직을 prototype/src/core/ 11개로 분리, index.html이 import해 씀(3,400줄·237KB) (D-33)
+2026-10-18 | developer | [설계] Clock·Trips는 createClock(store)·createTrips(TRIP, REGIONS) 팩토리, 경계는 buildRegions(raw) (D-33)
+2026-10-18 | developer | [설계] 눈 색 섞기 THREE.Color를 core/color.js mixHex(three 0.160과 같은 선형 계산)로 대체, 기준값 동일 (D-33)
+2026-10-18 | developer | [테스트] node 단위 29건·import 검사 순환 0·core_ref 동일, 분리 전후 reg·pose·극성·레시피·홍보·compare 통과 (D-33)
+2026-10-18 | developer | [구현] file://면 core import가 막혀 안내가 안 뜨던 것을 앞쪽 일반 script로 같은 문구 표시 (D-35)

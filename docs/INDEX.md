@@ -3,7 +3,7 @@
 ## 현재
 - 위치: 로컬 저장소(이 docs가 원본). 설계 확정 D-15~20(docs/design/골목냥_수정설계_2026-10-18.md)
 - 구현: M0-1~4 완료(2026-10-18 승인). 아티팩트는 고치지 않고 로컬 prototype/index.html에서 진행
-- 마일스톤: 리팩토링(D-33,34) 진행 중. 단계 0·1 구현 완료, 사용자 승인 대기
+- 마일스톤: 리팩토링(D-33~35) 진행 중. 단계 0·1·2 구현 완료(로컬), 단계 2 승인 대기
 - 원본 아티팩트: https://claude.ai/artifact/S2WQEgUYBgfJfc99d9RhoL
   - 이웃 데이터(members, data/users, posts, names)는 아티팩트 db에만 있다 (P-15)
   - 로컬엔 window.claude가 없어 모의 어댑터로 대체한다 (D-21)
@@ -18,13 +18,13 @@
 | 수정 B1 | 자세 바닥 뚫림·앉기 다리 겹침 보정 + 수컷 땅콩 | developer | R-02 | 완료(tester 통과, 사용자 승인) |
 | M0-4 | 행동 레시피 + 어드민 레시피 구역 | developer | R-14 D-07 | 완료(tester 통과, 사용자 승인) |
 각 작업 끝에 tester 확인 + 사용자 시연·승인 (동시 최대 2개)
-리팩토링(구조_리팩토링_제안.md): 0 tests/ 이전·기준값 완료 / 1 style.css·data/regions.json 완료(승인 대기) / 2 core / 3 모듈
+리팩토링(구조_리팩토링_제안.md): 0 tests/·기준값 / 1 style.css·regions.json / 2 src/core/ 11개+node 단위 시험 완료(승인 대기) / 3 모듈
 로컬: `python -m http.server 8000` → /prototype/ (file:// 불가), 시험은 tests/README.md
 ## 역할별 현황
 | 역할 | 상태 | 진행 중 | 마지막 반영 D |
 |---|---|---|---|
 | analyst·architect·tester | 대기 | - | D-23 |
-| developer | 대기 | 리팩토링 단계 0·1 보고 | D-34 |
+| developer | 대기 | 리팩토링 단계 2 보고 | D-35 |
 | reviewer·debugger·documenter·devops | 대기 | - | - |
 ## 논의 필요 (P) - 원본: PENDING.md
 | ID | 한 줄 요약 | 답할 사람 |
@@ -68,11 +68,11 @@
 ## 최근 변경 (C) - 최근 5건, 원본: history/CHANGELOG.md
 | ID | 날짜 | 한 줄 요약 |
 |---|---|---|
+| C-15 | 2026-10-18 | 리팩토링 단계 2(src/core/ 분리, node 단위 시험) |
 | C-14 | 2026-10-18 | 리팩토링 단계 0·1(tests/, CSS·JSON 분리) |
 | C-13 | 2026-10-18 | M0-4 완료·승인, 푸시 |
 | C-12 | 2026-10-18 | D-32 중성화 표시, 버그 2건 수정 |
 | C-11 | 2026-10-18 | 수정 묶음 B2(교감 극성·이름짓기 개편) |
-| C-10 | 2026-10-18 | 수정 묶음 A 구현(공유 개편 등) |
 ## 설계 문서 (docs/design/)
 - 골목냥_수정설계_2026-10-18.md: R-08~15 설계, 10장 구현 순서, 11장 서버 있을 때, 12장 확정
 - 의견함_명소배경_설계.md: R-16 의견 보내기, R-17 명소 배경 (P-16~21)

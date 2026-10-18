@@ -32,57 +32,25 @@
 <div id="loading">골목으로 가는 중<small>털을 한 올씩 빗는 중이에요</small></div>
 
 <!-- 행정구역 경계 JSON은 data/regions.json (모듈에서 fetch). 한 줄이 매우 길어 통째로 읽지 않는다 -->
+<script>// file://로 열면 브라우저가 src/core/*.js import 자체를 막아 아래 모듈이 아예 돌지 않는다(D-33 단계 2). 모듈 안의 fetch 실패 안내와 같은 문구를 여기서 먼저 띄운다 (D-35)
+if (location.protocol === 'file:') { const l = document.getElementById('loading'); if (l) { const box = document.createElement('div'), small = document.createElement('small'); box.style.cssText = 'text-align:center;padding:0 16px;max-width:36em'; small.textContent = '파일을 직접 열면(file://) 브라우저가 자료 읽기를 막아요. 저장소 루트에서 "python -m http.server 8000"(macOS·Linux는 python3)을 실행한 뒤 http://localhost:8000/prototype/ 으로 열어 주세요.'; box.append('지역 자료(data/regions.json)를 불러오지 못했어요', small); l.setAttribute('role', 'alert'); l.replaceChildren(box); } }
+</script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TAU, clamp, lerp, smooth, damp, dampAngle, angDiff, hashStr, mulberry32, makeRng, josa, fmtCount } from './src/core/util.js';
+import { DAY, EPOCH, TIME_SCALE, sunPosition } from './src/core/time.js';
+import { PATTERNS, EYES, KITTEN_NAMES, ADULT_NAMES, TRAITS, stageOf, ageText, makePersonality, traitTags, TNR_MIN_MONTHS, makeGenome, sexText, nameFor, dongPopulation } from './src/core/genome.js';
+import { REGION_LEVEL, REGION_CODE_LEN, SIDO_SHORT, buildRegions, sggShort, regionFull, DO_CODES, themeFor, THEME_LABEL } from './src/core/regions.js';
+import { STEP, ACTIONS, REACTIONS, REACTION_KEYS } from './src/core/behavior.js';
+import { CLOCK, PASSIVE_KEYS, NEED_DEFS, EMO_DEFS, EMO_BIAS, vnoise, circadian, createClock } from './src/core/clock.js';
+import { NEIGHBOR_PAIRS, NEIGHBORS, tripConfig, createTrips } from './src/core/trips.js';
+import { CAT_WORDS, interpret, QUICK_WORDS, PET_PARTS, EMO_POL, EMO_LABEL, REACT_META, THOUGHTS, pickThought, TOUCH_TYPES, erf, touchType, PET_PREF, CHURU_PREF, WORD_POS, petPolarityWeights, ruleReaction, TRUST_D, resolveRule } from './src/core/touch_rules.js';
+import { RV, RV_NEW, RPOSE, RLIM, RKEYS, RTEXT, RFREE, recipePrompt, parseRecipeText, recipeIsPlain, validateRecipe, RECIPE_SAMPLES } from './src/core/recipe_rules.js';
+import { NAME_BAD, NAME_RULE } from './src/core/name_rules.js';
 // ==== 00_util.js ====
 // ───────────────────────── util ─────────────────────────
-const TAU = Math.PI * 2;
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const lerp = (a, b, t) => a + (b - a) * t;
-const smooth = (t) => t * t * (3 - 2 * t);
-const damp = (a, b, lambda, dt) => lerp(a, b, 1 - Math.exp(-lambda * dt));
-function dampAngle(a, b, lambda, dt) {
-  let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI;
-  return a + d * (1 - Math.exp(-lambda * dt));
-}
-function angDiff(a, b) { return ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; }
-
-// string → 32bit hash
-function hashStr(str) {
-  let h = 1779033703 ^ str.length;
-  for (let i = 0; i < str.length; i++) {
-    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  h = Math.imul(h ^ (h >>> 16), 2246822507);
-  h = Math.imul(h ^ (h >>> 13), 3266489909);
-  return (h ^= h >>> 16) >>> 0;
-}
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function makeRng(seed) {
-  const r = mulberry32(typeof seed === 'string' ? hashStr(seed) : seed >>> 0);
-  r.range = (a, b) => a + (b - a) * r();
-  r.int = (a, b) => Math.floor(a + (b - a + 1) * r());
-  r.pick = (arr) => arr[Math.floor(r() * arr.length)];
-  r.chance = (p) => r() < p;
-  r.weighted = (pairs) => { // [[item, w], ...]
-    let s = 0; for (const p of pairs) s += p[1];
-    let x = r() * s;
-    for (const p of pairs) { x -= p[1]; if (x <= 0) return p[0]; }
-    return pairs[pairs.length - 1][0];
-  };
-  r.gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); };
-  return r;
-}
 const store = {
   get(k, d) { try { const v = localStorage.getItem('golmok:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('golmok:' + k, JSON.stringify(v)); } catch (e) {} },
@@ -100,11 +68,6 @@ function h(tag, attrs = {}, ...kids) {
   }
   for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
   return el;
-}
-function josa(word, a, b) { // 받침 여부에 따라 조사 선택 (이/가, 은/는, 을/를)
-  const c = word.charCodeAt(word.length - 1);
-  if (c < 0xac00 || c > 0xd7a3) return word + b;
-  return word + (((c - 0xac00) % 28) ? a : b);
 }
 
 // ==== 10_shaders.js ====
@@ -774,142 +737,9 @@ const SHADOW_MAT = (() => {
 
 // ==== 30_genome.js ====
 // ───────────────────────── 유전자 · 동네 개체군 ─────────────────────────
-const PATTERNS = {
-  mackerel:   { label: '고등어', w: 20, base: ['#8b7c69', '#80786f', '#93806a'], stripe: '#2a2521', stripeAmt: 0.95, nose: '#a8625a', names: ['고등어', '꽁치', '줄무늬', '호랑이', '삼치', '갈치'] },
-  orange:     { label: '치즈', w: 15, base: ['#e3964c', '#dc8a3f', '#e8a160'], stripe: '#b25d26', stripeAmt: 0.75, nose: '#d88274', names: ['치즈', '노랑이', '호박', '귤', '누룽지', '카레'] },
-  cream:      { label: '크림', w: 4, base: ['#f0d6ae', '#ecc99a'], stripe: '#d4a26e', stripeAmt: 0.55, nose: '#e3a094', names: ['크림', '버터', '카스테라', '라떼'] },
-  tuxedo:     { label: '턱시도', w: 12, base: ['#161417'], stripe: '#151316', stripeAmt: 0, white: 0.44, wn: 0.12, nose: '#2b2326', names: ['턱시도', '양말이', '신사', '장화', '오레오'] },
-  cow:        { label: '젖소', w: 7, base: ['#1f1c1e'], stripe: '#151316', stripeAmt: 0, white: 0.7, wn: 0.8, nose: '#e3a0a0', names: ['젖소', '얼룩이', '점박이', '바둑이', '달마'] },
-  calico:     { label: '삼색', w: 9, female: true, base: ['#d98b47'], stripe: '#b8672f', stripeAmt: 0.25, patch: '#201c1e', patchAmt: 0.42, white: 0.55, wn: 0.5, nose: '#e39a96', names: ['삼색이', '꽃분이', '삼순이', '알록이'] },
-  tortie:     { label: '카오스', w: 6, female: true, base: ['#2a2220'], stripe: '#1a1514', stripeAmt: 0, patch: '#a85a2a', mottle: 0.62, nose: '#4a3434', names: ['카오스', '깜순이', '누룽지', '초코칩'] },
-  black:      { label: '올블랙', w: 8, base: ['#141215'], stripe: '#141215', stripeAmt: 0, nose: '#2a2224', names: ['까망이', '연탄', '짜장', '흑당', '밤톨'] },
-  white:      { label: '흰둥이', w: 4, base: ['#f2efe9'], stripe: '#e6e1d8', stripeAmt: 0, white: 1, nose: '#eaa3a3', names: ['흰둥이', '두부', '백설기', '솜사탕', '눈송이'] },
-  gray:       { label: '회색', w: 5, base: ['#6f7378', '#7a7d82'], stripe: '#5b5e63', stripeAmt: 0.18, nose: '#6b5a60', names: ['회색이', '먼지', '구름', '재롱', '은비'] },
-  mackerelW:  { label: '고등어 흰양말', w: 10, base: ['#8b7c69', '#80786f'], stripe: '#2a2521', stripeAmt: 0.95, white: 0.46, wn: 0.2, nose: '#c97e76', names: ['고등어', '양말이', '줄무늬', '꼬리'] },
-  orangeW:    { label: '치즈 흰둥이', w: 8, base: ['#e3964c', '#e8a160'], stripe: '#b25d26', stripeAmt: 0.75, white: 0.48, wn: 0.25, nose: '#e09084', names: ['치즈', '노랑이', '단호박', '유자'] },
-};
-const EYES = {
-  amber:  ['#b8741f', '#e2ab45'],
-  yellow: ['#c8b02a', '#efe07a'],
-  green:  ['#5d8a33', '#b5c95a'],
-  hazel:  ['#8c7a2e', '#cdb65a'],
-  blue:   ['#3f78ba', '#9cc7ec'],
-  kitten: ['#4d6f98', '#9db5cf'],
-};
-const KITTEN_NAMES = ['콩', '꼬물이', '쪼꼬', '모찌', '깨', '몽실이', '솜이', '토리', '보리', '율무', '앵두', '두두', '찹쌀', '단추', '감자'];
-const ADULT_NAMES = ['나비', '야옹이', '대장', '점순이', '방울이', '복동이', '순심이', '해피', '달님이', '복실이', '장군이', '뭉치'];
-const TRAITS = [
-  ['bold', '겁이 없음', '겁이 많음'],
-  ['social', '사람을 좋아함', '낯가림'],
-  ['playful', '장난꾸러기', '점잖음'],
-  ['food', '식탐 대장', '입이 짧음'],
-  ['energy', '활발함', '게으름뱅이'],
-  ['grumpy', '까칠함', '순둥이'],
-];
-const DAY = 86400000;
-const EPOCH = Date.UTC(2026, 8, 1, -9); // 2026-09-01 00:00 KST
-const TIME_SCALE = 7; // 서비스 시간 = 실제의 7배
-
-function stageOf(months) {
-  if (months < 2) return { key: 'baby', label: '아기' };
-  if (months < 6) return { key: 'kit', label: '꼬마' };
-  if (months < 12) return { key: 'teen', label: '청소년' };
-  return { key: 'adult', label: '성체' };
-}
-function ageText(months) {
-  if (months < 1) return Math.max(1, Math.round(months * 4.3)) + '주';
-  if (months < 12) return Math.floor(months) + '개월';
-  const y = Math.floor(months / 12);
-  return y + '살';
-}
-
-function makePersonality(r, kitten) {
-  const p = {};
-  for (const [k] of TRAITS) p[k] = clamp(0.5 + r.gauss() * 0.22, 0.02, 0.98);
-  if (kitten) { p.playful = clamp(p.playful + 0.3, 0, 1); p.energy = clamp(p.energy + 0.25, 0, 1); p.grumpy = clamp(p.grumpy - 0.25, 0, 1); }
-  return p;
-}
-function traitTags(p) {
-  const arr = TRAITS.map(([k, hi, lo]) => ({ k, d: p[k] - 0.5, hi, lo })).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
-  return arr.slice(0, 2).map((t) => (t.d > 0 ? t.hi : t.lo));
-}
-
-const TNR_MIN_MONTHS = 6; // 중성화 표시는 6개월 이상부터
-function makeGenome(r, opts) {
-  const { sex, months, mother } = opts;
-  let pk;
-  if (mother && r.chance(0.6)) pk = mother.pattern;
-  else pk = r.weighted(Object.entries(PATTERNS).filter(([k, v]) => !(v.female && sex === 'm')).map(([k, v]) => [k, v.w]));
-  if (PATTERNS[pk].female && sex === 'm') pk = 'mackerel';
-  const P = PATTERNS[pk];
-  const growth = Math.pow(clamp((months - 0.8) / 11, 0, 1), 0.7);
-  const base = r.pick(P.base);
-  let eyeKey = r.weighted([['amber', 30], ['yellow', 26], ['green', 22], ['hazel', 16], ['blue', pk === 'white' ? 40 : 3]]);
-  let eye = EYES[eyeKey].slice();
-  if (pk === 'white' && r.chance(0.25)) { eye = EYES.blue.concat(EYES.amber); eyeKey = 'odd'; }
-  if (months < 3.5) { // 아기 고양이는 파란 눈 → 점점 제 색
-    const t = clamp((months - 1.5) / 2, 0, 1);
-    const mix = (a, b) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), t).getHexString();
-    eye = [mix(EYES.kitten[0], eye[0]), mix(EYES.kitten[1], eye[1])];
-  }
-  const tnrRoll = r.chance(0.5);
-  const whiteBase = P.white ?? (r.chance(0.12) ? 0.25 : 0);
-  const g = {
-    pattern: pk, patternLabel: P.label, sex, months, growth,
-    colors: { base, stripe: P.stripe, patch: P.patch || '#1f1c1e', white: '#f3f0ea' },
-    stripeAmt: P.stripeAmt, stripeFreq: r.range(150, 200),
-    patchAmt: P.patchAmt || 0, patchScale: r.range(6, 10), mottle: P.mottle || 0,
-    whiteAmt: whiteBase === 1 ? 1 : clamp(whiteBase + (whiteBase ? r.range(-0.08, 0.08) : 0), 0, 1),
-    whiteNoise: P.wn ?? 0.15,
-    eye, eyeKey,
-    nose: P.nose, earInner: ['black', 'tuxedo', 'tortie'].includes(pk) ? '#8a6262' : '#e6a49b',
-    furLen: r.range(0.78, 1.18), fluff: r.range(0.3, 1),
-    tipLight: ['black', 'tuxedo', 'tortie', 'cow'].includes(pk) ? 0.12 : pk.startsWith('mackerel') || pk === 'gray' ? 0.3 : 0.5,
-    body: { chub: r.range(0.92, 1.16), legLen: r.range(0.93, 1.06), headSize: r.range(0.95, 1.06), earSize: r.range(0.9, 1.12), tailLen: r.range(0.85, 1.1), faceWidth: r.range(0.94, 1.08) },
-    tnr: months >= TNR_MIN_MONTHS && tnrRoll, // 성묘 약 50%, 수컷·암컷 모두. 월령과 상관없이 같은 값을 뽑아 새로고침·나이에 흔들리지 않는다
-    personality: makePersonality(r, months < 6),
-    seedF: r() * 100,
-  };
-  return g;
-}
-
-const sexText = (g) => (g.sex === 'f' ? '암컷' : '수컷') + (g.tnr ? '(중)' : ''); // (중) = 중성화
-function nameFor(r, g, used) {
-  const pool = g.months < 6 ? KITTEN_NAMES : PATTERNS[g.pattern].names.concat(ADULT_NAMES.slice(0, 4));
-  let name = r.pick(pool);
-  let tries = 0;
-  while (used.has(name) && tries++ < 12) name = r.pick(g.months < 6 ? KITTEN_NAMES : PATTERNS[g.pattern].names.concat(ADULT_NAMES));
-  if (used.has(name)) name = name + (2 + [...used].filter((u) => u.startsWith(name)).length);
-  if (g.months >= 12 && g.body.chub > 1.12 && !name.startsWith('뚱') && r.chance(0.5)) name = '뚱' + name.replace(/이$/, '');
-  used.add(name);
-  return name;
-}
-
-// 활성 지역(현재 시/도) 하나에 마스코트 고양이 한 마리 (결정적: 같은 지역 코드 → 같은 고양이, 나이는 실제 시간에 따라 자람)
-function dongPopulation(dong, now = Date.now()) {
-  const r = makeRng('mascot:' + dong.c);
-  const sex = r.chance(0.55) ? 'f' : 'm';
-  const stage = r.weighted([['kit', 3], ['teen', 2], ['adult', 5]]);
-  const ageAtEpoch = stage === 'kit' ? r.range(0.4, 3.5) : stage === 'teen' ? r.range(5, 10) : r.range(13, 72);
-  const months = ageAtEpoch + ((now - EPOCH) / DAY) * TIME_SCALE / 30.4;
-  const g = makeGenome(makeRng('mascotg:' + dong.c), { sex, months });
-  const cat = { id: dong.c + '-m', idx: 0, dong: dong.c, g, name: '', born: EPOCH - (ageAtEpoch * 30.4 / TIME_SCALE) * DAY, mother: null, litter: null, here: true };
-  cat.defaultName = nameFor(r, g, new Set());
-  cat.name = cat.defaultName;
-  return [cat];
-}
 
 // ==== 35_regions.js ====
 // ───────────────────────── 행정구역 ─────────────────────────
-// 활성 단계 (D-05). 시/도 16곳만 활성이고 시/군/구·행정동은 경계 자료만 남긴 비활성 상태다.
-// 'sgg' | 'dong'으로 올리면 고양이·장면·시계는 그 단위로 돌지만, 지역 고르기 화면은 아직 시/도 전용이다.
-const REGION_LEVEL = 'sido';
-const REGION_CODE_LEN = { sido: 2, sgg: 5, dong: 10 };
-const SIDO_SHORT = {
-  '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구', '인천광역시': '인천', '전남광주통합특별시': '전남광주', '대전광역시': '대전',
-  '울산광역시': '울산', '세종특별자치시': '세종', '경기도': '경기', '강원특별자치도': '강원', '충청북도': '충북', '충청남도': '충남',
-  '경상북도': '경북', '경상남도': '경남', '제주특별자치도': '제주', '전북특별자치도': '전북',
-};
 // 경계 자료는 data/regions.json (D-33 리팩토링 단계 1). 모듈 최상위 await로 먼저 받아 둔다.
 // 못 받으면(file://로 연 경우 등) 로딩 화면에 로컬 서버 안내를 띄우고 여기서 멈춘다.
 const REGIONS_RAW = await (async () => {
@@ -930,79 +760,8 @@ const REGIONS_RAW = await (async () => {
     throw new Error('regions.json 불러오기 실패: ' + (e && e.message));
   }
 })();
-const REGIONS = (() => {
-  const raw = REGIONS_RAW;
-  const all = [];
-  const bySgg = {};
-  for (const [sido, sggs] of Object.entries(raw)) {
-    for (const [sgg, dongs] of Object.entries(sggs)) {
-      bySgg[sido + '|' + sgg] = dongs;
-      for (const d of dongs) { d.sido = sido; d.sgg = sgg; d.lng = d.x / 1e4; d.lat = d.y / 1e4; all.push(d); }
-    }
-  }
-  const byCode = new Map(all.map((d) => [d.c, d]));
-  // 활성 지역 단위 (D-05): REGION_LEVEL 단계의 묶음. 시/도는 행정동 코드 앞 2자리, 시/군/구는 앞 5자리.
-  const len = REGION_CODE_LEN[REGION_LEVEL] || 2;
-  const units = [], byUnit = new Map();
-  for (const d of all) {
-    const c = d.c.slice(0, len);
-    let u = byUnit.get(c);
-    if (!u) {
-      u = REGION_LEVEL === 'dong' ? d : { c, level: REGION_LEVEL, sido: d.sido, sgg: REGION_LEVEL === 'sido' ? '' : d.sgg, n: REGION_LEVEL === 'sido' ? (SIDO_SHORT[d.sido] || d.sido) : d.sgg, dongs: [], lat: 0, lng: 0 };
-      byUnit.set(c, u); units.push(u);
-    }
-    if (u !== d) { u.dongs.push(d); u.lat += d.lat; u.lng += d.lng; }
-  }
-  for (const u of units) if (u.dongs) { u.lat /= u.dongs.length; u.lng /= u.dongs.length; } // 중심 = 속한 동들의 평균
-  // 시/도 요약 (지역 고르기 화면용. REGION_LEVEL과 상관없이 16곳)
-  const sidoInfo = new Map();
-  for (const d of all) {
-    const c = d.c.slice(0, 2);
-    let s = sidoInfo.get(c);
-    if (!s) { s = { c, sido: d.sido, n: SIDO_SHORT[d.sido] || d.sido, dongs: [], sggs: new Set() }; sidoInfo.set(c, s); }
-    s.dongs.push(d); s.sggs.add(d.sgg);
-  }
-  return {
-    raw, all, byCode, bySgg, units, byUnit, sidoInfo,
-    unitOf: (code) => byUnit.get(String(code || '').slice(0, len)) || null, // 동 코드·시/도 코드 어느 쪽이든 활성 단위로 변환
-    sidos: Object.keys(raw),
-    sggsOf: (sido) => Object.keys(raw[sido] || {}),
-    dongsOf: (sido, sgg) => (raw[sido] && raw[sido][sgg]) || [],
-    search(q) {
-      q = q.trim().replace(/\s+/g, '');
-      if (!q) return [];
-      const out = [];
-      for (const d of all) {
-        const full = (d.sido + d.sgg + d.n).replace(/\s+/g, '');
-        if (d.n.startsWith(q)) out.push([0, d]);
-        else if (d.n.includes(q)) out.push([1, d]);
-        else if (full.includes(q)) out.push([2, d]);
-        if (out.length > 400) break;
-      }
-      out.sort((a, b) => a[0] - b[0] || a[1].n.length - b[1].n.length);
-      return out.slice(0, 40).map((x) => x[1]);
-    },
-    rings(d) { // 경계 복원 [ [ [lng,lat], ... ], ... ]
-      return d.p.map((flat) => { const pts = []; let x = d.x, y = d.y; for (let i = 0; i < flat.length; i += 2) { x += flat[i]; y += flat[i + 1]; pts.push([x / 1e4, y / 1e4]); } return pts; });
-    },
-  };
-})();
+const REGIONS = buildRegions(REGIONS_RAW);
 
-function sggShort(sgg) { return (sgg || '').replace(/^(.+?시)(.+구)$/, '$1 $2'); }
-// 화면에 쓸 지역 이름 (활성 단위의 전체 이름, 예: 서울특별시)
-function regionFull(d) { return d.level === 'sido' ? d.sido : [d.sido, sggShort(d.sgg), d.level === 'sgg' ? '' : d.n].filter(Boolean).join(' '); }
-const DO_CODES = ['41', '43', '44', '47', '48', '50', '51', '52']; // 도 지역은 공원 비중을 높인다
-function themeFor(d) {
-  const r = makeRng('theme:' + d.c);
-  if (d.level === 'sido') return r.weighted(DO_CODES.includes(d.c) ? [['park', 5], ['alley', 3], ['market', 2]] : [['alley', 6], ['market', 2.5], ['park', 2.5]]);
-  if (d.level === 'sgg') return r.weighted([['alley', 5], ['market', 2.5], ['park', 3]]);
-  if (/[면]$/.test(d.n)) return r.weighted([['park', 6], ['alley', 3], ['market', 1]]);
-  if (/[읍]$/.test(d.n)) return r.weighted([['market', 4], ['alley', 4], ['park', 2]]);
-  if (/시장|중앙|남포|동문|서문|광장/.test(d.n)) return r.weighted([['market', 6], ['alley', 3], ['park', 1]]);
-  if (/공원|숲|호수|천/.test(d.n)) return r.weighted([['park', 6], ['alley', 3]]);
-  return r.weighted([['alley', 6], ['market', 2], ['park', 2.5]]);
-}
-const THEME_LABEL = { alley: '골목 담벼락', market: '시장 골목', park: '동네 공원' };
 
 // ==== 40_poses.js ====
 // ───────────────────────── 자세 사전 ─────────────────────────
@@ -1042,22 +801,6 @@ function poseTarget(dim, name, extra) {
 // ───────────────────────── 골목 장면 ─────────────────────────
 const BOUNDS = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 1.2 };
 
-function sunPosition(date, lat, lng) {
-  const rad = Math.PI / 180;
-  const d = (date.getTime() / DAY) - 10957.5; // days since J2000
-  const g = (357.529 + 0.98560028 * d) * rad;
-  const q = 280.459 + 0.98564736 * d;
-  const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * rad;
-  const e = (23.439 - 0.00000036 * d) * rad;
-  const RA = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
-  const dec = Math.asin(Math.sin(e) * Math.sin(L));
-  const GMST = (18.697374558 + 24.06570982441908 * d) % 24;
-  const LST = (GMST * 15 + lng) * rad;
-  const HA = LST - RA;
-  const alt = Math.asin(Math.sin(lat * rad) * Math.sin(dec) + Math.cos(lat * rad) * Math.cos(dec) * Math.cos(HA));
-  const az = Math.atan2(-Math.sin(HA), Math.tan(dec) * Math.cos(lat * rad) - Math.sin(lat * rad) * Math.cos(HA));
-  return { alt, az };
-}
 
 function canvasTex(w, hgt, draw, repeat) {
   const c = document.createElement('canvas'); c.width = w; c.height = hgt;
@@ -1414,200 +1157,9 @@ class Scene3D {
 }
 
 // ==== 60_behavior.js ====
-// ───────────────────────── 행동 엔진 (효용 기반) ─────────────────────────
-const STEP = {
-  pose(name, dur, extra, fx) { return { start(a) { a.setPose(name, extra); this.t = 0; }, tick(a, dt) { this.t += dt; if (fx) fx(a, this.t, dt); return this.t >= dur; } }; },
-  walk(x, z, speed, opts = {}) { return { start(a) { a.moveTo(x, z, speed, opts); this.t = 0; }, tick(a, dt) { this.t += dt; return a.arrived || this.t > (opts.timeout || 14); } }; },
-  face(yaw, extra) { return { start(a) { a.yawTarget = yaw; }, tick(a) { return Math.abs(angDiff(a.yaw, a.yawTarget)) < 0.12; } }; },
-  faceYou() { return { start(a) { a.yawTarget = a.yawTo(a.world.youPoint()); a.lookAtYou = 1; }, tick(a) { return Math.abs(angDiff(a.yaw, a.yawTarget)) < 0.15; } }; },
-  call(fn) { return { start(a) { fn(a); }, tick() { return true; } }; },
-  wait(dur) { return { start() { this.t = 0; }, tick(a, dt) { this.t += dt; return this.t >= dur; } }; },
-  // 세계 시계용: 도착한 뒤에 그 자리에서 단계를 만들어 끼워 넣기 / 다음 일정까지 그대로 머물기(가끔 두리번)
-  lazy(fn) { return { start(a) { a.steps.unshift(...fn(a)); }, tick() { return true; } }; },
-  hold() { return { start(a) { this.t = 0; this.n = a.r.range(4, 9); }, tick(a, dt) { this.t += dt; if (this.t > this.n) { this.t = 0; this.n = a.r.range(6, 14); a.lookRandom(); } return false; } }; },
-};
-
-const ACTIONS = {
-  sit: { label: '앉아서 골목 구경', score: (a) => 0.75, steps: (a, r) => [STEP.pose('sit', r.range(6, 14), null, (a, t) => { if (Math.floor(t * 0.4) !== a._lk) { a._lk = Math.floor(t * 0.4); a.lookRandom(); } })] },
-  loaf: { label: '식빵 굽는 중', score: (a) => 0.55 + (1 - a.p.energy) * 0.6 + (1 - a.E) * 0.4, steps: (a, r) => [STEP.pose('loaf', r.range(10, 24), null, (a, t) => { if (r() < 0.004) a.slowBlink(); })] },
-  nap: { label: '웅크려 자는 중', score: (a) => (1 - a.E) * 2.0 + a.world.night * 0.6 + (1 - a.p.energy) * 0.4 - (a.kitten ? 0.3 : 0), steps: (a, r) => [STEP.pose('loaf', 2.5), STEP.pose('curl', r.range(18, 40), null, (a, t, dt) => { a.E = Math.min(1, a.E + dt * 0.04); }), STEP.pose('loaf', 1.5), ...ACTIONS.stretch.steps(a, r)] },
-  sideNap: { label: '옆으로 누워 자는 중', score: (a) => (1 - a.E) * 1.4 * a.p.bold + a.world.day * 0.2, steps: (a, r) => [STEP.pose('loaf', 2), STEP.pose('side', r.range(14, 30), null, (a, t, dt) => { a.E = Math.min(1, a.E + dt * 0.04); }), STEP.pose('loaf', 1.2)] },
-  belly: { label: '발라당 뒹굴', score: (a) => (a.cat.g.months > 4 ? a.p.bold * a.p.playful * 0.9 : 0.1), steps: (a, r) => [STEP.pose('loaf', 1.2), STEP.pose('belly', r.range(4, 8), null, (a, t) => { a.P.hr += Math.sin(t * 2.2) * 0.002; }), STEP.pose('loaf', 1.2)] },
-  groom: { label: '그루밍 중', score: (a) => 0.55, steps: (a, r) => [STEP.pose('sit', 1.2), STEP.pose('groom', r.range(5, 10), null, (a, t) => { a.ov.hdp = Math.sin(t * 9) * 0.09; a.ov.fle = Math.sin(t * 9) * 0.12; a.ov.mouth = 0.12 + Math.sin(t * 9) * 0.1; }), STEP.pose('sit', 1)] },
-  stretch: { label: '기지개 켜는 중', score: (a) => 0.05, steps: (a, r) => [STEP.pose('stretch', 2.6, null, (a, t) => { if (t > 0.6 && t < 2.0) a.ov.mouth = Math.sin((t - 0.6) / 1.4 * Math.PI) * 0.8; }), STEP.pose('stand', 0.8)] },
-  wander: { label: '골목 산책 중', score: (a) => a.E * 0.7 + a.p.energy * 0.5 + a.B * 0.6 + (a.p.bold - 0.5) * 0.2, steps: (a, r) => { const p = a.randomPoint(r, 1.6); return [STEP.walk(p.x, p.z, 1), STEP.pose(r.chance(0.5) ? 'sit' : 'stand', r.range(1, 3))]; } },
-  hunt: { label: '사냥 놀이 중', score: (a) => a.p.playful * a.E * 1.1 + (a.kitten ? 0.9 : 0) + a.B * 0.4, steps: (a, r) => {
-    const yaw = a.yaw + r.range(-0.8, 0.8);
-    return [STEP.face(yaw), STEP.pose('crouch', r.range(1.5, 3), null, (a, t) => { if (t > 0.8) { a.ov.hr = Math.sin(t * 15) * 0.09; a.ov.hy = Math.sin(t * 15) * 0.06; } }),
-      STEP.call((a) => a.pounce(0.32 + r() * 0.2)), STEP.wait(0.75), STEP.pose('sit', r.range(1, 2.5))];
-  } },
-  zoom: { label: '우다다!', score: (a) => a.p.playful * a.p.energy * a.E * 0.8 + (a.kitten ? 0.35 : 0), steps: (a, r) => { const s = []; for (let i = 0; i < r.int(2, 3); i++) { const p = a.randomPoint(r, 2.4); s.push(STEP.walk(p.x, p.z, 3.2)); } s.push(STEP.pose('stand', 0.6), STEP.pose('sit', 2)); return s; } },
-  greet: { label: '이웃 고양이와 코인사', score: (a) => { const o = a.nearestCat(2.2); return o ? a.p.social * 0.9 * (1 - a.p.grumpy) + 0.1 : 0; }, steps: (a, r) => {
-    const o = a.nearestCat(2.2); if (!o) return [STEP.wait(0.1)];
-    const ang = Math.atan2(a.x - o.x, a.z - o.z), d = 0.3 * (a.v.dim.scale + o.v.dim.scale);
-    return [STEP.walk(o.x + Math.sin(ang) * d, o.z + Math.cos(ang) * d, 0.8), STEP.call((a) => { a.yawTarget = a.yawTo(o); a.lookAt = o; o.lookAt = a; }),
-      STEP.pose('greet', 1.6, { np: 0.25, hdp: 0.2 }), STEP.call((a) => { a.say(r.pick(['냥', '…', '먀'])); }), STEP.pose('sit', 2.5), STEP.call((a) => { a.lookAt = null; o.lookAt = null; })];
-  } },
-  hissAt: { label: '하악! 경계 중', score: (a) => { const o = a.nearestCat(0.7); return o && !(o.cat.mother === a.cat.id || a.cat.mother === o.cat.id) ? a.p.grumpy * 1.6 : 0; }, steps: (a, r) => {
-    const o = a.nearestCat(0.9); if (!o) return [STEP.wait(0.1)];
-    return [STEP.call((a) => { a.yawTarget = a.yawTo(o) + 1.2; a.lookAt = o; a.say('하악!'); }), STEP.pose('hiss', 2.4), STEP.call((a) => { a.lookAt = null; }), STEP.walk(a.x + (a.x - o.x) * 2, a.z + (a.z - o.z) * 2, 1.1), STEP.pose('sit', 2)];
-  } },
-  watch: { label: '이쪽을 빤히 보는 중', score: (a) => a.p.social * 0.45 + a.p.bold * 0.25, steps: (a, r) => [STEP.faceYou(), STEP.pose('sit', r.range(4, 9), null, (a) => { a.lookAtYou = 1; }), STEP.call((a) => { a.lookAtYou = 0; })] },
-  followMom: { label: '엄마 졸졸 따라가기', score: (a) => { const m = a.mom(); if (!m) return 0; const d = Math.hypot(m.x - a.x, m.z - a.z); return d > 0.7 ? 2.2 : 0.3; }, steps: (a, r) => {
-    const m = a.mom(); if (!m) return [STEP.wait(0.1)];
-    return [STEP.walk(m.x + r.range(-0.3, 0.3), m.z + r.range(0.15, 0.35), 1.3), STEP.pose(r.chance(0.5) ? 'loaf' : 'sit', r.range(3, 8))];
-  } },
-  yawn: { label: '하품', score: (a) => (1 - a.E) * 0.3, steps: (a, r) => [STEP.pose('sit', 0.8), STEP.pose('yawn', 1.8), STEP.pose('sit', 1.5)] },
-};
-
-const REACTIONS = {
-  approach:   { label: '다가오는 중', steps: (a) => [STEP.walk(...a.nearYou(0.55), 1.0), STEP.faceYou(), STEP.pose('alert', 3, null, (a) => { a.lookAtYou = 1; })] },
-  rub:        { label: '부비부비', steps: (a) => [STEP.walk(...a.nearYou(0.45), 1.0), STEP.faceYou(), STEP.call((a) => a.say('그르릉…')), STEP.pose('greet', 3.2, { eye: 0.4, tb: 1.4 }, (a, t) => { a.ov.hdr = Math.sin(t * 3.2) * 0.38; a.ov.hy = Math.sin(t * 3.2) * 0.12; a.lookAtYou = 0.5; }), STEP.pose('sit', 2, { eye: 0.5 })] },
-  slow_blink: { label: '느린 눈 깜빡임', steps: (a) => [STEP.faceYou(), STEP.pose('sit', 0.6, null, (a) => { a.lookAtYou = 1; }), STEP.call((a) => a.slowBlink()), STEP.wait(1.8), STEP.call((a) => a.slowBlink()), STEP.pose('sit', 2.5, null, (a) => { a.lookAtYou = 1; })] },
-  tail_up:    { label: '꼬리 세우고 인사', steps: (a) => [STEP.walk(...a.nearYou(0.8), 0.9), STEP.faceYou(), STEP.pose('greet', 3, null, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.5)] },
-  meow_back:  { label: '대답하는 중', steps: (a) => [STEP.faceYou(), STEP.call((a) => { a.lookAtYou = 1; a.say(a.kitten ? '미야아' : '냐앙'); }), STEP.pose('sit', 1.6, null, (a, t) => { a.ov.mouth = t < 0.6 ? Math.sin(t / 0.6 * Math.PI) * 0.55 : 0; a.lookAtYou = 1; })] },
-  head_tilt:  { label: '갸웃', steps: (a) => [STEP.faceYou(), STEP.pose('sit', 2.4, { hdr: 0.42 }, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.2)] },
-  ignore:     { label: '무심한 척', steps: (a) => [STEP.call((a) => { a.earTwitch(0); a.earTwitch(1); }), STEP.wait(1.2)], keep: true },
-  stare:      { label: '빤히 쳐다봄', steps: (a) => [STEP.faceYou(), STEP.pose('alert', 3.5, { pupil: 0.95 }, (a) => { a.lookAtYou = 1; })] },
-  back_off:   { label: '뒷걸음질', steps: (a) => { const y = a.world.youPoint(); return [STEP.pose('stand', 0.3, { eL: 0.6, eR: 0.6 }), STEP.walk(a.x + (a.x - y.x) * 0.8, a.z + (a.z - y.z) * 0.8, 0.9), STEP.faceYou(), STEP.pose('alert', 2.5, { eL: 0.4, eR: 0.4 })]; } },
-  flee:       { label: '도망!', steps: (a) => { const y = a.world.youPoint(); const p = a.farFrom(y); return [STEP.call((a) => a.say('!')), STEP.walk(p.x, p.z, 3.2), STEP.pose('loaf', 5, { eL: 0.5, eR: 0.5, pupil: 0.9 })]; } },
-  hiss_back:  { label: '맞하악!', steps: (a) => [STEP.call((a) => { a.yawTarget = a.yawTo(a.world.youPoint()) + 1.1; a.lookAtYou = 1; a.say('하아악!'); }), STEP.pose('hiss', 2.8, null, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.5, { eL: 0.5, eR: 0.5 })] },
-  puff_side:  { label: '털 세우고 옆걸음', steps: (a) => { const y = a.world.youPoint(); const side = Math.atan2(y.x - a.x, y.z - a.z) + Math.PI / 2; return [STEP.call((a) => { a.yawTarget = side; a.lookAtYou = 1; a.say('캬아…'); }), STEP.pose('hiss', 0.8), STEP.call((a) => a.moveTo(a.x + Math.sin(side) * 0.45, a.z + Math.cos(side) * 0.45, 0.35, { keepPose: 'hiss', crab: true })), STEP.wait(2.2), STEP.pose('alert', 1.5, { eL: 0.6, eR: 0.6 })]; } },
-  purr:       { label: '그르릉', steps: (a) => [STEP.call((a) => a.say('그르릉 그르릉')), STEP.pose(a.P.h < 0.12 ? 'loaf' : 'sit', 4, { eye: 0.12 }, (a, t) => { a.ov.hdr = Math.sin(t * 40) * 0.006; })] },
-  eat_churu:  { label: '츄르 먹는 중', steps: (a) => [STEP.walk(...a.nearYou(0.42), 1.25), STEP.faceYou(), STEP.call((a) => a.say('냠냠')), STEP.pose('eat', 4.5, null, (a, t) => { a.ov.mouth = 0.2 + Math.sin(t * 11) * 0.18; a.ov.hdp = Math.sin(t * 11) * 0.05; }), STEP.call((a) => a.say('…더 줘')), STEP.pose('sit', 2.5, { eye: 0.6 }, (a) => { a.lookAtYou = 1; })] },
-  sniff_only: { label: '킁킁, 냄새만', steps: (a) => [STEP.walk(...a.nearYou(0.9), 0.7), STEP.faceYou(), STEP.pose('crouch', 2.2, { np: 0.1, hdp: -0.05 }, (a, t) => { a.ov.hdp = Math.sin(t * 16) * 0.025; a.lookAtYou = 0.7; }), STEP.pose('sit', 2)] },
-  swat:       { label: '냥펀치!', steps: (a) => [STEP.walk(...a.nearYou(0.5), 1.1), STEP.faceYou(), STEP.pose('sit', 0.5), STEP.call((a) => a.say('캭!')), STEP.pose('groom', 0.5, { fls: -1.1, fle: -0.2, eL: 1, eR: 1, eye: 1, pupil: 1, mouth: 0.6, hdp: 0.2, np: 0.2 }, (a, t) => { a.ov.fls = Math.sin(t * 30) * 0.5; a.lookAtYou = 1; }), STEP.pose('hiss', 1.2, { eL: 1, eR: 1 }, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.5, { eL: 0.6, eR: 0.6 })] },
-  roll_over:  { label: '발라당', steps: (a) => [STEP.walk(...a.nearYou(0.6), 1.0), STEP.pose('loaf', 0.8), STEP.pose('belly', 4.5, null, (a) => { a.lookAtYou = 0.6; }), STEP.pose('loaf', 1.2)] },
-};
-const REACTION_KEYS = Object.keys(REACTIONS);
 
 // ==== 62_clock.js ====
-// ───────────────────────── 세계 시계 (D-19) ─────────────────────────
-// 서버 없이 시각만으로 고양이의 하루를 계산한다. 같은 (고양이 id, 시각)이면 누가 언제 들어와도 같은 행동·같은 자리 근처가 나온다.
-//  · 시간을 30초 칸으로 나누고, 칸마다 (고양이 id, 칸 번호) 시드로 "무슨 행동을, 몇 칸(60~120초) 동안, 어디서" 할지 정한다.
-//  · 10분(20칸)마다 일정을 새로 이어 붙이는 기준점을 두어, 접속 순간 최근 10~30분만 계산하면 된다.
-//  · 욕구·감정은 시각의 함수. 교감으로 생기는 변화(츄르 먹은 시각 등)는 일정에 쓰지 않고 표시용 상태에만 반영한다.
-const CLOCK = { SLOT: 30000, BLOCK_SLOTS: 20, DEPTH: 3 };
-CLOCK.BLOCK = CLOCK.SLOT * CLOCK.BLOCK_SLOTS;
-const PASSIVE_KEYS = new Set(['sit', 'loaf', 'nap', 'sideNap', 'belly', 'groom', 'stretch', 'yawn', 'watch']);
-const NEED_DEFS = [['sleep', '졸림'], ['hunger', '배고픔'], ['play', '놀고 싶음'], ['social', '관심이 고픔']];
-const EMO_DEFS = [['calm', '편안'], ['happy', '기쁨'], ['playful', '장난'], ['curious', '호기심'], ['wary', '경계'], ['scared', '겁'], ['grumpy', '짜증'], ['lonely', '외로움']];
-// 감정이 행동 점수를 얼마나 밀어 주는지 (감정 0.5가 기준)
-const EMO_BIAS = {
-  sit: { calm: 0.4 }, loaf: { calm: 0.6 }, nap: { calm: 0.3, scared: -0.5 }, sideNap: { calm: 0.4, wary: -0.8 }, belly: { happy: 0.8, wary: -0.8 },
-  groom: { calm: 0.4 }, wander: { curious: 0.7 }, hunt: { playful: 0.9 }, zoom: { playful: 1, scared: -0.6 }, watch: { curious: 0.6, lonely: 0.6, wary: 0.3 },
-  hissAt: { grumpy: 0.9, wary: 0.5 }, greet: { happy: 0.4, lonely: 0.5 },
-};
-function vnoise(seed, ms, periodMs) { // 시각에 따라 천천히 변하는 0~1 값 (칸 사이는 부드럽게 이음)
-  const c = Math.floor(ms / periodMs), f = ms / periodMs - c;
-  const a = hashStr(seed + ':' + c) / 4294967296, b = hashStr(seed + ':' + (c + 1)) / 4294967296;
-  return lerp(a, b, smooth(f));
-}
-function circadian(hour) { // 한낮·새벽에 졸림이 높고 해질녘·이른 아침에 낮은 하루 곡선
-  const g = (x, c, w) => { let d = Math.abs(x - c); d = Math.min(d, 24 - d); return Math.exp(-(d * d) / (2 * w * w)); };
-  return 0.2 + 0.5 * g(hour, 14, 3) + 0.45 * g(hour, 2.5, 3);
-}
-const Clock = {
-  cache: new Map(),
-  state(cat, ms, recent, personal) {
-    const p = cat.g.personality, id = cat.id, kitten = cat.g.months < 6;
-    const hour = (((ms + 9 * 3600000) % DAY) + DAY) % DAY / 3600000;
-    const nz = (k, per) => vnoise(id + ':' + k, ms, per) - 0.5;
-    const sleep = clamp(circadian(hour) + (0.5 - p.energy) * 0.3 + nz('sl', 900000) * 0.24 - (kitten ? 0.05 : 0), 0, 1);
-    const passive = (recent || []).slice(0, 4).filter((k) => PASSIVE_KEYS.has(k)).length;
-    const nAct = Math.min(4, (recent || []).length);
-    const play = clamp(0.4 + 0.12 * (passive - nAct / 2) * (nAct ? 1 : 0) + (p.playful - 0.5) * 0.3 + (kitten ? 0.15 : 0) + nz('pl', 600000) * 0.2, 0, 1);
-    // 배고픔: 마지막 식사 뒤 시간. 식사 시각은 8시간 주기에 고양이마다 정해진 흔들림을 준 값 (츄르는 personal일 때만 반영)
-    const cyc = 8 * 3600000; let cell = Math.floor(ms / cyc);
-    const mealAt = (cl) => cl * cyc + (hashStr(id + ':meal:' + cl) / 4294967296) * cyc * 0.5;
-    let meal = mealAt(cell); if (meal > ms) meal = mealAt(cell - 1);
-    if (personal) { const fed = store.get('fed:' + id, 0); if (fed > meal && fed <= ms) meal = fed; }
-    const hunger = clamp(((ms - meal) / (9 * 3600000)) * (0.6 + 0.8 * p.food), 0, 1);
-    const touch = personal ? store.get('touch:' + id, 0) : 0;
-    const social = clamp(0.25 + (touch ? clamp((ms - touch) / (6 * 3600000), 0, 1) * 0.5 * (0.4 + p.social) : 0.15 * (0.4 + p.social)) + nz('so', 1200000) * 0.2, 0, 1);
-    const needs = { sleep, hunger, play, social };
-    const e = (k, v) => clamp(v + nz('e' + k, 420000) * 0.2, 0, 1);
-    const emo = {
-      calm: e('calm', 0.35 + 0.35 * sleep + 0.2 * (1 - p.grumpy) - 0.25 * play + 0.1 * (p.bold - 0.5)),
-      happy: e('happy', 0.25 + 0.3 * (1 - hunger) + 0.2 * (1 - social) + 0.2 * (p.social - 0.5)),
-      playful: e('playful', 0.2 + 0.5 * play * (1 - sleep) + 0.35 * (p.playful - 0.5) + (kitten ? 0.15 : 0)),
-      curious: e('curious', 0.25 + 0.4 * play + 0.25 * (p.bold - 0.5)),
-      wary: e('wary', 0.2 + 0.35 * (1 - p.bold) + 0.15 * p.grumpy),
-      scared: e('scared', 0.05 + 0.4 * (1 - p.bold)),
-      grumpy: e('grumpy', 0.1 + 0.45 * p.grumpy + 0.25 * hunger + 0.15 * sleep),
-      lonely: e('lonely', 0.1 + 0.6 * social * (0.4 + p.social)),
-    };
-    return { needs, emo };
-  },
-  ctx(cat, ms, st) { // 점수 함수(ACTIONS[k].score)가 읽는 모양으로 맞춘 계산용 대역
-    const { alt } = sunPosition(new Date(ms), cat.geo.lat, cat.geo.lng), deg = alt * 180 / Math.PI;
-    return { p: cat.g.personality, kitten: cat.g.months < 6, cat, E: 1 - st.needs.sleep, B: st.needs.play,
-      world: { night: deg < -3 ? 1 : 0, day: smooth(clamp((deg + 4) / 14, 0, 1)) }, nearestCat: () => null, mom: () => null };
-  },
-  weights(cat, ms, st, recent) { // 행동 후보와 점수 (잡음 전). recent: 최근 행동 키, 최신이 앞
-    const c = this.ctx(cat, ms, st), out = [];
-    for (const [k, A] of Object.entries(ACTIONS)) {
-      if (k === 'followMom' && !cat.mother) continue;
-      let s = A.score(c, c.world);
-      const ri = recent.indexOf(k);
-      s *= ri === 0 ? 0.3 : ri === 1 ? 0.6 : ri > 1 ? 0.85 : 1.3;
-      if (c.kitten && (k === 'sideNap' || k === 'hissAt')) s *= 0.3;
-      const bias = EMO_BIAS[k];
-      if (bias) { let m = 1; for (const [ek, w] of Object.entries(bias)) m += w * (st.emo[ek] - 0.5) * 2; s *= clamp(m, 0.4, 1.8); }
-      if (s > 0) out.push({ key: k, label: A.label, w: s });
-    }
-    return out.sort((a, b) => b.w - a.w);
-  },
-  top5(cat, ms, st, recent) { // 화면 표시용: 상위 5개와 확률
-    const l = this.weights(cat, ms, st, recent).slice(0, 5), sum = l.reduce((s, x) => s + x.w, 0) || 1;
-    return l.map((x) => ({ ...x, p: x.w / sum }));
-  },
-  block(cat, b, depth = CLOCK.DEPTH) { // 10분 구간 b의 일정. depth만큼 앞 구간을 이어 반복 방지에 쓴다
-    const ck = cat.id + '|' + b + '|' + depth;
-    const hit = this.cache.get(ck); if (hit) return hit;
-    if (this.cache.size > 400) this.cache.clear();
-    const prev = depth > 0 ? this.block(cat, b - 1, depth - 1) : [];
-    const t0 = b * CLOCK.BLOCK, end = t0 + CLOCK.BLOCK, out = [];
-    let t = t0;
-    while (t < end) {
-      const slot = Math.round(t / CLOCK.SLOT), rs = makeRng('clock:' + cat.id + ':' + slot);
-      const n = rs.pick([2, 3, 3, 4]); // 60~120초
-      const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
-      const st = this.state(cat, t, recent, false);
-      const cand = this.weights(cat, t, st, recent).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
-      const key = cand.length ? rs.weighted(cand) : 'sit';
-      out.push({ key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' });
-      t += n * CLOCK.SLOT;
-    }
-    this.cache.set(ck, out);
-    return out;
-  },
-  entryAt(cat, ms) { // 그 시각의 행동과 바로 앞 행동
-    const b = Math.floor(ms / CLOCK.BLOCK), list = this.block(cat, b);
-    let i = list.findIndex((e) => ms >= e.t0 && ms < e.t1); if (i < 0) i = list.length - 1;
-    const prev = i > 0 ? list[i - 1] : this.block(cat, b - 1).slice(-1)[0];
-    return { entry: list[i], prev };
-  },
-  between(cat, t0, t1) { // [t0, t1) 안의 일정 목록
-    const out = [];
-    for (let b = Math.floor(t0 / CLOCK.BLOCK); b * CLOCK.BLOCK < t1; b++) for (const e of this.block(cat, b)) if (e.t1 > t0 && e.t0 < t1) out.push(e);
-    return out;
-  },
-  recentAt(cat, ms) { // 그 시각 행동 앞의 최근 행동 키(최신이 앞)
-    const b = Math.floor(ms / CLOCK.BLOCK), list = [...this.block(cat, b - 1), ...this.block(cat, b)];
-    let i = list.findIndex((e) => ms >= e.t0 && ms < e.t1); if (i < 0) i = list.length - 1;
-    return list.slice(Math.max(0, i - 5), i).map((e) => e.key).reverse();
-  },
-  stateAt(cat, ms, personal = true) { return this.state(cat, ms, this.recentAt(cat, ms), personal); },
-  home(entry, world) { // 이 행동을 하는 자리 (장애물을 피한 시드 난수)
-    if (entry.H) return entry.H;
-    const r = makeRng(entry.seed + ':home');
-    for (let i = 0; i < 30; i++) { const x = r.range(-1.8, 1.8), z = r.range(-1.0, 0.7); if (!world.blocked(x, z, 0.3)) return (entry.H = { x, z }); }
-    return (entry.H = { x: 0, z: 0 });
-  },
-  markFed(cat) { store.set('fed:' + cat.id, Date.now()); },
-  markTouch(cat) { store.set('touch:' + cat.id, Date.now()); },
-};
+const Clock = createClock(store); // 세계 시계 계산은 core/clock.js. 브라우저 저장 도우미(store)를 넘긴다
 
 class CatAgent {
   constructor(cat, view, world, rng) {
@@ -1909,68 +1461,10 @@ class CatAgent {
 // 같은 칸 안의 외출끼리 겹치면 정해진 순서로 한쪽을 취소한다. 어느 탭에서 계산해도 같은 결과이므로 탭끼리 통신하지 않는다.
 // 시험용: ?admin&tripdur=12,14 로 외출 길이(초)를 줄여 볼 수 있다(어드민 주소에서만 열림) (일정이 바뀌므로 같은 주소끼리만 같은 결과)
 const TRIP_DUR = (() => { const q = new URLSearchParams(location.search); if (!q.has('admin')) return [60, 120]; const v = (q.get('tripdur') || '').split(',').map(Number); return v.length === 2 && v[0] > 0 && v[1] >= v[0] ? v : [60, 120]; })();
-const TRIP = { SLOT: 30 * 60000, PROB: 0.54, DUR: TRIP_DUR, FIGHT: 0.73, ENTER: 8, LEAVE: 8, WALKOUT: 6 };
-// 경계가 맞닿은 시/도 쌍 (경계 자료의 꼭짓점이 겹치는 곳을 한 번 계산해 둔 값). 제주는 이웃이 없어 놀러 가지 않는다.
-// 11 서울 12 전남광주 26 부산 27 대구 28 인천 30 대전 31 울산 36 세종 41 경기 43 충북 44 충남 47 경북 48 경남 50 제주 51 강원 52 전북
-const NEIGHBOR_PAIRS = '27-47 43-47 41-51 12-52 11-41 47-48 43-51 44-52 48-52 47-51 36-44 43-44 41-43 26-48 30-44 31-47 28-41 30-43 31-48 36-43 43-52 12-48 41-44 27-48 30-36 26-31 47-52 11-28';
-const NEIGHBORS = (() => {
-  const m = new Map();
-  for (const pr of NEIGHBOR_PAIRS.split(' ')) { const [a, b] = pr.split('-'); if (!m.has(a)) m.set(a, []); if (!m.has(b)) m.set(b, []); m.get(a).push(b); m.get(b).push(a); }
-  for (const v of m.values()) v.sort();
-  return m;
-})();
+const TRIP = tripConfig(TRIP_DUR); // 설정값·이웃 표·일정 계산은 core/trips.js
 const unitName = (c) => { const u = REGIONS.byUnit.get(c); return u ? u.n : c; };
+const Trips = createTrips(TRIP, REGIONS);
 
-const Trips = {
-  cache: new Map(),
-  codes() { return REGIONS.units.map((u) => u.c).sort(); },
-  neighbors(code) { return REGION_LEVEL === 'sido' ? (NEIGHBORS.get(code) || []) : []; }, // 시/군/구 단계의 이웃은 아직 만들지 않았다
-  cat(code, ms) { const u = REGIONS.byUnit.get(code); return u ? dongPopulation(u, ms)[0] : null; },
-  // 싸움이냐 어울리기냐: 평균 70%, 까칠한 쌍은 더 자주 싸우고 사교적인 쌍은 덜 싸운다
-  kindOf(from, to, ms, id) {
-    const a = this.cat(from, ms), b = this.cat(to, ms); if (!a || !b) return 'fight';
-    const pa = a.g.personality, pb = b.g.personality;
-    const pf = clamp(TRIP.FIGHT + 0.3 * ((pa.grumpy + pb.grumpy) / 2 - 0.5) - 0.25 * ((pa.social + pb.social) / 2 - 0.5), 0.4, 0.92);
-    return makeRng('tripkind:' + id)() < pf ? 'fight' : 'play';
-  },
-  make(from, to, t0, durSec, kind, id) { return { id, from, to, t0, t1: t0 + durSec * 1000, kind: kind === 'fight' || kind === 'play' ? kind : this.kindOf(from, to, t0, id) }; },
-  // 칸 si(30분)의 외출 목록. 외출은 칸 안에서 끝나므로 칸끼리 서로 영향이 없다.
-  slot(si) {
-    const hit = this.cache.get(si); if (hit) return hit;
-    if (this.cache.size > 300) this.cache.clear();
-    const cand = [];
-    for (const from of this.codes()) {
-      const nb = this.neighbors(from); if (!nb.length) continue;
-      const r = makeRng('trip:' + from + ':' + si);
-      if (!r.chance(TRIP.PROB)) continue; // 칸당 50% = 평균 한 시간에 한 번
-      const to = r.pick(nb), dur = Math.round(r.range(TRIP.DUR[0], TRIP.DUR[1])), st = Math.round(r.range(30, 1800 - dur - 30)), pri = r();
-      cand.push({ from, to, dur, st, pri });
-    }
-    cand.sort((a, b) => a.pri - b.pri || (a.from < b.from ? -1 : 1));
-    const busy = {}, out = [];
-    const free = (c, t0, t1) => !(busy[c] || []).some((x) => t0 < x[1] && x[0] < t1);
-    for (const c of cand) { // 가려는 이웃이 그 시각에 외출 중이거나 이미 손님이 있으면, 또는 내가 손님을 맞는 중이면 이번 외출은 취소
-      const t0 = si * TRIP.SLOT + c.st * 1000, t1 = t0 + c.dur * 1000;
-      if (!free(c.from, t0, t1) || !free(c.to, t0, t1)) continue;
-      for (const k of [c.from, c.to]) (busy[k] = busy[k] || []).push([t0, t1]);
-      const id = si + ':' + c.from;
-      out.push({ id, from: c.from, to: c.to, t0, t1, kind: this.kindOf(c.from, c.to, t0, id) });
-    }
-    out.sort((a, b) => a.t0 - b.t0);
-    this.cache.set(si, out);
-    return out;
-  },
-  at(code, ms) { // 그 시각 code 지역의 마스코트가 나가 있는지(away) / 손님을 맞는 중인지(host)
-    let away = null, host = null;
-    for (const t of this.slot(Math.floor(ms / TRIP.SLOT))) if (ms >= t.t0 && ms < t.t1) { if (t.from === code) away = t; if (t.to === code) host = t; }
-    return { away, host };
-  },
-  between(t0, t1) {
-    const out = [];
-    for (let si = Math.floor(t0 / TRIP.SLOT); si * TRIP.SLOT < t1; si++) for (const t of this.slot(si)) if (t.t1 > t0 && t.t0 < t1) out.push(t);
-    return out;
-  },
-};
 
 // 두 마리가 만나는 동안의 단계표. 시각(초)만으로 어느 단계인지 정해지고, 두 고양이는 그 단계표를 따라 움직인다.
 // 서로 바라보기: 만나는 내내 두 마리의 시선(lookAt)을 상대 머리에 묶고, 단계마다 몸 방향(yaw)과 떨어진 거리를 정한다.
@@ -2141,13 +1635,6 @@ const nickOf = () => (Member.me ? Member.me.nick : Admin.active ? '어드민' : 
 // 공유 채널 켜짐 설정 (D-17). 카카오톡·인스타는 만들어 두고 비활성. 어드민이 화면 확인용으로 켜 볼 수 있다
 const SHARE_ENABLED = { link: true, x: true, threads: true, kakao: false, insta: false };
 const PROMO = { lockMs: 10000, showMs: 5000, cooldownMs: 60000 }; // D-15
-// 숫자 표기 (D-20): 999까지 그대로, 1,000 이상 1.2K, 1,000,000 이상 1.2M
-function fmtCount(n) {
-  n = Math.max(0, Math.floor(+n || 0));
-  if (n < 1000) return String(n);
-  const f = (v, u) => { const t = Math.floor(v / 100) / 10; return (Number.isInteger(t) ? String(t) : t.toFixed(1)) + u; };
-  return n < 1e6 ? f(n, 'K').replace(/^1000K$/, '999.9K') : f(n / 1000, 'M');
-}
 const Local = {
   member: () => store.get('member', null),
   setMember: (m) => store.set('member', m),
@@ -2323,124 +1810,6 @@ async function initCaps() {
   Caps.ready = true;
 }
 
-// ── 고양이 말 해석 ──
-const CAT_WORDS = [
-  { intent: 'fight', re: /라오+|니겅|우와+옹|와아+옹|으르+렁|크르+/, meaning: '싸움 걸기', trust: -0.15 },
-  { intent: 'hiss', re: /하+악|캬+악|샤+악|햐+악|하아+악|쉬+익/, meaning: '경고 (하악질)', trust: -0.12 },
-  { intent: 'calm', re: /그르+릉|골골|그릉|고르릉/, meaning: '편안함', trust: 0.05 },
-  { intent: 'come', re: /마-*아|^마+$|이리|쮸+|쭈+쭈|츄츄|오라|와봐|나비야|냐아+$|^냐+아/, meaning: '이리 와', trust: 0.03 },
-  { intent: 'question', re: /냐+옹\?|\?$|뭐해|뭐냥/, meaning: '궁금함', trust: 0.02 },
-  { intent: 'greet', re: /^냥+[!~.]*$|^냐[!~.]*$|^야옹[!~.]*$|안녕|미야+|^먀+/, meaning: '인사', trust: 0.03 },
-];
-function interpret(text) {
-  const t = (text || '').trim();
-  for (const w of CAT_WORDS) if (w.re.test(t)) return w;
-  return { intent: 'unknown', meaning: '알 수 없는 울음', trust: 0 };
-}
-const QUICK_WORDS = ['마-아', '냥', '냐옹?', '그르릉', '하악', '라오오- 니겅니겅니겅'];
-const PET_PARTS = [['head', '머리'], ['chin', '턱'], ['back', '등'], ['belly', '배']];
-
-// ── 교감 반응 데이터 (D-30): 극성·감정·속마음·손길 선호를 이 블록 한 곳에 둔다 ──
-// 극성: +1 긍정 / 0 중립 / -1 부정. 속마음 문구와 행동(반응)은 같은 극성끼리만 짝지어진다 (resolveRule, 검사: pp/b2_polarity.js)
-const EMO_POL = { happy: 1, calm: 1, playful: 1, curious: 0, lonely: 0, indifferent: 0, wary: -1, scared: -1, grumpy: -1 };
-const EMO_LABEL = { happy: '기쁨', calm: '편안', playful: '장난', curious: '호기심', indifferent: '무관심', wary: '경계', scared: '겁', grumpy: '짜증', lonely: '외로움' };
-const REACT_META = { // 행동의 극성(눈에 보이는 몸짓 기준)과 그때의 감정
-  approach: { pol: 1, emo: 'happy' }, rub: { pol: 1, emo: 'happy' }, slow_blink: { pol: 1, emo: 'calm' }, tail_up: { pol: 1, emo: 'happy' },
-  meow_back: { pol: 1, emo: 'happy' }, purr: { pol: 1, emo: 'calm' }, eat_churu: { pol: 1, emo: 'happy' }, roll_over: { pol: 1, emo: 'playful' },
-  head_tilt: { pol: 0, emo: 'curious' }, ignore: { pol: 0, emo: 'indifferent' }, stare: { pol: 0, emo: 'curious' }, sniff_only: { pol: 0, emo: 'curious' },
-  back_off: { pol: -1, emo: 'wary' }, flee: { pol: -1, emo: 'scared' }, hiss_back: { pol: -1, emo: 'grumpy' }, puff_side: { pol: -1, emo: 'scared' }, swat: { pol: -1, emo: 'grumpy' },
-};
-// 속마음 문구. pol·emo는 문구 자신의 극성/감정(행동에서 가져오지 않는다). acts: 이 교감에서만, part: 이 쓰다듬기 부위에서만
-const THOUGHTS = [
-  { r: ['approach'], pol: 1, emo: 'happy', t: '불렀지? 가 볼게' }, { r: ['approach'], pol: 1, emo: 'happy', t: '가까이 가 봐도 되겠네' },
-  { r: ['rub'], pol: 1, emo: 'happy', t: '이 사람 냄새, 내 거 해야지' }, { r: ['rub'], pol: 1, emo: 'happy', t: '여기 좋아, 더 해 줘', acts: ['pet'] },
-  { r: ['slow_blink'], pol: 1, emo: 'calm', t: '…너 나쁜 사람 아니구나' }, { r: ['slow_blink'], pol: 1, emo: 'calm', t: '눈 깜빡깜빡, 마음이 편해' },
-  { r: ['tail_up'], pol: 1, emo: 'happy', t: '어, 왔어? 반가워' }, { r: ['tail_up'], pol: 1, emo: 'happy', t: '꼬리 세우고 인사해야지' },
-  { r: ['meow_back'], pol: 1, emo: 'happy', t: '불렀어? 왜애', acts: ['word'] }, { r: ['meow_back'], pol: 1, emo: 'happy', t: '대답해 줄게, 냐앙', acts: ['word'] },
-  { r: ['purr'], pol: 1, emo: 'calm', t: '거기… 거기 좋아…' }, { r: ['purr'], pol: 1, emo: 'calm', t: '기분 좋아서 저절로 골골' },
-  { r: ['eat_churu'], pol: 1, emo: 'happy', t: '츄르는 못 참지' }, { r: ['eat_churu'], pol: 1, emo: 'happy', t: '이거 맛있다, 더 줘' },
-  { r: ['roll_over'], pol: 1, emo: 'playful', t: '배 보여주는 건 특별히다', part: ['belly'] }, { r: ['roll_over'], pol: 1, emo: 'playful', t: '너니까 보여주는 거야', part: ['belly'] },
-  { r: ['head_tilt'], pol: 0, emo: 'curious', t: '무슨 소리야 그게', acts: ['word'] }, { r: ['head_tilt'], pol: 0, emo: 'curious', t: '음? 뭐라는 거지', acts: ['word'] }, { r: ['head_tilt'], pol: 0, emo: 'curious', t: '어? 뭘 하려는 거야', acts: ['pet'] },
-  { r: ['ignore'], pol: 0, emo: 'indifferent', t: '못 들은 척해야지', acts: ['word'] }, { r: ['ignore'], pol: 0, emo: 'indifferent', t: '지금은 별 관심 없어' }, { r: ['ignore'], pol: 0, emo: 'indifferent', t: '만지든 말든…', acts: ['pet'] },
-  { r: ['stare'], pol: 0, emo: 'curious', t: '…' }, { r: ['stare'], pol: 0, emo: 'curious', t: '뭐 하는 사람이지' },
-  { r: ['sniff_only'], pol: 0, emo: 'curious', t: '수상한 냄새… 일단 보류' }, { r: ['sniff_only'], pol: 0, emo: 'curious', t: '먹어도 되나… 일단 킁킁' },
-  { r: ['back_off'], pol: -1, emo: 'wary', t: '너무 가까워' }, { r: ['back_off'], pol: -1, emo: 'wary', t: '아직은 만지지 마', acts: ['pet'] }, { r: ['back_off'], pol: -1, emo: 'wary', t: '거긴 안 돼, 비켜', acts: ['pet'], part: ['belly'] }, { r: ['back_off'], pol: -1, emo: 'wary', t: '츄르라도 아직은 못 믿어', acts: ['churu'] },
-  { r: ['flee'], pol: -1, emo: 'scared', t: '으악 도망!' }, { r: ['flee'], pol: -1, emo: 'scared', t: '무서워, 숨어야지' },
-  { r: ['hiss_back'], pol: -1, emo: 'grumpy', t: '감히 나한테!' }, { r: ['hiss_back'], pol: -1, emo: 'grumpy', t: '건드리지 마!', acts: ['pet'] },
-  { r: ['puff_side'], pol: -1, emo: 'scared', t: '나 커 보이지? 무섭지?' },
-  { r: ['swat'], pol: -1, emo: 'grumpy', t: '배는 안 된다고 했지', acts: ['pet'], part: ['belly'] }, { r: ['swat'], pol: -1, emo: 'grumpy', t: '손 치워, 싫어', acts: ['pet'] },
-];
-function pickThought(r, reaction, act) {
-  const M = REACT_META[reaction] || REACT_META.stare;
-  const ok = THOUGHTS.filter((x) => x.r.includes(reaction) && x.pol === M.pol && (!x.acts || x.acts.includes(act.kind)) && (!x.part || (act.kind === 'pet' && x.part.includes(act.part))));
-  if (!ok.length) return null;
-  return r.weighted(ok.map((x) => [x, x.part ? 3 : 1]));
-}
-// 손길 선호 (D-30): 고양이마다 결정적으로 정해진다 (고양이 id 해시 + 성격, 새로고침해도 같다). 개냥이는 약 20%.
-const TOUCH_TYPES = { dog: '개냥이', tolerant: '참아줌', aloof: '무관심', wary: '경계', avoid: '피함' };
-function erf(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); return s * (1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x)); }
-function touchType(id, p) {
-  const g = makeRng(String(id) + ':touch').gauss();
-  const L = 0.8 * g + 0.6 * (p.social - 0.5) / 0.22 - 0.4 * (p.grumpy - 0.5) / 0.22; // 분산 약 1.16
-  const q = 0.5 * (1 + erf(L / 1.077 / Math.SQRT2)); // 0~1 분위
-  return q > 0.83 ? 'dog' : q > 0.58 ? 'tolerant' : q > 0.43 ? 'aloof' : q > 0.17 ? 'wary' : 'avoid';
-}
-// 쓰다듬기 부위별 [긍정, 중립, 부정] 비율: 신뢰 0일 때 -> 신뢰 1일 때 (신뢰가 쌓이면 허용 쪽으로 옮겨 간다)
-const PET_PREF = {
-  dog:      { head: [[.75, .15, .10], [.92, .07, .01]], chin: [[.80, .12, .08], [.94, .05, .01]], back: [[.65, .20, .15], [.86, .10, .04]], belly: [[.08, .20, .72], [.30, .20, .50]] },
-  tolerant: { head: [[.15, .55, .30], [.45, .45, .10]], chin: [[.20, .50, .30], [.55, .40, .05]], back: [[.08, .50, .42], [.30, .55, .15]], belly: [[0, .10, .90], [.05, .25, .70]] },
-  aloof:    { head: [[.03, .80, .17], [.20, .75, .05]], chin: [[.05, .75, .20], [.30, .65, .05]], back: [[.02, .80, .18], [.12, .80, .08]], belly: [[0, .20, .80], [.03, .40, .57]] },
-  wary:     { head: [[0, .20, .80], [.12, .50, .38]], chin: [[.02, .20, .78], [.20, .50, .30]], back: [[0, .20, .80], [.08, .50, .42]], belly: [[0, .05, .95], [.02, .20, .78]] },
-  avoid:    { head: [[0, .10, .90], [.05, .35, .60]], chin: [[0, .10, .90], [.10, .40, .50]], back: [[0, .10, .90], [.03, .35, .62]], belly: [[0, 0, 1], [0, .10, .90]] },
-};
-// 츄르를 먹을 확률 = 기본 + 신뢰 x 증가분 + 식탐 보정 (먹지 않으면 냄새만 맡거나 물러난다)
-const CHURU_PREF = { dog: [.85, .10], tolerant: [.72, .22], aloof: [.62, .30], wary: [.35, .55], avoid: [.15, .62] };
-const WORD_POS = { dog: 1, tolerant: 0.55, aloof: 0.25, wary: 0.2, avoid: 0.1 }; // 고양이 말에 긍정으로 답할 정도
-function petPolarityWeights(type, part, trust) {
-  const t = clamp(trust, 0, 1), tab = PET_PREF[type][part] || PET_PREF[type].head;
-  return [0, 1, 2].map((i) => lerp(tab[0][i], tab[1][i], t));
-}
-function ruleReaction(a, act, trust) {
-  const p = a.p, r = a.r, type = touchType(a.cat.id, p), tr = clamp(trust, 0, 1);
-  const pick = (pairs) => r.weighted(pairs.filter((x) => x[1] > 0));
-  switch (act.kind) {
-    case 'pet': {
-      const w = petPolarityWeights(type, act.part, tr);
-      const pol = r.weighted([[1, w[0] * (0.8 + 0.4 * p.social)], [0, w[1]], [-1, w[2] * (0.8 + 0.4 * p.grumpy)]]);
-      if (pol > 0) return act.part === 'belly' ? 'roll_over' : pick([['purr', 1.4 + tr], ['rub', 0.3 + p.social * 2], ['slow_blink', 1], ['tail_up', 0.2 + p.social]]);
-      if (pol === 0) return pick([['ignore', 1 + (1 - p.social)], ['stare', 1], ['head_tilt', 0.4]]);
-      const shy = (1 - p.bold) * (1 - tr);
-      return act.part === 'belly'
-        ? pick([['swat', 1.5 + p.grumpy * 2], ['back_off', 0.8], ['hiss_back', p.grumpy * 1.5], ['flee', shy]])
-        : pick([['back_off', 2], ['flee', shy * 2], ['swat', 0.3 + p.grumpy], ['hiss_back', p.grumpy * 1.5], ['puff_side', p.bold * 0.5]]);
-    }
-    case 'churu': {
-      const [b0, gain] = CHURU_PREF[type];
-      const pe = clamp(b0 + gain * tr + 0.3 * (p.food - 0.5), 0.05, 0.98);
-      if (r() < pe) return 'eat_churu';
-      const shy = (1 - p.bold) * (1 - tr);
-      return pick([['sniff_only', 1 + (1 - p.food)], ['back_off', shy * 2 + (type === 'avoid' ? 1 : 0)]]);
-    }
-    case 'word': {
-      const i = act.word.intent, pf = WORD_POS[type];
-      if (i === 'come') return ((p.social * 0.6 + tr * 0.6 + p.bold * 0.3) * (0.5 + 0.65 * pf) > 0.72) ? pick([['approach', 2], ['tail_up', p.social * 2]]) : pick([['stare', 1], ['head_tilt', 1], ['ignore', 1 + p.grumpy]]);
-      if (i === 'greet') return pick([['meow_back', 1.5 * pf], ['tail_up', p.social * pf], ['slow_blink', tr * 2 * pf], ['ignore', p.grumpy + 0.4], ['stare', 0.5], ['head_tilt', 0.5]]);
-      if (i === 'question') return pick([['head_tilt', 2], ['meow_back', pf], ['stare', 0.5]]);
-      if (i === 'calm') return pick([['slow_blink', 2 * pf], ['purr', tr * 2 * pf], ['stare', 0.5], ['ignore', 0.4], ['head_tilt', 0.4]]);
-      if (i === 'hiss') return pick([['hiss_back', p.grumpy * 2.5], ['back_off', 1.2], ['flee', (1 - p.bold) * 2], ['puff_side', p.bold]]);
-      if (i === 'fight') return pick([['puff_side', p.bold * 2 + p.grumpy], ['hiss_back', p.grumpy * 2], ['flee', (1 - p.bold) * 2.5]]);
-      return pick([['head_tilt', 1.5], ['stare', 1], ['ignore', 1]]);
-    }
-  }
-  return 'stare';
-}
-const TRUST_D = { purr: 0.07, rub: 0.09, slow_blink: 0.06, tail_up: 0.06, eat_churu: 0.12, sniff_only: 0.02, approach: 0.04, meow_back: 0.03, head_tilt: 0.01, roll_over: 0.06, ignore: 0, stare: 0, back_off: -0.03, flee: -0.06, hiss_back: -0.08, puff_side: -0.06, swat: -0.02 };
-// 규칙 엔진 한 번 실행: 반응 + 같은 극성의 속마음 + 감정을 함께 돌려준다 (검사 스크립트도 이 함수를 쓴다)
-function resolveRule(a, act, trust) {
-  const reaction = ruleReaction(a, act, trust), M = REACT_META[reaction];
-  const line = pickThought(a.r, reaction, act);
-  return { reaction, thought: line ? line.t : '…', thoughtPol: line ? line.pol : null, thoughtEmo: line ? line.emo : null, pol: M.pol, emo: M.emo, trust_delta: TRUST_D[reaction] || 0, by: 'rule' };
-}
 
 async function askCat(a, act) {
   const bond = Bonds.get(a.cat.id);
@@ -2484,8 +1853,6 @@ async function askCat(a, act) {
 //  · 싫어요가 좋아요보다 많아지면 삭제 (제안자는 제안과 함께 좋아요 1로 시작) · 신고가 5개 쌓이면 삭제 (한 세션 한 번, 횟수는 화면에 안 보임)
 //  · 랭킹: 좋아요 많은 순 -> 싫어요 적은 순 -> 먼저 제안한 순 · 지역당 이름은 최대 NAME_CAP개
 // 저장 위치는 names2/ (예전 names/ 하트 기록은 지우지 않고 읽지 않는다 = 보이지 않음, D-20)
-const NAME_BAD = new RegExp('[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2028-\\u202f\\u2060-\\u206f\\ufeff]', 'g'); // 제어문자·보이지 않는 글자
-const NAME_RULE = { PER_SESSION: 5, CAP: 40, REPORT_DEL: 5, MAXLEN: 8, SHOW: 10 };
 const Names = {
   dong: null, list: [], unsub: null, listeners: [], ready: false, asUid: null, // asUid: 어드민 시험용 가짜 세션
   on(fn) { this.listeners.push(fn); },
@@ -3104,147 +2471,6 @@ function openShare(app) {
 // 붙여 넣은 글은 코드로 실행하지 않는다(eval·Function 없음). 모르는 항목·범위를 넘는 값·너무 큰 입력은 모두 거절하고,
 // 검증을 통과한 값만 새 객체로 옮겨 쓴다(원본 객체를 그대로 쓰지 않음 → 프로토타입 오염 불가).
 // 이 단어 목록을 바꾸면 안내 문서의 프롬프트와 어드민의 '프롬프트 복사'도 함께 바뀐다(recipePrompt가 이 표에서 만든다).
-const RV = {
-  pose: ['sit', 'stand', 'loaf', 'lie_side', 'lie_belly', 'crouch', 'stretch', 'arch', 'lean_side', 'roll'],
-  move: ['stay', 'walk', 'trot', 'run', 'jump_up', 'jump_down', 'pounce', 'to:box', 'to:wall', 'to:sunny', 'to:hide', 'to:you'],
-  ears: ['forward', 'side', 'back_flat', 'swivel', 'one_back'],
-  eyes: ['open', 'half_closed', 'slow_blink', 'wide', 'closed'],
-  pupil: ['small', 'normal', 'large'],
-  tail: ['up', 'up_hook', 'low', 'puff', 'wrap', 'flick', 'lash'],
-  head: ['tilt_left', 'tilt_right', 'rub_left', 'rub_right', 'look_up', 'look_down'],
-  sound: ['none', 'meow', 'trill', 'purr', 'hiss', 'yowl'],
-  emotion: ['편안', '호기심', '신남', '애정', '경계', '두려움', '짜증', '졸림'],
-  need: ['에너지 높음', '에너지 낮음', '배고픔 높음', '지루함 높음', '안심 높음', '안심 낮음'],
-};
-// 단어는 받지만 아직 몸동작이 없는 것 → "새 동작 필요"로 표시하고 미리보기에서는 건너뛴다
-const RV_NEW = { pose: ['arch', 'lean_side', 'roll'], move: ['jump_up', 'jump_down', 'to:box', 'to:sunny', 'to:hide'] };
-const RPOSE = { sit: 'sit', stand: 'stand', loaf: 'loaf', lie_side: 'side', lie_belly: 'belly', crouch: 'crouch', stretch: 'stretch' };
-const RLIM = { raw: 6000, name: 24, place: 16, steps: 24, unknown: 8, unkLen: 80, durMin: 1, durMax: 40, saved: 30, enabled: 10 };
-const RKEYS = {
-  top: new Set(['name', 'when', 'duration_s', 'steps', 'unknown_moves']),
-  when: new Set(['emotion', 'need', 'place']),
-  step: new Set(['t', 'pose', 'move', 'ears', 'eyes', 'pupil', 'tail', 'head', 'sound']),
-};
-const RTEXT = /^[\p{L}\p{N} _\-·.,!?~()]+$/u; // 이름·장소: 글자·숫자·공백과 몇 가지 기호만
-const RFREE = /^[^<>\u0000-\u001f\u007f]+$/;   // 못 하는 동작 설명: 꺾쇠·제어문자만 막는다 (표시는 textContent로만)
-function recipePrompt() {
-  return `너는 고양이 행동 분석가다. 사용자가 보낸 영상 속 고양이의 행동 하나를 골라
-아래 JSON 형식으로만 답하라. 설명 문장은 쓰지 마라.
-행동이 여러 개면 가장 귀엽고 눈에 띄는 것 하나만 고른다.
-
-{
-  "name": "행동 이름(한국어, 짧게, ${RLIM.name}자 이내)",
-  "when": { "emotion": ["감정"], "need": "욕구 상황", "place": "장소(한국어 ${RLIM.place}자 이내)" },
-  "duration_s": 숫자(${RLIM.durMin}~${RLIM.durMax}),
-  "steps": [ { "t": 시작초, "pose": "", "move": "", "ears": "", "eyes": "", "pupil": "", "tail": "", "head": "", "sound": "" } ],
-  "unknown_moves": ["목록에 없는 몸동작을 한국어로 묘사"]
-}
-
-단계(steps)는 ${RLIM.steps}개 이하, t는 0부터 duration_s 안에서 커지는 순서로 쓴다.
-각 칸에는 아래 단어만 쓴다. 해당 없으면 칸을 빼라.
-- pose: ${RV.pose.join(', ')}
-- move: ${RV.move.join(', ')}
-- ears: ${RV.ears.join(', ')}
-- eyes: ${RV.eyes.join(', ')}
-- pupil: ${RV.pupil.join(', ')}
-- tail: ${RV.tail.join(', ')}
-- head: ${RV.head.join(', ')}
-- sound: ${RV.sound.join(', ')}
-- emotion: ${RV.emotion.join(', ')}
-- need: ${RV.need.join(', ')}
-
-목록 단어로 표현할 수 없는 몸동작(예: 뒷발로 서서 앞발 모으기)은 steps에 넣지 말고
-unknown_moves에 한국어로 자세히 적어라.`;
-}
-// 글 → 값. 문법 오류는 줄·칸을 알려 준다.
-function parseRecipeText(text) {
-  if (typeof text !== 'string') return { errors: [{ path: '입력', msg: '글이 아니에요', pos: -1 }] };
-  let s = text.trim();
-  if (!s) return { errors: [{ path: '입력', msg: '비어 있어요', pos: -1 }] };
-  if (s.length > RLIM.raw) return { errors: [{ path: '입력', msg: `너무 길어요 (${s.length}자 > ${RLIM.raw}자)`, pos: -1 }] };
-  const fence = s.match(/^```[a-zA-Z]*\s*([\s\S]*?)\s*```$/); // AI가 코드 블록으로 감싸 준 경우
-  if (fence) s = fence[1];
-  try { return { value: JSON.parse(s), text: s }; }
-  catch (e) {
-    const msg = String(e && e.message), m = /position (\d+)/.exec(msg), lc = /line (\d+) column (\d+)/.exec(msg);
-    const pos = m ? +m[1] : -1; let line = 0, col = 0;
-    if (lc) { line = +lc[1]; col = +lc[2]; }
-    else if (pos >= 0) { const before = s.slice(0, pos).split('\n'); line = before.length; col = before[before.length - 1].length + 1; }
-    return { errors: [{ path: line ? `줄 ${line}, 칸 ${col}` : 'JSON', msg: 'JSON 문법이 맞지 않아요 (괄호·쉼표·따옴표를 확인해 주세요)', pos }], text: s };
-  }
-}
-const recipeIsPlain = (o) => { if (o === null || typeof o !== 'object' || Array.isArray(o)) return false; const p = Object.getPrototypeOf(o); return (p === Object.prototype || p === null) && Object.getOwnPropertySymbols(o).length === 0; };
-// 값(객체) → 검사 결과 { ok, errors:[{path,msg}], recipe(검증된 새 객체), needs:[새 동작 필요 목록] }
-function validateRecipe(input) {
-  const errors = [], needs = [];
-  const err = (path, msg) => { if (errors.length < 40) errors.push({ path, msg }); };
-  const show = (v) => (typeof v === 'string' ? JSON.stringify(v.slice(0, 20)) : v === null ? 'null' : Array.isArray(v) ? '(배열)' : typeof v === 'object' ? '(객체)' : String(v).slice(0, 20));
-  const done = (recipe) => ({ ok: errors.length === 0, errors, recipe: errors.length ? null : recipe, needs });
-  try { const n = JSON.stringify(input); if (typeof n !== 'string' || n.length > RLIM.raw * 2) { err('입력', '너무 크거나 변환할 수 없어요'); return done(null); } }
-  catch (e) { err('입력', '순환 참조이거나 변환할 수 없는 값이에요'); return done(null); }
-  if (!recipeIsPlain(input)) { err('입력', '{ ... } 모양의 객체여야 해요'); return done(null); }
-  const keys = (o, set, path) => { for (const k of Object.keys(o)) if (!set.has(k)) err(path ? path + '.' + k : k, `알 수 없는 항목이에요 (받지 않아요): ${show(k)}`); };
-  const en = (v, list, path) => { if (typeof v === 'string' && list.includes(v)) return true; err(path, `허용되지 않은 값이에요: ${show(v)} (가능: ${list.join(', ')})`); return false; };
-  const text = (v, max, path, re) => { if (typeof v !== 'string') { err(path, '글이어야 해요'); return false; } const t = v.trim(); if (!t || t.length > max) { err(path, `1~${max}자여야 해요 (지금 ${t.length}자)`); return false; } if (!re.test(t)) { err(path, '쓸 수 없는 글자가 있어요 (< > 같은 기호·제어문자 불가)'); return false; } return true; };
-  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  keys(input, RKEYS.top, '');
-  const out = { name: '', when: {}, duration_s: 0, steps: [], unknown_moves: [] };
-  // name
-  if (!has(input, 'name')) err('name', '꼭 필요해요'); else if (text(input.name, RLIM.name, 'name', RTEXT)) out.name = input.name.trim();
-  // duration_s
-  if (!has(input, 'duration_s')) err('duration_s', '꼭 필요해요');
-  else if (typeof input.duration_s !== 'number' || !Number.isFinite(input.duration_s) || input.duration_s < RLIM.durMin || input.duration_s > RLIM.durMax) err('duration_s', `${RLIM.durMin}~${RLIM.durMax} 사이 숫자여야 해요: ${show(input.duration_s)}`);
-  else out.duration_s = Math.round(input.duration_s * 10) / 10;
-  // when
-  if (has(input, 'when')) {
-    const w = input.when;
-    if (!recipeIsPlain(w)) err('when', '{ emotion, need, place } 모양이어야 해요');
-    else {
-      keys(w, RKEYS.when, 'when');
-      if (has(w, 'emotion')) {
-        if (!Array.isArray(w.emotion)) err('when.emotion', '배열이어야 해요');
-        else if (w.emotion.length > RV.emotion.length) err('when.emotion', `최대 ${RV.emotion.length}개예요`);
-        else { const seen = []; w.emotion.forEach((e, i) => { if (en(e, RV.emotion, `when.emotion[${i}]`) && !seen.includes(e)) seen.push(e); }); out.when.emotion = seen; }
-      }
-      if (has(w, 'need') && en(w.need, RV.need, 'when.need')) out.when.need = w.need;
-      if (has(w, 'place') && text(w.place, RLIM.place, 'when.place', RTEXT)) out.when.place = w.place.trim();
-    }
-  }
-  // steps
-  if (!has(input, 'steps')) err('steps', '꼭 필요해요');
-  else if (!Array.isArray(input.steps)) err('steps', '배열이어야 해요');
-  else if (!input.steps.length) err('steps', '단계가 하나는 있어야 해요');
-  else if (input.steps.length > RLIM.steps) err('steps', `단계는 최대 ${RLIM.steps}개예요 (지금 ${input.steps.length}개)`);
-  else {
-    let last = -1;
-    input.steps.forEach((s, i) => {
-      const P = `steps[${i}]`;
-      if (!recipeIsPlain(s)) { err(P, '{ t, pose, ... } 모양이어야 해요'); return; }
-      keys(s, RKEYS.step, P);
-      const o = {};
-      if (!has(s, 't')) err(P + '.t', '시작 초(t)가 꼭 필요해요');
-      else if (typeof s.t !== 'number' || !Number.isFinite(s.t) || s.t < 0 || s.t > RLIM.durMax) err(P + '.t', `0~${RLIM.durMax} 사이 숫자여야 해요: ${show(s.t)}`);
-      else if (s.t < last) err(P + '.t', `앞 단계(${last}초)보다 작아요. 시작 초는 커지는 순서여야 해요`);
-      else if (out.duration_s && s.t > out.duration_s) err(P + '.t', `전체 길이(${out.duration_s}초)를 넘어요`);
-      else { o.t = Math.round(s.t * 10) / 10; last = o.t; }
-      let n = 0;
-      for (const k of ['pose', 'move', 'ears', 'eyes', 'pupil', 'tail', 'head', 'sound']) {
-        if (!has(s, k)) continue;
-        if (en(s[k], RV[k], `${P}.${k}`)) { o[k] = s[k]; n++; if (RV_NEW[k] && RV_NEW[k].includes(s[k])) needs.push(`${P}.${k}: ${s[k]}`); }
-      }
-      if (!n && has(s, 't') && Object.keys(s).length <= 1) err(P, '바꿀 내용이 하나도 없어요');
-      out.steps.push(o);
-    });
-  }
-  // unknown_moves
-  if (has(input, 'unknown_moves')) {
-    const u = input.unknown_moves;
-    if (!Array.isArray(u)) err('unknown_moves', '배열이어야 해요');
-    else if (u.length > RLIM.unknown) err('unknown_moves', `최대 ${RLIM.unknown}개예요`);
-    else u.forEach((m, i) => { if (text(m, RLIM.unkLen, `unknown_moves[${i}]`, RFREE)) { out.unknown_moves.push(m.trim()); needs.push(`unknown_moves[${i}]: ${m.trim().slice(0, 30)}`); } });
-  }
-  return done(out);
-}
 // 저장소 어댑터 (D-21, D-10): 로컬은 localStorage, 배포 뒤 db가 있으면 db 한 칸. 저장 모양은 { json: "<목록 JSON 글자>" } 한 가지라 db로 옮기기 쉽다.
 const RecipeStore = {
   local: () => store.get('recipes', []),
@@ -3384,13 +2610,6 @@ const Recipes = {
 };
 Recipes.adopt(RecipeStore.local()); // 로컬 저장분은 앱이 시작되기 전에 읽는다
 
-// 샘플 (직접 만든 단순 동작. 영상·자막과 무관)
-const RECIPE_SAMPLES = [
-  { label: '꼬리 흔들며 앉기', text: JSON.stringify({ name: '꼬리 흔들며 앉기', when: { emotion: ['편안', '애정'], need: '안심 높음', place: '골목' }, duration_s: 10,
-    steps: [{ t: 0, pose: 'sit', ears: 'forward', eyes: 'open', tail: 'low' }, { t: 2, tail: 'flick', head: 'tilt_left', sound: 'trill' }, { t: 5, eyes: 'slow_blink', head: 'tilt_right' }, { t: 8, tail: 'wrap', eyes: 'half_closed', sound: 'purr' }], unknown_moves: [] }, null, 2) },
-  { label: '살금살금 한 번 덮치기', text: JSON.stringify({ name: '살금살금 한 번 덮치기', when: { emotion: ['호기심', '신남'], need: '지루함 높음', place: '골목' }, duration_s: 9,
-    steps: [{ t: 0, pose: 'crouch', pupil: 'large', ears: 'forward', tail: 'lash' }, { t: 3, move: 'trot', pose: 'crouch', tail: 'lash' }, { t: 5, move: 'pounce', tail: 'up' }, { t: 6.5, pose: 'sit', eyes: 'slow_blink', tail: 'wrap', ears: 'side' }], unknown_moves: ['앞발을 번갈아 들고 제자리 걷기'] }, null, 2) },
-];
 // 어드민 '행동 레시피' 구역 (붙여 넣기 · 검사 · 미리보기 · 저장 · 켜기/끄기 · 목록)
 function buildRecipeSection(panel) {
   const app = panel.app, ta = h('textarea', { id: 'adRcpIn', class: 'adrcp-in', rows: '8', spellcheck: 'false', autocomplete: 'off', 'aria-label': '행동 레시피 JSON', placeholder: '여기에 AI가 준 JSON을 붙여 넣어요 ({ 로 시작해서 } 로 끝나는 글)' });
