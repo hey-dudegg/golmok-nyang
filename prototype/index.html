@@ -283,6 +283,17 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 .sharebtn .lockbadge { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--plate); color: var(--plate-ink); display: grid; place-items: center; filter: none; }
 .sharebtn .lockbadge svg { width: 11px; height: 11px; }
 .sharesheet .note { overflow-wrap: anywhere; user-select: text; }
+#admin .adrcp-in { width: 100%; box-sizing: border-box; font-family: var(--f-mono); font-size: 11.5px; line-height: 1.4; padding: 6px; background: var(--panel-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; resize: vertical; min-height: 120px; }
+#admin .adrcp-res:empty { display: none; }
+#admin .adrcp-res { overflow-wrap: anywhere; user-select: text; max-height: 180px; overflow: auto; border-left: 3px solid var(--line); padding-left: 8px; }
+#admin .adrcp-res.ok { border-left-color: #3a9a5b; } #admin .adrcp-res.warn { border-left-color: #d49a1c; } #admin .adrcp-res.bad { border-left-color: #c9453a; }
+#admin .adrcp-line { font-family: var(--f-mono); font-size: 11px; white-space: pre-wrap; }
+#admin .adrcp-item { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+#admin .adrcp-item.on { border-color: #3a9a5b; background: var(--lamp-soft); }
+#admin .adrcp-name { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; overflow-wrap: anywhere; }
+#admin .adrcp-tag { font-size: 10.5px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line); color: var(--muted); }
+#admin .adrcp-tag.on { color: #2f7d4a; border-color: #3a9a5b; } #admin .adrcp-tag.warn { color: #9a6a00; border-color: #d49a1c; }
+#admin .adrcp-err { font-size: 11px; color: #c9453a; overflow-wrap: anywhere; }
 #admin .adrow2 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 #admin input[type=number] { width: 84px; font: inherit; font-size: 12px; padding: 2px 4px; }
 @media (max-width: 720px) {
@@ -1951,7 +1962,7 @@ class CatAgent {
   }
   beginEntry(entry, resume) {
     this.entry = entry; this.isReaction = false; this.override = false;
-    const A = ACTIONS[entry.key], H = Clock.home(entry, this.world), r = makeRng(entry.seed + (resume ? ':r' : ''));
+    const A = ACTIONS[entry.key] || ACTIONS.sit, H = Clock.home(entry, this.world), r = makeRng(entry.seed + (resume ? ':r' : ''));
     const st = Clock.stateAt(this.cat, entry.t0, false);
     this.E = 1 - st.needs.sleep; this.B = st.needs.play;
     this.action = entry.key; this.lastAction = entry.key;
@@ -3374,6 +3385,350 @@ function openShare(app) {
   const cb = $('.sharesheet .close'); if (cb) cb.innerHTML = ICON.close;
 }
 
+// ==== 70_recipe.js ====
+// ───────────────────────── 행동 레시피 (R-14, 설계 8장, 안내: docs/design/숏츠_행동_가져오기_안내.md) ─────────────────────────
+// 숏츠를 보고 AI가 정리한 JSON을 붙여 넣으면, 정해진 단어·숫자 범위만 받아 행동 엔진(ACTIONS)의 새 행동으로 등록한다.
+// 붙여 넣은 글은 코드로 실행하지 않는다(eval·Function 없음). 모르는 항목·범위를 넘는 값·너무 큰 입력은 모두 거절하고,
+// 검증을 통과한 값만 새 객체로 옮겨 쓴다(원본 객체를 그대로 쓰지 않음 → 프로토타입 오염 불가).
+// 이 단어 목록을 바꾸면 안내 문서의 프롬프트와 어드민의 '프롬프트 복사'도 함께 바뀐다(recipePrompt가 이 표에서 만든다).
+const RV = {
+  pose: ['sit', 'stand', 'loaf', 'lie_side', 'lie_belly', 'crouch', 'stretch', 'arch', 'lean_side', 'roll'],
+  move: ['stay', 'walk', 'trot', 'run', 'jump_up', 'jump_down', 'pounce', 'to:box', 'to:wall', 'to:sunny', 'to:hide', 'to:you'],
+  ears: ['forward', 'side', 'back_flat', 'swivel', 'one_back'],
+  eyes: ['open', 'half_closed', 'slow_blink', 'wide', 'closed'],
+  pupil: ['small', 'normal', 'large'],
+  tail: ['up', 'up_hook', 'low', 'puff', 'wrap', 'flick', 'lash'],
+  head: ['tilt_left', 'tilt_right', 'rub_left', 'rub_right', 'look_up', 'look_down'],
+  sound: ['none', 'meow', 'trill', 'purr', 'hiss', 'yowl'],
+  emotion: ['편안', '호기심', '신남', '애정', '경계', '두려움', '짜증', '졸림'],
+  need: ['에너지 높음', '에너지 낮음', '배고픔 높음', '지루함 높음', '안심 높음', '안심 낮음'],
+};
+// 단어는 받지만 아직 몸동작이 없는 것 → "새 동작 필요"로 표시하고 미리보기에서는 건너뛴다
+const RV_NEW = { pose: ['arch', 'lean_side', 'roll'], move: ['jump_up', 'jump_down', 'to:box', 'to:sunny', 'to:hide'] };
+const RPOSE = { sit: 'sit', stand: 'stand', loaf: 'loaf', lie_side: 'side', lie_belly: 'belly', crouch: 'crouch', stretch: 'stretch' };
+const RLIM = { raw: 6000, name: 24, place: 16, steps: 24, unknown: 8, unkLen: 80, durMin: 1, durMax: 40, saved: 30, enabled: 10 };
+const RKEYS = {
+  top: new Set(['name', 'when', 'duration_s', 'steps', 'unknown_moves']),
+  when: new Set(['emotion', 'need', 'place']),
+  step: new Set(['t', 'pose', 'move', 'ears', 'eyes', 'pupil', 'tail', 'head', 'sound']),
+};
+const RTEXT = /^[\p{L}\p{N} _\-·.,!?~()]+$/u; // 이름·장소: 글자·숫자·공백과 몇 가지 기호만
+const RFREE = /^[^<>\u0000-\u001f\u007f]+$/;   // 못 하는 동작 설명: 꺾쇠·제어문자만 막는다 (표시는 textContent로만)
+function recipePrompt() {
+  return `너는 고양이 행동 분석가다. 사용자가 보낸 영상 속 고양이의 행동 하나를 골라
+아래 JSON 형식으로만 답하라. 설명 문장은 쓰지 마라.
+행동이 여러 개면 가장 귀엽고 눈에 띄는 것 하나만 고른다.
+
+{
+  "name": "행동 이름(한국어, 짧게, ${RLIM.name}자 이내)",
+  "when": { "emotion": ["감정"], "need": "욕구 상황", "place": "장소(한국어 ${RLIM.place}자 이내)" },
+  "duration_s": 숫자(${RLIM.durMin}~${RLIM.durMax}),
+  "steps": [ { "t": 시작초, "pose": "", "move": "", "ears": "", "eyes": "", "pupil": "", "tail": "", "head": "", "sound": "" } ],
+  "unknown_moves": ["목록에 없는 몸동작을 한국어로 묘사"]
+}
+
+단계(steps)는 ${RLIM.steps}개 이하, t는 0부터 duration_s 안에서 커지는 순서로 쓴다.
+각 칸에는 아래 단어만 쓴다. 해당 없으면 칸을 빼라.
+- pose: ${RV.pose.join(', ')}
+- move: ${RV.move.join(', ')}
+- ears: ${RV.ears.join(', ')}
+- eyes: ${RV.eyes.join(', ')}
+- pupil: ${RV.pupil.join(', ')}
+- tail: ${RV.tail.join(', ')}
+- head: ${RV.head.join(', ')}
+- sound: ${RV.sound.join(', ')}
+- emotion: ${RV.emotion.join(', ')}
+- need: ${RV.need.join(', ')}
+
+목록 단어로 표현할 수 없는 몸동작(예: 뒷발로 서서 앞발 모으기)은 steps에 넣지 말고
+unknown_moves에 한국어로 자세히 적어라.`;
+}
+// 글 → 값. 문법 오류는 줄·칸을 알려 준다.
+function parseRecipeText(text) {
+  if (typeof text !== 'string') return { errors: [{ path: '입력', msg: '글이 아니에요', pos: -1 }] };
+  let s = text.trim();
+  if (!s) return { errors: [{ path: '입력', msg: '비어 있어요', pos: -1 }] };
+  if (s.length > RLIM.raw) return { errors: [{ path: '입력', msg: `너무 길어요 (${s.length}자 > ${RLIM.raw}자)`, pos: -1 }] };
+  const fence = s.match(/^```[a-zA-Z]*\s*([\s\S]*?)\s*```$/); // AI가 코드 블록으로 감싸 준 경우
+  if (fence) s = fence[1];
+  try { return { value: JSON.parse(s), text: s }; }
+  catch (e) {
+    const msg = String(e && e.message), m = /position (\d+)/.exec(msg), lc = /line (\d+) column (\d+)/.exec(msg);
+    const pos = m ? +m[1] : -1; let line = 0, col = 0;
+    if (lc) { line = +lc[1]; col = +lc[2]; }
+    else if (pos >= 0) { const before = s.slice(0, pos).split('\n'); line = before.length; col = before[before.length - 1].length + 1; }
+    return { errors: [{ path: line ? `줄 ${line}, 칸 ${col}` : 'JSON', msg: 'JSON 문법이 맞지 않아요 (괄호·쉼표·따옴표를 확인해 주세요)', pos }], text: s };
+  }
+}
+const recipeIsPlain = (o) => { if (o === null || typeof o !== 'object' || Array.isArray(o)) return false; const p = Object.getPrototypeOf(o); return (p === Object.prototype || p === null) && Object.getOwnPropertySymbols(o).length === 0; };
+// 값(객체) → 검사 결과 { ok, errors:[{path,msg}], recipe(검증된 새 객체), needs:[새 동작 필요 목록] }
+function validateRecipe(input) {
+  const errors = [], needs = [];
+  const err = (path, msg) => { if (errors.length < 40) errors.push({ path, msg }); };
+  const show = (v) => (typeof v === 'string' ? JSON.stringify(v.slice(0, 20)) : v === null ? 'null' : Array.isArray(v) ? '(배열)' : typeof v === 'object' ? '(객체)' : String(v).slice(0, 20));
+  const done = (recipe) => ({ ok: errors.length === 0, errors, recipe: errors.length ? null : recipe, needs });
+  try { const n = JSON.stringify(input); if (typeof n !== 'string' || n.length > RLIM.raw * 2) { err('입력', '너무 크거나 변환할 수 없어요'); return done(null); } }
+  catch (e) { err('입력', '순환 참조이거나 변환할 수 없는 값이에요'); return done(null); }
+  if (!recipeIsPlain(input)) { err('입력', '{ ... } 모양의 객체여야 해요'); return done(null); }
+  const keys = (o, set, path) => { for (const k of Object.keys(o)) if (!set.has(k)) err(path ? path + '.' + k : k, `알 수 없는 항목이에요 (받지 않아요): ${show(k)}`); };
+  const en = (v, list, path) => { if (typeof v === 'string' && list.includes(v)) return true; err(path, `허용되지 않은 값이에요: ${show(v)} (가능: ${list.join(', ')})`); return false; };
+  const text = (v, max, path, re) => { if (typeof v !== 'string') { err(path, '글이어야 해요'); return false; } const t = v.trim(); if (!t || t.length > max) { err(path, `1~${max}자여야 해요 (지금 ${t.length}자)`); return false; } if (!re.test(t)) { err(path, '쓸 수 없는 글자가 있어요 (< > 같은 기호·제어문자 불가)'); return false; } return true; };
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  keys(input, RKEYS.top, '');
+  const out = { name: '', when: {}, duration_s: 0, steps: [], unknown_moves: [] };
+  // name
+  if (!has(input, 'name')) err('name', '꼭 필요해요'); else if (text(input.name, RLIM.name, 'name', RTEXT)) out.name = input.name.trim();
+  // duration_s
+  if (!has(input, 'duration_s')) err('duration_s', '꼭 필요해요');
+  else if (typeof input.duration_s !== 'number' || !Number.isFinite(input.duration_s) || input.duration_s < RLIM.durMin || input.duration_s > RLIM.durMax) err('duration_s', `${RLIM.durMin}~${RLIM.durMax} 사이 숫자여야 해요: ${show(input.duration_s)}`);
+  else out.duration_s = Math.round(input.duration_s * 10) / 10;
+  // when
+  if (has(input, 'when')) {
+    const w = input.when;
+    if (!recipeIsPlain(w)) err('when', '{ emotion, need, place } 모양이어야 해요');
+    else {
+      keys(w, RKEYS.when, 'when');
+      if (has(w, 'emotion')) {
+        if (!Array.isArray(w.emotion)) err('when.emotion', '배열이어야 해요');
+        else if (w.emotion.length > RV.emotion.length) err('when.emotion', `최대 ${RV.emotion.length}개예요`);
+        else { const seen = []; w.emotion.forEach((e, i) => { if (en(e, RV.emotion, `when.emotion[${i}]`) && !seen.includes(e)) seen.push(e); }); out.when.emotion = seen; }
+      }
+      if (has(w, 'need') && en(w.need, RV.need, 'when.need')) out.when.need = w.need;
+      if (has(w, 'place') && text(w.place, RLIM.place, 'when.place', RTEXT)) out.when.place = w.place.trim();
+    }
+  }
+  // steps
+  if (!has(input, 'steps')) err('steps', '꼭 필요해요');
+  else if (!Array.isArray(input.steps)) err('steps', '배열이어야 해요');
+  else if (!input.steps.length) err('steps', '단계가 하나는 있어야 해요');
+  else if (input.steps.length > RLIM.steps) err('steps', `단계는 최대 ${RLIM.steps}개예요 (지금 ${input.steps.length}개)`);
+  else {
+    let last = -1;
+    input.steps.forEach((s, i) => {
+      const P = `steps[${i}]`;
+      if (!recipeIsPlain(s)) { err(P, '{ t, pose, ... } 모양이어야 해요'); return; }
+      keys(s, RKEYS.step, P);
+      const o = {};
+      if (!has(s, 't')) err(P + '.t', '시작 초(t)가 꼭 필요해요');
+      else if (typeof s.t !== 'number' || !Number.isFinite(s.t) || s.t < 0 || s.t > RLIM.durMax) err(P + '.t', `0~${RLIM.durMax} 사이 숫자여야 해요: ${show(s.t)}`);
+      else if (s.t < last) err(P + '.t', `앞 단계(${last}초)보다 작아요. 시작 초는 커지는 순서여야 해요`);
+      else if (out.duration_s && s.t > out.duration_s) err(P + '.t', `전체 길이(${out.duration_s}초)를 넘어요`);
+      else { o.t = Math.round(s.t * 10) / 10; last = o.t; }
+      let n = 0;
+      for (const k of ['pose', 'move', 'ears', 'eyes', 'pupil', 'tail', 'head', 'sound']) {
+        if (!has(s, k)) continue;
+        if (en(s[k], RV[k], `${P}.${k}`)) { o[k] = s[k]; n++; if (RV_NEW[k] && RV_NEW[k].includes(s[k])) needs.push(`${P}.${k}: ${s[k]}`); }
+      }
+      if (!n && has(s, 't') && Object.keys(s).length <= 1) err(P, '바꿀 내용이 하나도 없어요');
+      out.steps.push(o);
+    });
+  }
+  // unknown_moves
+  if (has(input, 'unknown_moves')) {
+    const u = input.unknown_moves;
+    if (!Array.isArray(u)) err('unknown_moves', '배열이어야 해요');
+    else if (u.length > RLIM.unknown) err('unknown_moves', `최대 ${RLIM.unknown}개예요`);
+    else u.forEach((m, i) => { if (text(m, RLIM.unkLen, `unknown_moves[${i}]`, RFREE)) { out.unknown_moves.push(m.trim()); needs.push(`unknown_moves[${i}]: ${m.trim().slice(0, 30)}`); } });
+  }
+  return done(out);
+}
+// 저장소 어댑터 (D-21, D-10): 로컬은 localStorage, 배포 뒤 db가 있으면 db 한 칸. 저장 모양은 { json: "<목록 JSON 글자>" } 한 가지라 db로 옮기기 쉽다.
+const RecipeStore = {
+  local: () => store.get('recipes', []),
+  async load() {
+    if (Caps.db) { try { const s = await Caps.db.doc('admin/recipes').get(); if (s.exists) { const d = s.data(); return JSON.parse(String(d.json || '[]')); } } catch (e) {} }
+    return this.local();
+  },
+  async save(list) {
+    if (Caps.db) { try { await Caps.db.doc('admin/recipes').set({ json: JSON.stringify(list) }); return; } catch (e) {} }
+    store.set('recipes', list);
+  },
+};
+const RECIPE_EMO = { 편안: ['calm'], 호기심: ['curious'], 신남: ['playful', 'happy'], 애정: ['happy', 'lonely'], 경계: ['wary'], 두려움: ['scared'], 짜증: ['grumpy'], 졸림: ['calm'] };
+// 레시피 한 단계 → 자세 덧값(ex)·순간 호출(pre)·매 프레임 덧값(fx). 단어마다 정해진 값만 쓰고 레시피의 글은 값으로 쓰지 않는다.
+function recipeStepParts(s) {
+  const ex = {}, pre = [], fx = [];
+  const E = { forward: [0, 0], side: [0.45, 0.45], back_flat: [1, 1], one_back: [0, 0.95] };
+  if (s.ears && E[s.ears]) { ex.eL = E[s.ears][0]; ex.eR = E[s.ears][1]; }
+  if (s.ears === 'swivel') fx.push((a, t) => { a.ov.eL = 0.3 + Math.sin(t * 5) * 0.3; a.ov.eR = 0.3 + Math.sin(t * 5 + 2) * 0.3; });
+  const EY = { open: 1, half_closed: 0.45, closed: 0, wide: 1 };
+  if (s.eyes && EY[s.eyes] !== undefined) ex.eye = EY[s.eyes];
+  if (s.eyes === 'wide' && !s.pupil) ex.pupil = 0.9;
+  if (s.eyes === 'slow_blink') pre.push((a) => a.slowBlink());
+  const PU = { small: 0.2, normal: 0.55, large: 0.95 };
+  if (s.pupil && PU[s.pupil] !== undefined) ex.pupil = PU[s.pupil];
+  const TL = { up: { tb: 1.3, tc: -0.03, tw: 0.06 }, up_hook: { tb: 1.3, tc: 0.35, tw: 0.06 }, low: { tb: -0.12, tc: 0.02 }, puff: { tb: 0.95, puff: 1, tw: 0.12 },
+    wrap: { tb: -0.1, tc: 0, tcs: 0.6, ts: 0.9, tw: 0.03 }, flick: { tw: 0.55, twf: 3.2 }, lash: { tb: 0.4, tw: 0.95, twf: 5.5 } };
+  if (s.tail && TL[s.tail]) Object.assign(ex, TL[s.tail]);
+  const ease = (t) => Math.min(1, t / 0.4);
+  if (s.head === 'tilt_left') fx.push((a, t) => { a.ov.hdr = 0.42 * ease(t); });
+  if (s.head === 'tilt_right') fx.push((a, t) => { a.ov.hdr = -0.42 * ease(t); });
+  if (s.head === 'look_up') fx.push((a, t) => { a.ov.hdp = -0.45 * ease(t); });
+  if (s.head === 'look_down') fx.push((a, t) => { a.ov.hdp = 0.4 * ease(t); });
+  if (s.head === 'rub_left' || s.head === 'rub_right') { const sg = s.head === 'rub_left' ? 1 : -1; fx.push((a, t) => { a.ov.hdr = sg * (0.2 + Math.sin(t * 3.2) * 0.38) * ease(t); a.ov.hy = sg * Math.sin(t * 3.2) * 0.12; }); }
+  const SND = { meow: ['냥', 0.6], trill: ['르르릉', 0.35], purr: ['그르릉', 0.1], hiss: ['하악!', 0.9], yowl: ['냐아오오', 0.9] };
+  if (s.sound && SND[s.sound]) { const [word, open] = SND[s.sound]; pre.push((a) => a.say(word)); fx.push((a, t) => { if (t < 0.8) a.ov.mouth = Math.sin(t / 0.8 * Math.PI) * open; }); }
+  return { ex, pre, fx };
+}
+// 레시피 한 단계가 엔진을 깨뜨리지 않게: 예외가 나면 그 레시피를 끄고 단계를 마친다
+function recipeGuard(step, onFail) {
+  let bad = false;
+  return { start(a) { try { step.start(a); } catch (e) { bad = true; onFail(e); } }, tick(a, dt) { if (bad) return true; try { return step.tick(a, dt); } catch (e) { bad = true; onFail(e); return true; } } };
+}
+function recipeToAction(id, R, onFail) {
+  const emos = R.when.emotion || [], need = R.when.need, sleepy = emos.includes('졸림');
+  const fail = (e) => { if (onFail) onFail(e); };
+  return {
+    label: R.name, recipe: true,
+    score(a) {
+      try {
+        let s = 0.35;
+        if (need === '에너지 높음') s += 0.5 * a.E; else if (need === '에너지 낮음') s += 0.5 * (1 - a.E);
+        else if (need === '지루함 높음') s += 0.5 * a.B; else if (need === '안심 높음') s += 0.4 * a.p.bold; else if (need === '안심 낮음') s += 0.4 * (1 - a.p.bold);
+        else if (need === '배고픔 높음') s += 0.3 * a.p.food;
+        if (sleepy) s += 0.4 * (1 - a.E);
+        return Number.isFinite(s) ? clamp(s, 0, 1.6) : 0;
+      } catch (e) { fail(e); return 0; }
+    },
+    steps(a, r) {
+      try {
+        const out = [], carry = {}; let cur = 'sit';
+        const G = (st) => recipeGuard(st, fail);
+        R.steps.forEach((s, i) => {
+          const end = i + 1 < R.steps.length ? R.steps[i + 1].t : R.duration_s, dur = clamp(end - s.t, 0.4, RLIM.durMax);
+          switch (s.move) { // 이동 (몸동작이 없는 단어는 건너뛴다)
+            case 'walk': { const p = a.randomPoint(r, 1.0); out.push(G(STEP.walk(p.x, p.z, 1, { timeout: 8 }))); break; }
+            case 'trot': { const p = a.randomPoint(r, 1.6); out.push(G(STEP.walk(p.x, p.z, 1.8, { timeout: 8 }))); break; }
+            case 'run': { const p = a.randomPoint(r, 2.0); out.push(G(STEP.walk(p.x, p.z, 3.2, { timeout: 8 }))); break; }
+            case 'to:wall': { const x = clamp(a.x + r.range(-0.8, 0.8), BOUNDS.x0, BOUNDS.x1), z = BOUNDS.z0 + 0.1; const p = a.world.blocked(x, z, 0.2) ? a.randomPoint(r, 1.0) : { x, z }; out.push(G(STEP.walk(p.x, p.z, 1, { timeout: 8 }))); break; }
+            case 'to:you': { const [x, z] = a.nearYou(0.6); out.push(G(STEP.walk(x, z, 1, { timeout: 8 })), G(STEP.faceYou())); break; }
+            case 'pounce': out.push(G(STEP.call((a2) => a2.pounce(0.35))), G(STEP.wait(0.75))); break;
+            default: break;
+          }
+          const pn = s.pose && RPOSE[s.pose]; if (pn) cur = pn;
+          const { ex, pre, fx } = recipeStepParts(s); Object.assign(carry, ex);
+          for (const f of pre) out.push(G(STEP.call(f)));
+          out.push(G(STEP.pose(cur, dur, { ...carry }, fx.length ? (a2, t, dt) => { for (const f of fx) f(a2, t, dt); } : null)));
+        });
+        return out;
+      } catch (e) { fail(e); return [STEP.wait(0.1)]; }
+    },
+    emoBias: Object.fromEntries(emos.flatMap((e) => RECIPE_EMO[e] || []).map((k) => [k, 0.9])),
+  };
+}
+const Recipes = {
+  list: [], listeners: [], dropped: 0,
+  on(fn) { this.listeners.push(fn); },
+  emit() { for (const f of this.listeners) { try { f(this.list); } catch (e) {} } },
+  adopt(raw) { // 저장소에서 읽은 목록은 믿지 않고 다시 검사한다
+    this.list = []; this.dropped = 0;
+    if (Array.isArray(raw)) {
+      for (const it of raw.slice(0, RLIM.saved)) {
+        const v = recipeIsPlain(it) && typeof it.id === 'string' && /^r[0-9a-z]{4,14}$/.test(it.id) ? validateRecipe(it.rec) : null;
+        if (!v || !v.ok) { this.dropped++; continue; }
+        this.list.push({ id: it.id, savedAt: +it.savedAt || 0, enabled: it.enabled === true, rec: v.recipe, err: typeof it.err === 'string' ? it.err.slice(0, 80) : '' });
+      }
+    }
+    this.sync();
+  },
+  async init() { if (Caps.db) { this.adopt(await RecipeStore.load()); this.emit(); } },
+  persist() { return RecipeStore.save(this.list.map((x) => ({ id: x.id, savedAt: x.savedAt, enabled: x.enabled, rec: x.rec, err: x.err }))); },
+  register(it) {
+    const A = recipeToAction(it.id, it.rec, (e) => this.fail(it.id, e));
+    ACTIONS['rcp_' + it.id] = A; if (Object.keys(A.emoBias).length) EMO_BIAS['rcp_' + it.id] = A.emoBias;
+  },
+  sync() { // 켜진 레시피만 ACTIONS에 등록 (켜는 수 상한). 일정 계산 캐시를 비워 새 후보가 반영되게 한다
+    for (const k of Object.keys(ACTIONS)) if (k.startsWith('rcp_') && k !== 'rcp_preview') { delete ACTIONS[k]; delete EMO_BIAS[k]; }
+    let n = 0;
+    for (const it of this.list) {
+      if (!it.enabled) continue;
+      if (n >= RLIM.enabled) { it.enabled = false; it.err = `켜는 수 상한(${RLIM.enabled}개) 초과`; continue; }
+      try { this.register(it); n++; } catch (e) { it.enabled = false; it.err = '등록 중 오류: ' + String(e && e.message).slice(0, 50); }
+    }
+    Clock.cache.clear();
+  },
+  fail(id, e) { // 실행 중 오류: 그 레시피를 끈다 (미리보기는 끄지 않고 알림만)
+    const it = this.list.find((x) => x.id === id);
+    if (it && it.enabled) { it.enabled = false; it.err = '실행 중 오류로 꺼졌어요: ' + String(e && e.message).slice(0, 50); this.sync(); this.persist(); this.emit(); }
+    try { toast('레시피 오류: ' + (it ? it.rec.name : '미리보기') + ' (꺼짐)'); } catch (e2) {}
+  },
+  add(rec) {
+    if (this.list.length >= RLIM.saved) throw new Error(`저장은 최대 ${RLIM.saved}개예요`);
+    const it = { id: 'r' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), savedAt: Date.now(), enabled: false, rec, err: '' };
+    this.list.unshift(it); this.persist(); this.emit(); return it;
+  },
+  setEnabled(id, on) {
+    const it = this.list.find((x) => x.id === id); if (!it) return false;
+    if (on && this.list.filter((x) => x.enabled).length >= RLIM.enabled) throw new Error(`켜는 수는 최대 ${RLIM.enabled}개예요`);
+    it.enabled = !!on; it.err = ''; this.sync(); this.persist(); this.emit(); return true;
+  },
+  remove(id) { this.list = this.list.filter((x) => x.id !== id); this.sync(); this.persist(); this.emit(); },
+  preview(rec, agent) { // 저장하지 않은 레시피도 재생: 점수 0이라 일정 후보에는 절대 들어가지 않는 임시 행동
+    if (!agent || agent.enc || agent.hidden) return false;
+    ACTIONS.rcp_preview = recipeToAction('preview', rec, (e) => this.fail('preview', e)); ACTIONS.rcp_preview.score = () => 0;
+    agent.repeatKey = null; agent.play('rcp_preview'); return true;
+  },
+};
+Recipes.adopt(RecipeStore.local()); // 로컬 저장분은 앱이 시작되기 전에 읽는다
+
+// 샘플 (직접 만든 단순 동작. 영상·자막과 무관)
+const RECIPE_SAMPLES = [
+  { label: '꼬리 흔들며 앉기', text: JSON.stringify({ name: '꼬리 흔들며 앉기', when: { emotion: ['편안', '애정'], need: '안심 높음', place: '골목' }, duration_s: 10,
+    steps: [{ t: 0, pose: 'sit', ears: 'forward', eyes: 'open', tail: 'low' }, { t: 2, tail: 'flick', head: 'tilt_left', sound: 'trill' }, { t: 5, eyes: 'slow_blink', head: 'tilt_right' }, { t: 8, tail: 'wrap', eyes: 'half_closed', sound: 'purr' }], unknown_moves: [] }, null, 2) },
+  { label: '살금살금 한 번 덮치기', text: JSON.stringify({ name: '살금살금 한 번 덮치기', when: { emotion: ['호기심', '신남'], need: '지루함 높음', place: '골목' }, duration_s: 9,
+    steps: [{ t: 0, pose: 'crouch', pupil: 'large', ears: 'forward', tail: 'lash' }, { t: 3, move: 'trot', pose: 'crouch', tail: 'lash' }, { t: 5, move: 'pounce', tail: 'up' }, { t: 6.5, pose: 'sit', eyes: 'slow_blink', tail: 'wrap', ears: 'side' }], unknown_moves: ['앞발을 번갈아 들고 제자리 걷기'] }, null, 2) },
+];
+// 어드민 '행동 레시피' 구역 (붙여 넣기 · 검사 · 미리보기 · 저장 · 켜기/끄기 · 목록)
+function buildRecipeSection(panel) {
+  const app = panel.app, ta = h('textarea', { id: 'adRcpIn', class: 'adrcp-in', rows: '8', spellcheck: 'false', autocomplete: 'off', 'aria-label': '행동 레시피 JSON', placeholder: '여기에 AI가 준 JSON을 붙여 넣어요 ({ 로 시작해서 } 로 끝나는 글)' });
+  const res = h('div', { class: 'note adrcp-res', id: 'adRcpRes', 'aria-live': 'polite' });
+  const list = h('div', { class: 'adrcp-list', id: 'adRcpList' });
+  const say = (cls, head, lines) => { res.className = 'note adrcp-res ' + cls; res.replaceChildren(h('b', { text: head }), ...lines.map((l) => h('div', { class: 'adrcp-line', text: l }))); };
+  const check = () => {
+    const p = parseRecipeText(ta.value);
+    if (p.errors) {
+      say('bad', '검사: 오류', p.errors.map((e) => `${e.path}: ${e.msg}`));
+      if (p.errors[0].pos >= 0 && p.text === ta.value.trim()) { try { ta.focus(); ta.setSelectionRange(p.errors[0].pos, Math.min(ta.value.length, p.errors[0].pos + 1)); } catch (e) {} }
+      return null;
+    }
+    const v = validateRecipe(p.value);
+    if (!v.ok) { say('bad', `검사: 오류 ${v.errors.length}건 (고친 뒤 다시 검사)`, v.errors.map((e) => `${e.path}: ${e.msg}`)); return null; }
+    const l = [`이름: ${v.recipe.name} · 길이 ${v.recipe.duration_s}초 · 단계 ${v.recipe.steps.length}개`];
+    if (v.recipe.when.emotion && v.recipe.when.emotion.length) l.push('어울리는 감정: ' + v.recipe.when.emotion.join(', '));
+    if (v.recipe.when.need) l.push('욕구 상황: ' + v.recipe.when.need);
+    if (v.needs.length) l.push('새 동작 필요 (미리보기에서는 건너뛰어요. Claude Code에 이 JSON을 붙여 "새 동작 추가해 줘"):', ...v.needs.map((x) => ' - ' + x));
+    say(v.needs.length ? 'warn' : 'ok', v.needs.length ? '검사: 통과 (새 동작 필요 있음)' : '검사: 통과', l);
+    return v.recipe;
+  };
+  const target = () => (app.selected && !app.selected.guest ? app.selected : app.mascot);
+  const play = (rec) => { const a = target(); if (!Recipes.preview(rec, a)) toast('지금은 재생할 수 없어요 (놀러가기 중이거나 고양이가 없어요)'); else toast(`미리보기: ${a.cat.name}`); };
+  const sample = h('select', { 'aria-label': '샘플 레시피' }, ...RECIPE_SAMPLES.map((s, i) => h('option', { value: String(i), text: s.label })));
+  const btn = (label, fn, cls = '') => h('button', { type: 'button', class: 'btn adbtn ' + cls, text: label, onclick: fn });
+  const renderList = () => {
+    list.replaceChildren(h('div', { class: 'adsub', text: `저장된 레시피 ${Recipes.list.length}/${RLIM.saved} · 켜진 것 ${Recipes.list.filter((x) => x.enabled).length}/${RLIM.enabled}` }),
+      ...(Recipes.list.length ? Recipes.list.map((it) => {
+        const nn = validateRecipe(it.rec).needs.length;
+        let askDel = false;
+        const del = btn('삭제', () => { if (!askDel) { askDel = true; del.textContent = '정말 삭제'; setTimeout(() => { askDel = false; del.textContent = '삭제'; }, 3000); return; } Recipes.remove(it.id); });
+        return h('div', { class: 'adrcp-item' + (it.enabled ? ' on' : ''), 'data-rid': it.id },
+          h('div', { class: 'adrcp-name' }, h('b', { text: it.rec.name }), h('small', { text: ` ${it.rec.duration_s}초 · ${it.rec.steps.length}단계` }),
+            h('span', { class: 'adrcp-tag ' + (it.enabled ? 'on' : ''), text: it.enabled ? '켜짐' : '꺼짐' }), nn ? h('span', { class: 'adrcp-tag warn', text: '새 동작 필요' }) : null),
+          it.err ? h('div', { class: 'adrcp-err', text: it.err }) : null,
+          h('div', { class: 'adrow2' }, btn('재생', () => play(it.rec)), btn(it.enabled ? '끄기' : '켜기', () => { try { Recipes.setEnabled(it.id, !it.enabled); } catch (e) { toast(e.message); } }, it.enabled ? '' : 'primary'),
+            btn('불러오기', () => { ta.value = JSON.stringify(it.rec, null, 2); check(); }), del));
+      }) : [h('div', { class: 'note', text: '아직 저장한 레시피가 없어요.' })]));
+  };
+  Recipes.on(renderList); renderList();
+  return h('div', { class: 'adrcp' },
+    h('div', { class: 'note', text: '숏츠에서 정리한 행동 레시피(JSON)를 붙여 넣어요. 글은 코드로 실행되지 않고, 정해진 단어와 숫자 범위만 받아요. 켜진 레시피만 고양이의 일정 후보에 들어가요.' }),
+    h('div', { class: 'adrow2' }, sample, btn('샘플 넣기', () => { ta.value = RECIPE_SAMPLES[+sample.value].text; check(); }), btn('프롬프트 복사', async () => { toast((await copyText(recipePrompt())) ? 'AI Studio용 프롬프트를 복사했어요' : '복사하지 못했어요'); })),
+    ta,
+    h('div', { class: 'adrow2' }, btn('검사', check), btn('미리보기', () => { const r = check(); if (r) play(r); }, 'primary'),
+      btn('저장 (꺼진 채로)', () => { const r = check(); if (!r) return; try { Recipes.add(r); toast('저장했어요. 켜면 일정 후보에 들어가요'); } catch (e) { toast(e.message); } }),
+      btn('비우기', () => { ta.value = ''; res.className = 'note adrcp-res'; res.replaceChildren(); })),
+    h('div', { class: 'note', text: '미리보기는 지금 고른 고양이(없으면 첫 고양이)가 해요.' }), res, list);
+}
+
 // ==== 80_admin.js ====
 // ───────────────────────── 어드민 (R-15, 설계 9장) ─────────────────────────
 // 주소 뒤에 ?admin. 소유자만 열린다 (로컬에서는 모의 어댑터가 소유자로 취급, D-21). 가입 없이 모든 기능을 쓴다 (D-16).
@@ -3417,7 +3772,7 @@ const AdminPanel = {
     const resume = h('button', { type: 'button', class: 'btn', text: '일정으로 복귀', onclick: () => { const a = self.agent(); if (a) { a.resumeSchedule(); self.refresh(); } } });
     const s1 = sec('행동 재생', true,
       h('div', { class: 'row' }, h('label', { for: 'adSpeed', text: '속도' }), speed, h('label', { class: 'check', for: 'adRep' }, rep, h('span', { text: '반복' })), resume),
-      h('div', { class: 'adsub', text: '일정 행동' }), h('div', { class: 'adgrid' }, ...Object.entries(ACTIONS).map(([k, A]) => playBtn(k, A.label))),
+      h('div', { class: 'adsub', text: '일정 행동' }), h('div', { class: 'adgrid' }, ...Object.entries(ACTIONS).filter(([k]) => !k.startsWith('rcp_')).map(([k, A]) => playBtn(k, A.label))),
       h('div', { class: 'adsub', text: '교감 반응' }), h('div', { class: 'adgrid' }, ...Object.entries(REACTIONS).map(([k, R]) => playBtn(k, R.label))));
     speed.id = 'adSpeed';
 
@@ -3526,7 +3881,8 @@ const AdminPanel = {
       const rows = PET_PARTS.map(([k, l]) => { const w = petPolarityWeights(ty, k, tr), t = w[0] + w[1] + w[2]; return `${l}: 긍정 ${Math.round(w[0] / t * 100)}% · 중립 ${Math.round(w[1] / t * 100)}% · 부정 ${Math.round(w[2] / t * 100)}%`; });
       touchInfo.textContent = `손길 유형: ${TOUCH_TYPES[ty]} · 신뢰도 ${tr.toFixed(2)}` + '\n' + rows.join('\n'); touchInfo.style.whiteSpace = 'pre-line'; };
     const s8 = sec('교감 극성 표', false, act('고른 고양이 손길 유형 보기', showTouch), touchInfo);
-    body.append(s1, s2, s3, s6, s4, s5, s7, s8, this.info);
+    const s9 = sec('행동 레시피 (숏츠에서 가져오기)', false, buildRecipeSection(this));
+    body.append(s1, s2, s3, s6, s4, s5, s7, s8, s9, this.info);
     document.body.append(el); this.el = el;
     this.refresh();
     this.timer = setInterval(() => this.refresh(), 1000);
@@ -3624,7 +3980,7 @@ class App {
     this.renderMember();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
-    initCaps().then(async () => { await Member.load(); await Bonds.load(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
+    initCaps().then(async () => { await Member.load(); await Bonds.load(); await Recipes.init(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
     setInterval(() => this.updateClock(), 30000);
     addEventListener('hashchange', () => { const d = REGIONS.unitOf(location.hash.replace('#', '')); if (d && d !== this.dong) this.goDong(d); });
   }
@@ -4104,7 +4460,7 @@ class App {
   }
 }
 const app = new App();
-window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; } // 시험용 노출은 ?admin일 때만
+window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; } // 시험용 노출은 ?admin일 때만
 window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); };
 app.start();
 
