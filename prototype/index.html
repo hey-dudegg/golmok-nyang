@@ -234,6 +234,42 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 #admin select, #admin .row label { font-size: 12px; }
 @media (max-width: 720px) { #admin { top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); max-height: 50vh; } }
 @media (prefers-reduced-motion: reduce) { .now .dot { animation: none; } }
+/* ── 함께 보기 (M0-2): 보는 사람 수 · 공유 · 홍보 ── */
+.census { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.viewers { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 999px; background: rgba(12, 16, 24, 0.55); color: #f4f6f8; font-size: 12.5px; text-shadow: none; font-variant-numeric: tabular-nums; }
+.viewers svg.i { width: 14px; height: 14px; }
+.viewers.bump { animation: bump 0.45s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+#share, #promo { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); border-radius: 50%; background: var(--panel-solid); box-shadow: var(--shadow); display: grid; place-items: center; }
+#promo { right: 84px; width: 58px; height: 58px; }
+#share { right: 152px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: 46px; height: 46px; }
+#promo svg { width: 26px; height: 26px; }
+#share svg { width: 21px; height: 21px; }
+#promo:active, #share:active { transform: scale(0.95); }
+#promo .lockbadge { position: absolute; right: -2px; top: -2px; width: 20px; height: 20px; border-radius: 50%; background: var(--plate); color: var(--plate-ink); display: grid; place-items: center; }
+#promo .lockbadge svg { width: 12px; height: 12px; }
+#promo .waves { position: absolute; left: 6px; top: 50%; width: 30px; height: 30px; transform: translateY(-50%); pointer-events: none; opacity: 0; }
+#promo.blast .waves { animation: waves 0.8s ease-out; }
+@keyframes waves { 0% { opacity: 0.9; transform: translateY(-50%) scale(0.6); } 100% { opacity: 0; transform: translateY(-50%) scale(1.9); } }
+#promo[data-tip]:hover::after, #promo.tip::after { content: attr(data-tip); position: absolute; bottom: 66px; right: 0; white-space: nowrap; background: var(--ink); color: var(--panel-solid); font-size: 12.5px; padding: 4px 10px; border-radius: 999px; }
+#promoBanner { position: fixed; z-index: 7; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); width: min(340px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px; padding: 10px 14px 12px 10px; text-align: left; overflow: hidden; background: var(--panel-solid); color: var(--ink); border-radius: 16px; box-shadow: var(--shadow); animation: dropin 0.35s ease-out; }
+@keyframes dropin { from { opacity: 0; transform: translate(-50%, -14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+#promoBanner img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; background: var(--chip); }
+#promoBanner .t1 { font-family: var(--f-display); font-size: 16px; line-height: 1.3; }
+#promoBanner .t2 { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+#promoBanner .timebar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--lamp); transform-origin: left; animation: shrink var(--dur, 5s) linear forwards; }
+@keyframes shrink { to { transform: scaleX(0); } }
+.sharegrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sharegrid .btn { flex-direction: column; justify-content: center; padding: 12px 6px; gap: 6px; text-align: center; font-size: 13px; }
+.sharegrid .btn svg.i { width: 22px; height: 22px; }
+.sharegrid .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.sharelink { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-family: var(--f-mono); font-size: 12px; }
+#admin .adrow2 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+#admin input[type=number] { width: 84px; font: inherit; font-size: 12px; padding: 2px 4px; }
+@media (max-width: 720px) {
+  #promoBanner { top: calc(128px + env(safe-area-inset-top, 0px)); }
+  #roster { max-width: calc(100vw - 32px - 188px); }
+}
 </style>
 
 <div id="stage"><canvas id="c3d" tabindex="0" aria-label="골목 3D 장면. 고양이를 눌러 자세히 보세요."></canvas></div>
@@ -247,7 +283,7 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
     <span class="code" id="pCode">1111054000</span>
     <button class="move" id="btnMove" type="button">지역 바꾸기</button>
   </div>
-  <div class="census" id="census">고양이를 찾는 중…</div>
+  <div class="census"><span id="census">고양이를 찾는 중…</span><span class="viewers" id="viewers" role="status" aria-label="지금 보고 있는 사람 1명"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg><b id="viewersN">1</b></span></div>
 </div>
 
 <div id="tools" class="ui">
@@ -257,6 +293,8 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 </div>
 
 <div id="roster" class="ui" aria-label="지금 이 골목의 고양이"></div>
+<button id="share" class="ui" type="button" aria-label="공유하기" title="공유하기"><svg class="i" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/></svg></button>
+<button id="promo" class="ui" type="button" aria-label="구경 오세요 홍보하기" data-tip="구경 오세요"><svg class="i" viewBox="0 0 24 24"><path d="M3 10v4h3l7 4V6L6 10z"/><path d="M16.5 9a4 4 0 0 1 0 6"/><path d="M19 6.5a7.5 7.5 0 0 1 0 11"/></svg><svg class="waves i" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11M21.5 4a11 11 0 0 1 0 16"/></svg></button>
 <button id="capture" class="ui" type="button" aria-label="지금 장면 캡쳐"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg></button>
 <section id="card" class="ui panel" hidden aria-live="polite"></section>
 <div id="loading">골목으로 가는 중<small>털을 한 올씩 빗는 중이에요</small></div>
@@ -2017,7 +2055,7 @@ class CatAgent {
 
 // ==== 65_caps.js ====
 // ───────────────────────── 회원 · 저장소 · AI (런타임 기능, 없으면 이 브라우저 안에서 체험) ─────────────────────────
-const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false };
+const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false, room: null, lock: null };
 // 회원 범위 설정표 (D-16). 버튼마다 흩어진 확인을 이 표 하나로 모은다. '회원' | '누구나'. 어드민은 이 표를 무시한다.
 const GATE = {
   promo: '회원', churu: '회원',
@@ -2028,9 +2066,21 @@ const GATE = {
 };
 const GATE_LABEL = { promo: '홍보하기', churu: '츄르 주기', board_write: '게시판 글쓰기', board_comment: '게시판 댓글', pet: '쓰다듬기', cat_words: '고양이 말', drop_item: '물건 놓기',
   name_suggest: '이름 제안', name_like: '이름 좋아요', board_like: '게시판 좋아요', capture: '캡쳐', share: '공유' };
-const Admin = { active: false, wantsPage: new URLSearchParams(location.search).has('admin') }; // active는 소유자 확인 뒤 켜진다
-const gateNeedsMember = (key) => !Admin.active && GATE[key] === '회원' && !Member.me;
+const Admin = { active: false, wantsPage: new URLSearchParams(location.search).has('admin'), view: 'admin' }; // active는 소유자 확인 뒤 켜진다. view: 어드민 | 회원 | 비회원 화면 (설계 9장 이벤트 시험)
+const adminPowers = () => Admin.active && Admin.view === 'admin'; // 어드민 화면에서만 설정표를 무시한다
+const isMemberNow = () => (Admin.active && Admin.view === 'member') || (!(Admin.active && Admin.view === 'guest') && !!Member.me);
+const gateNeedsMember = (key) => !adminPowers() && GATE[key] === '회원' && !isMemberNow();
 const nickOf = () => (Member.me ? Member.me.nick : Admin.active ? '어드민' : '이웃');
+// 공유 채널 켜짐 설정 (D-17). 카카오톡·인스타는 만들어 두고 비활성. 어드민이 화면 확인용으로 켜 볼 수 있다
+const SHARE_ENABLED = { link: true, x: true, threads: true, device: true, kakao: false, insta: false };
+const PROMO = { lockMs: 10000, showMs: 5000, cooldownMs: 60000 }; // D-15
+// 숫자 표기 (D-20): 999까지 그대로, 1,000 이상 1.2K, 1,000,000 이상 1.2M
+function fmtCount(n) {
+  n = Math.max(0, Math.floor(+n || 0));
+  if (n < 1000) return String(n);
+  const f = (v, u) => { const t = Math.floor(v / 100) / 10; return (Number.isInteger(t) ? String(t) : t.toFixed(1)) + u; };
+  return n < 1e6 ? f(n, 'K').replace(/^1000K$/, '999.9K') : f(n / 1000, 'M');
+}
 const Local = {
   member: () => store.get('member', null),
   setMember: (m) => store.set('member', m),
@@ -2122,16 +2172,67 @@ const Board = {
   },
 };
 
-// 로컬 모의 어댑터 (D-21): window.claude가 없는 로컬 시험 환경에서만. 이번 단계는 어드민 판별용 사용자 흉내만 둔다.
-// db·room(BroadcastChannel)은 M0-2에서 이 자리에 더한다. 저장은 지금처럼 브라우저 localStorage로 대신한다.
+// 로컬 모의 어댑터 (D-21): window.claude가 없는 로컬 시험 환경에서만. 사용자 흉내(어드민 판별) + room(사람 수·순간 메시지) + lock(먼저 잡은 한 명).
+// 탭끼리는 BroadcastChannel로 이야기한다. 잠금은 localStorage의 한 칸(탭 사이 거의 동시에 눌러도 한 명만 남게 쓴 뒤 다시 읽어 확인).
+// 게시판·이웃 데이터(db)는 지금처럼 브라우저 localStorage로 대신한다.
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', ''];
 const LocalMock = {
   usable: () => LOCAL_HOSTS.includes(location.hostname),
   user: () => ({ id: async () => null, isOwner: async () => true, can: async () => true }),
+  // room: join(이름) 한 곳에 들어가 있고, count(이름)으로 그 곳 사람 수(나 포함), send/on으로 모든 탭에 순간 메시지
+  room() {
+    const id = 'p' + Math.random().toString(36).slice(2, 9), peers = new Map(), handlers = [], countFns = [];
+    let ch = null, name = null, timer = null;
+    try { ch = new BroadcastChannel('golmok-room'); } catch (e) {}
+    const sweep = () => { const t = Date.now(); for (const [k, v] of peers) if (t - v.at > 7000) peers.delete(k); };
+    const beat = () => { if (ch) try { ch.postMessage({ t: 'hb', id, r: name }); } catch (e) {} };
+    const changed = () => { sweep(); const n = R.count(); for (const f of countFns) f(n); };
+    const R = {
+      id, live: !!ch,
+      join(n) { name = n; beat(); changed(); },
+      count(n = name) { sweep(); let c = n === name ? 1 : 0; for (const v of peers.values()) if (v.r === n) c++; return c; },
+      onCount(f) { countFns.push(f); },
+      send(kind, data) { if (ch) try { ch.postMessage({ t: 'msg', id, kind, data }); } catch (e) {} },
+      on(f) { handlers.push(f); },
+    };
+    if (ch) {
+      ch.onmessage = (ev) => {
+        const m = ev.data || {};
+        if (m.id === id) return;
+        if (m.t === 'hb') { const known = peers.has(m.id); peers.set(m.id, { r: m.r, at: Date.now() }); if (!known) beat(); changed(); }
+        else if (m.t === 'bye') { peers.delete(m.id); changed(); }
+        else if (m.t === 'msg') for (const f of handlers) f(m.kind, m.data, m.id);
+      };
+      timer = setInterval(() => { beat(); changed(); }, 2500);
+      addEventListener('pagehide', () => { try { ch.postMessage({ t: 'bye', id }); } catch (e) {} clearInterval(timer); });
+    }
+    return R;
+  },
+  // lock: acquire(키, {holder, ttlMs}) -> 성공하면 true. 이미 다른 사람이 잡고 있으면(만료 전) false
+  lock() {
+    const k = (key) => 'golmok:lock:' + key;
+    const read = (key) => { try { return JSON.parse(localStorage.getItem(k(key)) || 'null'); } catch (e) { return null; } };
+    return {
+      // 읽기-확인-쓰기를 한 덩어리로 묶는다: Web Locks(같은 출처의 모든 탭이 차례로 지나감)를 쓰고, 없는 환경이면 쓴 뒤 다시 읽는 옛 방식으로 되돌아간다
+      acquire(key, { holder, ttlMs }) {
+        const attempt = () => {
+          const now = Date.now(), cur = read(key);
+          if (cur && cur.until > now) return false;
+          try { localStorage.setItem(k(key), JSON.stringify({ holder, until: now + ttlMs })); } catch (e) { return true; }
+          return true;
+        };
+        if (navigator.locks && typeof navigator.locks.request === 'function') return navigator.locks.request('golmok-lock:' + key, () => attempt()).catch(() => { const ok = attempt(); const a = read(key); return ok && !!a && a.holder === holder; });
+        const ok = attempt(), after = read(key);
+        return Promise.resolve(ok && !!after && after.holder === holder);
+      },
+      peek: (key) => { const c = read(key); return c && c.until > Date.now() ? c : null; },
+      clear(key) { try { localStorage.removeItem(k(key)); } catch (e) {} },
+    };
+  },
 };
 async function initCaps() {
   if (!window.claude || typeof window.claude.use !== 'function') {
-    if (LocalMock.usable()) { Caps.user = LocalMock.user(); Caps.mock = true; }
+    if (LocalMock.usable()) { Caps.user = LocalMock.user(); Caps.mock = true; Caps.room = LocalMock.room(); Caps.lock = LocalMock.lock(); }
     Caps.ready = true; return;
   }
   const get = (n) => window.claude.use(n).catch(() => null);
@@ -2670,10 +2771,127 @@ function renderBoard(app) {
   el.replaceChildren(header, tabs, feed, foot);
 }
 
+// ==== 75_together.js ====
+// ───────────────────────── 함께 보기 (M0-2): 보는 사람 수 · 홍보하기 · 공유하기 (R-12, R-08, R-11) ─────────────────────────
+// 사람 수와 홍보는 Caps.room / Caps.lock 위에서만 동작한다. 로컬에서는 모의 어댑터(D-21), 배포 후에는 Supabase Presence·Broadcast·RPC가 같은 자리에 들어온다.
+const Live = {
+  app: null, region: null, fake: null, shown: 1,
+  init(app) {
+    this.app = app;
+    if (Caps.room) { Caps.room.onCount(() => this.render()); Caps.room.on((kind, data) => { if (kind === 'promo') Promo.receive(data); }); }
+    this.setRegion(app.dong.c);
+  },
+  setRegion(code) { this.region = code; if (Caps.room) Caps.room.join('r:' + code); this.render(); },
+  real() { return Caps.room ? Caps.room.count('r:' + this.region) : 1; }, // 이 지역을 지금 보고 있는 사람(나 포함)
+  value() { return this.fake != null ? this.fake : this.real(); },
+  render() {
+    const n = this.value(), el = $('#viewers'); if (!el) return;
+    $('#viewersN').textContent = fmtCount(n);
+    el.setAttribute('aria-label', `지금 보고 있는 사람 ${n.toLocaleString('ko-KR')}명`);
+    el.title = `이 지역을 지금 보고 있는 사람 ${n.toLocaleString('ko-KR')}명`;
+    if (n > this.shown) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    this.shown = n;
+  },
+};
+
+const Promo = {
+  timer: null, lastAt: +store.get('promoAt', 0) || 0,
+  // 지금 장면에서 고양이 쪽을 160px 정사각으로 잘라 작은 사진으로 만든다 (약 10KB)
+  thumb(app) {
+    const R = app.s.renderer, cv = R.domElement, a = app.selected || app.mascot;
+    R.render(app.s.scene, app.s.camera);
+    const sz = Math.round(Math.min(cv.width, cv.height) * 0.5);
+    let cx = cv.width / 2, cy = cv.height / 2;
+    if (a) { const v = new THREE.Vector3(); a.v.rig.chest.getWorldPosition(v); v.project(app.s.camera); if (v.z < 1) { cx = (v.x * 0.5 + 0.5) * cv.width; cy = (-v.y * 0.5 + 0.5) * cv.height; } }
+    const sx = clamp(cx - sz / 2, 0, cv.width - sz), sy = clamp(cy - sz / 2, 0, cv.height - sz);
+    const c = document.createElement('canvas'); c.width = c.height = 160;
+    c.getContext('2d').drawImage(cv, sx, sy, sz, sz, 0, 0, 160, 160);
+    return c.toDataURL('image/jpeg', 0.7);
+  },
+  left() { return PROMO.cooldownMs - (Date.now() - this.lastAt); },
+  async press(app) {
+    if (!adminPowers() && this.left() > 0) return toast(`홍보는 1분에 한 번만 할 수 있어요 (${Math.ceil(this.left() / 1000)}초 뒤)`);
+    if (!Caps.room || !Caps.lock) return toast('이 화면에서는 홍보를 내보낼 수 없어요');
+    const m = app.selected || app.mascot; if (!m) return;
+    const data = { code: app.dong.c, name: m.cat.name, where: app.dong.n, thumb: this.thumb(app), at: Date.now() };
+    const ok = await Caps.lock.acquire('promo', { holder: Caps.room.id, ttlMs: PROMO.lockMs });
+    if (!ok) return toast('지금은 다른 동네 홍보가 나가는 중이라 이번엔 묻혔어요', 3600);
+    this.lastAt = Date.now(); store.set('promoAt', this.lastAt);
+    Caps.room.send('promo', data);
+    const b = $('#promo'); b.classList.add('blast'); setTimeout(() => b.classList.remove('blast'), 900);
+    toast('구경 오세요! 사이트 전체에 홍보를 내보냈어요');
+  },
+  // 다른 사람의 홍보가 도착. 이미 그 지역을 보고 있으면 띄우지 않는다
+  receive(d) {
+    const app = Live.app;
+    if (!app || !d || typeof d.code !== 'string' || !REGIONS.unitOf(d.code) || d.code === app.dong.c) return;
+    this.show(d);
+  },
+  show(d) {
+    const app = Live.app; if (!app) return;
+    this.hide();
+    const name = String(d.name || '').slice(0, 20), where = String(d.where || '').slice(0, 20);
+    const thumb = typeof d.thumb === 'string' && d.thumb.startsWith('data:image/jpeg') ? d.thumb : '';
+    const b = h('button', { id: 'promoBanner', type: 'button', 'aria-label': `${name} 구경 오세요, ${where}. 누르면 그 지역으로 이동해요`, style: `--dur:${PROMO.showMs}ms`, onclick: () => { this.hide(); app.visit(d.code); } },
+      thumb ? h('img', { src: thumb, alt: '' }) : null,
+      h('div', {}, h('div', { class: 't1' }, h('b', { text: name }), ' 구경 오세요!'), h('div', { class: 't2', text: `${where} · 눌러서 가 보기` })),
+      h('i', { class: 'timebar' }));
+    document.body.append(b);
+    this.timer = setTimeout(() => this.hide(), PROMO.showMs);
+  },
+  hide() { clearTimeout(this.timer); const b = $('#promoBanner'); if (b) b.remove(); },
+};
+
+// ── 공유하기 ──
+const SHARE_ICON = {
+  link: '<svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  x: '<svg class="i" viewBox="0 0 24 24"><path d="M5 4l14 16M19 4L5 20"/></svg>',
+  threads: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M15.2 12v1.2a2.3 2.3 0 0 0 4.6 0V12a7.8 7.8 0 1 0-3 6.2"/></svg>',
+  kakao: ICON.chat,
+  insta: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><path d="M16.8 7.2h.01"/></svg>',
+  device: '<svg class="i" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>',
+};
+function shareUrl(code) { try { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('r', code); return u.toString(); } catch (e) { return location.href; } }
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  try { const ta = h('textarea', { style: 'position:fixed;opacity:0;left:-999px' }); ta.value = t; document.body.append(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e) { return false; }
+}
+function openShare(app) {
+  const d = app.dong, a = app.selected || app.mascot;
+  const url = shareUrl(d.c);
+  const text = a ? `${d.n} 골목냥 ${a.cat.name} (지금: ${a.label}) 같이 구경해요` : `${d.n} 골목냥 같이 구경해요`;
+  const note = h('div', { class: 'note', hidden: true });
+  const say = (t) => { note.hidden = false; note.textContent = t; };
+  const link = h('input', { class: 'sharelink', type: 'text', readonly: true, value: url, 'aria-label': '공유 링크', onfocus: (e) => e.target.select() });
+  const open = (u) => { try { window.open(u, '_blank', 'noopener'); } catch (e) {} };
+  const defs = [
+    ['link', '링크 복사', async () => { toast((await copyText(url)) ? '링크를 복사했어요' : '복사하지 못했어요. 위 링크를 길게 눌러 복사해 주세요'); }],
+    ['x', 'X', () => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`)],
+    ['threads', '스레드', () => open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text + ' ' + url)}`)],
+    ['kakao', '카카오톡', () => say('화면 확인용이에요. 배포 뒤 카카오 JavaScript SDK(Kakao.Share)로 이 자리에 연결돼요.')],
+    ['insta', '인스타그램', async () => { await copyText(url); say('화면 확인용이에요. 휴대폰은 기기 공유 시트로 캡쳐 사진과 링크를 보내고, PC는 사진을 저장한 뒤 링크를 복사해 올려 주세요. (링크는 복사했어요)'); }],
+    ['device', '기기 공유', () => { navigator.share({ title: '골목냥', text, url }).catch(() => {}); }],
+  ];
+  const grid = h('div', { class: 'sharegrid' }, ...defs.map(([k, label, fn]) => {
+    const noDevice = k === 'device' && typeof navigator.share !== 'function';
+    const on = SHARE_ENABLED[k] && !noDevice;
+    const b = h('button', { class: 'btn', type: 'button', 'data-ch': k, 'aria-disabled': on ? 'false' : 'true', title: noDevice ? '이 기기에서는 쓸 수 없어요' : '',
+      onclick: () => { if (!on) { toast(noDevice ? '이 기기에서는 기기 공유를 쓸 수 없어요' : '배포 후 열려요'); return; } fn(); } });
+    b.innerHTML = SHARE_ICON[k]; b.append(label);
+    return b;
+  }));
+  const sheet = h('div', { class: 'sheet' },
+    h('h3', { text: '같이 구경해요' }),
+    h('p', { text }),
+    link, grid, note,
+    h('div', { class: 'foot' }, h('button', { class: 'btn ghost', type: 'button', text: '닫기', onclick: () => close() })));
+  const close = openScrim(sheet, { center: true });
+}
+
 // ==== 80_admin.js ====
 // ───────────────────────── 어드민 (R-15, 설계 9장) ─────────────────────────
 // 주소 뒤에 ?admin. 소유자만 열린다 (로컬에서는 모의 어댑터가 소유자로 취급, D-21). 가입 없이 모든 기능을 쓴다 (D-16).
-// 이번 단계(M0-1)는 기본 구역만: 행동 재생 · 상태 조절 · 일정 미리보기 · 회원 범위. 나머지 구역은 뒤 단계에서 더한다.
+// M0-1: 행동 재생 · 상태 조절 · 일정 미리보기 · 회원 범위. M0-2: 이벤트 시험 · 공유. 나머지 구역은 뒤 단계에서 더한다.
 const fmtKST = (ms) => { const k = new Date(ms + 9 * 3600000); return [k.getUTCHours(), k.getUTCMinutes(), k.getUTCSeconds()].map((n) => String(n).padStart(2, '0')).join(':'); };
 // Clock.state()의 감정 식에서 배고픔·관심이 고픔이 곱해지는 계수 (식을 바꾸면 여기도 맞춘다)
 const NEED_TO_EMO = { hunger: { happy: -0.3, grumpy: 0.25 }, social: { happy: -0.2, lonely: (p) => 0.6 * (0.4 + p.social) } };
@@ -2756,14 +2974,38 @@ const AdminPanel = {
 
     // 4) 회원 범위
     const gate = h('div', { class: 'adgate' }, ...Object.keys(GATE).map((k) => {
-      const sel = h('select', { 'aria-label': GATE_LABEL[k], onchange: () => { GATE[k] = sel.value; renderCard(app); } },
+      const sel = h('select', { 'aria-label': GATE_LABEL[k], onchange: () => { GATE[k] = sel.value; renderCard(app); app.refreshFab(); } },
         ...['회원', '누구나'].map((v) => h('option', { value: v, selected: GATE[k] === v, text: v })));
       return h('label', {}, h('span', { text: GATE_LABEL[k] }), sel);
     }));
     const s4 = sec('회원 범위 (이 화면에서만)', false, h('div', { class: 'note', text: '어드민은 이 표와 상관없이 가입 없이 모두 쓸 수 있어요. 새로고침하면 원래 표로 돌아와요.' }), gate);
 
+    // 5) 이벤트 시험 (홍보 안내창 · 사람 수 가짜 값 · 회원/비회원 화면)
+    const view = h('select', { 'aria-label': '보기 모드', onchange: () => { Admin.view = view.value; app.renderMember(); renderCard(app); } },
+      ...[['admin', '어드민 (가입 없이 전부)'], ['member', '회원 화면'], ['guest', '비회원 화면']].map(([v, l]) => h('option', { value: v, selected: Admin.view === v, text: l })));
+    const target = h('select', { 'aria-label': '안내창이 가리킬 지역' }, ...REGIONS.units.map((u) => h('option', { value: u.c, text: u.n, selected: u.c === '26' })));
+    const fakeIn = h('input', { type: 'number', min: '0', step: '1', 'aria-label': '보는 사람 수 가짜 값', placeholder: '예: 1234' });
+    const fakeOut = h('output', { class: 'adinfo', text: '실제 값' });
+    const setFake = (v) => { Live.fake = v; fakeIn.value = v == null ? '' : String(v); fakeOut.textContent = v == null ? '실제 값' : `표기 ${fmtCount(v)}`; Live.render(); };
+    fakeIn.addEventListener('input', () => setFake(fakeIn.value === '' ? null : Math.max(0, Math.floor(+fakeIn.value || 0))));
+    const preset = (v) => h('button', { type: 'button', class: 'btn ghost adbtn', text: String(v), onclick: () => setFake(v) });
+    const shareBox = (k, l) => h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: SHARE_ENABLED[k] || null, onchange: (e) => { SHARE_ENABLED[k] = e.target.checked; } }), h('span', { text: l }));
+    const s5 = sec('이벤트 시험 · 공유', false,
+      h('div', { class: 'adsub', text: '화면 전환' }), h('div', { class: 'note', text: '회원/비회원 화면에서는 회원 범위 표(위)를 그대로 적용해요. "누구나"로 바꿔 두면 비회원도 되는지 볼 수 있어요.' }), view,
+      h('div', { class: 'adsub', text: '홍보 안내창 (나에게만)' }),
+      h('div', { class: 'adrow2' }, target, h('button', { type: 'button', class: 'btn adbtn', text: '안내창 띄우기', onclick: () => {
+        const a = app.selected || app.mascot; if (!a) return;
+        Promo.show({ code: target.value, name: a.cat.name, where: REGIONS.unitOf(target.value).n, thumb: Promo.thumb(app) });
+      } })),
+      h('div', { class: 'adsub', text: '보는 사람 수 가짜 값 (이 화면에서만)' }),
+      h('div', { class: 'adrow2' }, fakeIn, fakeOut, h('button', { type: 'button', class: 'btn adbtn', text: '실제 값', onclick: () => setFake(null) })),
+      h('div', { class: 'adgrid' }, ...[999, 1000, 1234, 12500, 999999, 1234567].map(preset)),
+      h('div', { class: 'adsub', text: '홍보 잠금' }),
+      h('div', { class: 'adrow2' }, h('button', { type: 'button', class: 'btn adbtn', text: '10초 잠금·1분 쿨다운 풀기', onclick: () => { if (Caps.lock) Caps.lock.clear('promo'); Promo.lastAt = 0; store.set('promoAt', 0); toast('홍보 잠금을 풀었어요'); } })),
+      h('div', { class: 'adsub', text: '공유 비활성 채널 켜 보기 (화면 확인용)' }), shareBox('kakao', '카카오톡'), shareBox('insta', '인스타그램'));
+
     this.info = h('div', { class: 'note adinfo' });
-    body.append(s1, s2, s3, s4, this.info);
+    body.append(s1, s2, s3, s4, s5, this.info);
     document.body.append(el); this.el = el;
     this.refresh();
     this.timer = setInterval(() => this.refresh(), 1000);
@@ -2790,7 +3032,7 @@ const AdminPanel = {
       return h('div', { class: 'adsrow' + (cur ? ' now' : '') }, h('span', { class: 'tm', text: fmtKST(e.t0) }), h('span', { text: e.label }), h('small', { text: cur ? `${Math.round((e.t1 - now) / 1000)}초 남음` : `${Math.round((e.t1 - e.t0) / 1000)}초` }));
     }));
     const slot = Math.floor(now / CLOCK.SLOT);
-    this.info.textContent = `지역 ${this.app.dong.n}(${this.app.dong.c}) · 고양이 ${a.cat.id} · 칸 ${slot} (30초) · 시각 ${fmtKST(now)} KST`;
+    this.info.textContent = `지역 ${this.app.dong.n}(${this.app.dong.c}) · 고양이 ${a.cat.id} · 칸 ${slot} (30초) · 시각 ${fmtKST(now)} KST · 사람 ${Live.real()}명(실제)${Caps.room && !Caps.room.live ? ' · 탭 통신 없음' : ''}`;
   },
 };
 
@@ -2824,19 +3066,22 @@ class App {
     this.bindInput();
     $('#btnMove').addEventListener('click', () => openPicker(this));
     $('#btnBoard').addEventListener('click', () => this.openBoard());
-    $('#btnMember').addEventListener('click', () => { if (Member.me) toast(`${Member.me.nick}님은 이미 골목 이웃이에요`); else if (Admin.active) toast('어드민은 가입 없이 모든 기능을 쓸 수 있어요'); else openSignup(this, '골목 이웃이 되어 주세요'); });
+    $('#btnMember').addEventListener('click', () => { if (isMemberNow() && Member.me) toast(`${Member.me.nick}님은 이미 골목 이웃이에요`); else if (adminPowers()) toast('어드민은 가입 없이 모든 기능을 쓸 수 있어요'); else if (isMemberNow()) toast('회원 화면을 시험 중이에요'); else openSignup(this, '골목 이웃이 되어 주세요'); });
     $('#capture').addEventListener('click', () => this.capture());
+    $('#share').addEventListener('click', () => requireGate(this, 'share', '공유는 이웃 등록 뒤에 할 수 있어요', () => openShare(this)));
+    $('#promo').addEventListener('click', () => requireGate(this, 'promo', '구경 오세요 홍보는 이웃 등록 뒤에 할 수 있어요', () => Promo.press(this)));
     Member.on(() => { this.renderMember(); renderCard(this); });
     Board.on(() => renderBoard(this));
     Names.on(() => this.applyNames());
     // 첫 동네
-    const hashCode = (location.hash || '').replace('#', '');
-    const first = REGIONS.unitOf(hashCode) || REGIONS.unitOf(store.get('region', '') || store.get('dong', '')) || REGIONS.unitOf('11') || REGIONS.units[0];
-    this.goDong(first);
+    const hashCode = (location.hash || '').replace('#', ''), qCode = new URLSearchParams(location.search).get('r') || ''; // 공유 링크 ?r=시도코드 (R-11)
+    const linked = REGIONS.unitOf(hashCode) || REGIONS.unitOf(qCode); // 링크로 연 세션은 그 지역만 보여 주고, 저장된 기본 지역은 사용자가 직접 바꿀 때만 바꾼다
+    const first = linked || REGIONS.unitOf(store.get('region', '') || store.get('dong', '')) || REGIONS.unitOf('11') || REGIONS.units[0];
+    this.goDong(first, undefined, { nosave: !!linked });
     this.renderMember();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
-    initCaps().then(async () => { await Member.load(); await Bonds.load(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); await AdminPanel.init(this); });
+    initCaps().then(async () => { await Member.load(); await Bonds.load(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
     setInterval(() => this.updateClock(), 30000);
     addEventListener('hashchange', () => { const d = REGIONS.unitOf(location.hash.replace('#', '')); if (d && d !== this.dong) this.goDong(d); });
   }
@@ -2856,13 +3101,25 @@ class App {
   }
   renderMember() {
     const b = $('#btnMember');
-    if (Member.me) { b.classList.remove('cta'); b.textContent = Member.me.nick + ' 님'; }
+    if (Admin.active && Admin.view === 'guest') { b.classList.add('cta'); b.textContent = '이웃 등록 (비회원 화면)'; }
+    else if (Member.me) { b.classList.remove('cta'); b.textContent = Member.me.nick + ' 님'; }
+    else if (Admin.active && Admin.view === 'member') { b.classList.remove('cta'); b.textContent = '회원 화면'; }
     else if (Admin.active) { b.classList.remove('cta'); b.textContent = '어드민'; }
     else { b.classList.add('cta'); b.textContent = '이웃 등록'; }
+    this.refreshFab();
+  }
+  // 회원 전용 버튼에는 작은 자물쇠 (설정표 GATE를 따른다)
+  refreshFab() {
+    const b = $('#promo'); if (!b) return;
+    const locked = gateNeedsMember('promo'), bd = b.querySelector('.lockbadge');
+    if (locked && !bd) { const s = h('span', { class: 'lockbadge', 'aria-hidden': 'true' }); s.innerHTML = ICON.lock; b.append(s); }
+    else if (!locked && bd) bd.remove();
+    b.setAttribute('aria-label', '구경 오세요 홍보하기' + (locked ? ' (이웃 등록 필요)' : ''));
+    const sh = $('#share'); if (sh) sh.title = gateNeedsMember('share') ? '공유하기 (이웃 등록 필요)' : '공유하기';
   }
   // ── 동네 이동 ──
-  goDong(d, focusCatId) {
-    this.dong = d; store.set('region', d.c);
+  goDong(d, focusCatId, opts) {
+    this.dong = d; if (!(opts && opts.nosave)) store.set('region', d.c); if (Live.app) Live.setRegion(d.c);
     try { history.replaceState(null, '', '#' + d.c); } catch (e) {}
     $('#pUp').textContent = d.level === 'sido' ? '대한민국' : d.sido + (d.level === 'sgg' ? '' : ' ' + sggShort(d.sgg));
     $('#pDong').textContent = d.level === 'sido' ? d.sido : d.n; $('#pCode').textContent = ({ sido: '시/도 ', sgg: '시/군/구 ' }[d.level] || '행정동 ') + d.c;
