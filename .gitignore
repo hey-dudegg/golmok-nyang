@@ -1,0 +1,67 @@
+# ===== 비밀값·인증 정보 (절대 올리지 않음) =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+id_rsa*
+id_ed25519*
+*.ppk
+credentials*
+secrets*
+*.secret
+*service-account*.json
+*-credentials.json
+*.ovpn
+*.kdbx
+
+# ===== 라이선스·시리얼·사내 자료 =====
+*.lic
+*.license
+license-key*
+serial*
+.private/
+private/
+data/private/
+data/raw/
+internal/
+*.dump
+*.sql.gz
+*.bak
+*.backup
+
+# ===== 로컬 설정 =====
+.claude/settings.local.json
+CLAUDE.local.md
+CLAUDE.md.bak
+.vscode/
+.idea/
+*.code-workspace
+
+# ===== 로그·임시 파일 =====
+*.log
+logs/
+tmp/
+*.tmp
+
+# ===== 빌드·의존성 =====
+node_modules/
+dist/
+build/
+out/
+coverage/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
