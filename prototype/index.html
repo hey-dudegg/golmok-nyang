@@ -105,7 +105,7 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 .names { display: flex; flex-direction: column; gap: 10px; }
 .nhelp { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.rank li { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; border-bottom: 1px solid var(--line); }
+.rank li { display: grid; grid-template-columns: 26px 1fr auto auto auto; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; border-bottom: 1px solid var(--line); }
 .rank li:last-child { border-bottom: 0; }
 .rank li.top { background: var(--lamp-soft); }
 .rank .rk { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
@@ -114,7 +114,11 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 .rank .nm b { font-family: var(--f-display); font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank li.top .nm b { font-size: 18px; }
 .rank .nm small { font-size: 11.5px; color: var(--muted); }
-.rank .like { padding: 5px 9px; font-variant-numeric: tabular-nums; }
+.rank .like, .rank .dislike { padding: 5px 7px; gap: 3px; font-variant-numeric: tabular-nums; }
+.rank .dislike .num { color: var(--ink); min-width: 1.1em; text-align: left; }
+.rank .rep { padding: 5px 7px; color: var(--muted); }
+.rank .rep[aria-pressed="true"] { color: var(--danger); }
+.rank .dislike[aria-pressed="true"] { color: var(--danger); }
 .rank .like[aria-pressed="true"] { color: var(--danger); }
 .rank .like .num { color: var(--ink); min-width: 1.2em; text-align: left; }
 .rank .rempty { display: block; padding: 14px 12px; color: var(--muted); font-size: 13.5px; }
@@ -227,6 +231,7 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 #admin .adsrow.now { background: var(--lamp-soft); font-weight: 600; }
 #admin .adsrow .tm { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
 #admin .adsrow small { color: var(--muted); }
+#admin .adtrips { max-height: 170px; overflow: auto; }
 #admin .adgate { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
 #admin .adgate label { display: flex; justify-content: space-between; gap: 6px; align-items: center; font-size: 12px; }
 #admin .adgate select { font: inherit; font-size: 12px; padding: 1px 2px; background: var(--panel-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
@@ -246,6 +251,8 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 #promo svg { width: 26px; height: 26px; }
 #share svg { width: 21px; height: 21px; }
 #promo:active, #share:active { transform: scale(0.95); }
+#promo:disabled { opacity: 0.4; cursor: not-allowed; }
+#promo:disabled:active { transform: none; }
 #promo .lockbadge { position: absolute; right: -2px; top: -2px; width: 20px; height: 20px; border-radius: 50%; background: var(--plate); color: var(--plate-ink); display: grid; place-items: center; }
 #promo .lockbadge svg { width: 12px; height: 12px; }
 #promo .waves { position: absolute; left: 6px; top: 50%; width: 30px; height: 30px; transform: translateY(-50%); pointer-events: none; opacity: 0; }
@@ -259,17 +266,37 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 #promoBanner .t2 { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
 #promoBanner .timebar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--lamp); transform-origin: left; animation: shrink var(--dur, 5s) linear forwards; }
 @keyframes shrink { to { transform: scaleX(0); } }
-.sharegrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.sharegrid .btn { flex-direction: column; justify-content: center; padding: 12px 6px; gap: 6px; text-align: center; font-size: 13px; }
-.sharegrid .btn svg.i { width: 22px; height: 22px; }
-.sharegrid .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
-.sharelink { width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-family: var(--f-mono); font-size: 12px; }
+.sheet.sharesheet { box-sizing: border-box; width: min(340px, 100%); padding: 14px 16px 16px; gap: 12px; }
+.sharesheet .sharehead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sharesheet h3 { font-size: 18px; }
+.sharesheet .close { padding: 6px; min-height: 0; }
+.sharegrid { display: flex; justify-content: space-between; gap: 8px; }
+.sharebtn { position: relative; width: 48px; height: 48px; flex: none; border-radius: 50%; display: grid; place-items: center; padding: 0; border: 1px solid transparent; box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer; }
+.sharebtn svg.i { width: 22px; height: 22px; }
+.sharebtn:active { transform: scale(0.94); }
+.sharebtn[data-ch="link"] { background: #2f6fe4; color: #fff; }
+.sharebtn[data-ch="x"] { background: #000; color: #fff; }
+.sharebtn[data-ch="threads"] { background: #fff; color: #000; border-color: #8a8f98; }
+.sharebtn[data-ch="kakao"] { background: #fee500; color: #191919; }
+.sharebtn[data-ch="insta"] { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%); color: #fff; }
+.sharebtn[aria-disabled="true"] { filter: grayscale(1); opacity: 0.4; cursor: not-allowed; box-shadow: none; border: 1px dashed #8a8f98; }
+.sharebtn .lockbadge { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--plate); color: var(--plate-ink); display: grid; place-items: center; filter: none; }
+.sharebtn .lockbadge svg { width: 11px; height: 11px; }
+.sharesheet .note { overflow-wrap: anywhere; user-select: text; }
 #admin .adrow2 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 #admin input[type=number] { width: 84px; font: inherit; font-size: 12px; padding: 2px 4px; }
 @media (max-width: 720px) {
   #promoBanner { top: calc(128px + env(safe-area-inset-top, 0px)); }
-  #roster { max-width: calc(100vw - 32px - 188px); }
+  /* 좁은 화면: 손님 칩이 오른쪽 아래 버튼에 가려 잘리지 않게 칩을 줄이고(나이·'손님 고양이' 글자 생략, 긴 이름은 …) 두 칩이 버튼 왼쪽에 다 들어가게 한다 */
+  #roster { max-width: calc(100vw - 32px - 188px); overflow: hidden; gap: 6px; }
+  .catchip { flex: 0 1 auto; min-width: 0; padding: 4px 9px 4px 4px; gap: 6px; font-size: 13px; }
+  .catchip .sw { width: 24px; height: 24px; }
+  .catchip small { display: none; }
+  .catchip .nm { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 }
+.catchip .gt { display: inline-flex; flex: none; color: var(--muted); }
+.catchip .gt .i { width: 14px; height: 14px; }
+.catchip.guest { box-shadow: none; border: 1.5px dashed var(--muted); }
 </style>
 
 <div id="stage"><canvas id="c3d" tabindex="0" aria-label="골목 3D 장면. 고양이를 눌러 자세히 보세요."></canvas></div>
@@ -742,6 +769,7 @@ function applyPose(n, P, dim, t) {
 function ellipsoid(rx, ry, rz, ws, hs) { const big = Math.max(rx, ry, rz) > 0.03; ws = ws || (big ? 24 : 14); hs = hs || (big ? 16 : 10); const g = new THREE.SphereGeometry(1, ws, hs); g.scale(rx, ry, rz); return g; }
 function capsule(r, len, rs = 14) { return new THREE.CapsuleGeometry(r, len, 5, rs); }
 
+const EAR_CUT = 0.3; // 중성화 표식: 왼쪽 귀 끝 30%를 수평으로 자른다
 function buildCatGeometry(g, dim, rig) {
   // 서 있는 자세로 rest 행렬 계산
   applyPose(rig, standPose(dim), dim, 0);
@@ -757,6 +785,11 @@ function buildCatGeometry(g, dim, rig) {
   add(PART.hips, ellipsoid(0.084 * c, 0.092 * Math.sqrt(c), 0.13), M(0, 0.0, -0.02), { blend: { c: [0, 0, 0], axis: true, k: 0.55 },
     fur: () => 1.0 * fl, comb: () => [0, -0.5, -1.5], tab: (p, n) => [p.z, clamp(0.35 + n.y * 1.4, 0, 1)],
   });
+  // 수컷 땅콩(고환): 꼬리 밑 엉덩이 뒤 아래에 작은 한 쌍. 4개월 전엔 없고 4~10개월에 0.4배에서 1배로 자란다. 암컷은 없다.
+  if (g.sex === 'm' && g.months >= 4) {
+    const nk = lerp(0.4, 1, clamp((g.months - 4) / 6, 0, 1)), sc = Math.sqrt(c);
+    for (const sx of [1, -1]) add(PART.hips, ellipsoid(0.0155 * nk, 0.019 * nk, 0.0165 * nk, 14, 10), M(sx * 0.019, -0.052 * sc, -0.133), { fur: () => 0.45 * fl, comb: () => [0, -0.8, -0.3], tab: () => [0, 0], nut: true });
+  }
   add(PART.chest, ellipsoid(0.086 * c, 0.096 * Math.sqrt(c), 0.115), M(0, -0.004, 0.025), { blend: { c: [0, -0.004, 0], axis: true, k: 0.55 },
     fur: (p, n) => (1.0 + clamp(-n.y, 0, 1) * 0.2 + clamp(n.z, 0, 1) * 0.15) * fl, comb: () => [0, -0.6, -1.4], tab: (p, n) => [p.z, clamp(0.35 + n.y * 1.4, 0, 1)],
   });
@@ -784,9 +817,13 @@ function buildCatGeometry(g, dim, rig) {
   add(PART.head, ellipsoid(0.015, 0.012, 0.012), M(-0.011, -0.018, 0.056), { blend: { c: [0, -0.008, 0], k: 0.65 }, fur: () => 0.3 * fl, comb: (p, n) => [n.x, -0.2, 0], tab: () => [0, 0], muzzle: true });
   add(PART.head, ellipsoid(0.012, 0.009, 0.01), M(0, -0.03, 0.048), { blend: { c: [0, -0.008, 0], k: 0.65 }, fur: () => 0.35 * fl, comb: () => [0, -0.6, 0], tab: () => [0, 0], muzzle: true });
   // 귀
-  const earG = () => { const e = new THREE.ConeGeometry(0.028 * dim.ear, 0.05 * dim.ear, 18, 4); e.translate(0, 0.02 * dim.ear, 0); e.scale(1, 1, 0.42); return e; };
-  add(PART.earL, earG(), null, { fur: (p, n) => 0.28 * fl * (n.z > 0.5 ? 0.3 : 1), comb: () => [0, 0.6, -0.2], tab: () => [0, 0], ear: true });
-  add(PART.earR, earG(), null, { fur: (p, n) => 0.28 * fl * (n.z > 0.5 ? 0.3 : 1), comb: () => [0, 0.6, -0.2], tab: () => [0, 0], ear: true });
+  const earG = (cut) => { // cut: 끝을 수평으로 잘라 낸 비율(중성화 표식). 0이면 뾰족한 귀
+    const e = cut ? new THREE.CylinderGeometry(0.028 * dim.ear * cut, 0.028 * dim.ear, 0.05 * dim.ear * (1 - cut), 18, 4) : new THREE.ConeGeometry(0.028 * dim.ear, 0.05 * dim.ear, 18, 4);
+    if (cut) { e.translate(0, (-0.005 + 0.025 * (1 - cut)) * dim.ear, 0); } else e.translate(0, 0.02 * dim.ear, 0);
+    e.scale(1, 1, 0.42); return e;
+  };
+  add(PART.earL, earG(g.tnr ? EAR_CUT : 0), null, { fur: (p, n) => 0.28 * fl * (n.z > 0.5 ? 0.3 : 1), comb: () => [0, 0.6, -0.2], tab: () => [0, 0], ear: true });
+  add(PART.earR, earG(0), null, { fur: (p, n) => 0.28 * fl * (n.z > 0.5 ? 0.3 : 1), comb: () => [0, 0.6, -0.2], tab: () => [0, 0], ear: true });
   // 앞다리
   for (const [sh, el] of [[PART.shL, PART.elL], [PART.shR, PART.elR]]) {
     add(sh, capsule(0.027, dim.lu * 0.85), M(0, -dim.lu * 0.5, 0), { fur: () => 0.75 * fl, comb: () => [0, -0.8, -0.1], tab: (p) => [p.y * 1.2, 0.85], leg: true });
@@ -837,6 +874,7 @@ function buildCatGeometry(g, dim, rig) {
       else if (pc.muzzle) w = 0.97;
       else if (pc.ear) w = 0.02;
       else if (pc.paw) w = 0.99;
+      else if (pc.nut) w = 0.12;
       else if (pc.leg) w = clamp(0.92 - (R.y / (hipsY * 0.75)) * 0.65, 0, 1) * (0.75 + 0.25 * clamp(RN.z, 0, 1));
       else if (pc.tail !== undefined) w = 0.05 + pc.tail * pc.tail * 0.35;
       else w = clamp(-RN.y * 0.85 + 0.42 + clamp(RN.z, 0, 1) * clamp(R.z - 0.02, 0, 0.2) * 3.0, 0, 1) * 0.97;
@@ -872,6 +910,8 @@ class CatView {
     this.dim = catDims(genome);
     this.rig = buildRig(this.dim);
     const { geo, eyeL, eyeR } = buildCatGeometry(genome, this.dim, this.rig);
+    this.sp = { pos: geo.attributes.position.array, part: geo.attributes.part.array }; // 바닥 검사용 피부 정점 (전부)
+    this.minPart = new Float32Array(24);
     this.mat = makeFurMaterial(genome, shells);
     const u = this.mat.uniforms;
     const C = genome.colors;
@@ -912,12 +952,12 @@ class CatView {
     // 귓속
     const inner = makeSkinMaterial(genome.earInner, 0.1);
     for (const en of [this.rig.earL, this.rig.earR]) {
-      const ig = new THREE.ConeGeometry(0.021 * this.dim.ear, 0.044 * this.dim.ear, 14, 1, true, -Math.PI / 2, Math.PI);
-      ig.translate(0, 0.02 * this.dim.ear, 0); ig.scale(1, 1, 0.4);
+      const D = this.dim.ear, cutE = genome.tnr && en === this.rig.earL; // 잘린 귀는 귓속도 같은 높이에서 끝난다
+      const ig = cutE ? new THREE.CylinderGeometry(0.0057 * D, 0.021 * D, 0.0315 * D, 14, 1, true, -Math.PI / 2, Math.PI) : new THREE.ConeGeometry(0.021 * D, 0.044 * D, 14, 1, true, -Math.PI / 2, Math.PI);
+      ig.translate(0, cutE ? 0.01375 * D : 0.02 * D, 0); ig.scale(1, 1, 0.4);
       const im = new THREE.Mesh(ig, inner); im.position.z = 0.0062;
       en.add(im);
     }
-    if (genome.tnr) this.rig.earL.scale.set(1, 0.84, 1); // TNR 귀 끝 컷 표식(왼쪽 귀)
     // 수염
     const wpts = [];
     for (const s of [1, -1]) for (let k = 0; k < 3; k++) {
@@ -945,21 +985,53 @@ class CatView {
     v.set(0, -len - 0.013, dz).applyMatrix4(node.matrixWorld).applyMatrix4(this.inv);
     return v.y;
   }
+  // 현재 뼈대 자세에서 피부 정점의 가장 낮은 y (몸 좌표, 바닥 보정 전). 부위별 최저는 this.minPart
+  lowest() {
+    const B = this.mat.uniforms.bones.value, L = this.rig.list, mp = this.minPart;
+    for (let i = 0; i < L.length; i++) { B[i].multiplyMatrices(this.inv, L[i].matrixWorld); mp[i] = 9; }
+    const { pos, part } = this.sp;
+    for (let i = 0, n = part.length; i < n; i++) {
+      const e = B[part[i]].elements, y = e[1] * pos[i * 3] + e[5] * pos[i * 3 + 1] + e[9] * pos[i * 3 + 2] + e[13];
+      if (y < mp[part[i]]) mp[part[i]] = y;
+    }
+    let m = 9; for (let i = 0; i < L.length; i++) if (mp[i] < m) m = mp[i];
+    return m;
+  }
+  // 앉기: 엉덩이를 깔고 앉도록 몸통 기울기(hp)를 체형마다 맞춘다. 앞발이 바닥에 닿은 채 엉덩이 아래가 바닥을 뚫지 않는 가장 큰 기울기를 이분법으로 찾는다.
+  solveSit(P, t) {
+    const Q = this._Q || (this._Q = {}); Object.assign(Q, P);
+    const R = this.rig, d = this.dim;
+    const g = (hp) => {
+      Q.hp = hp; Q.cp = P.cp - (hp - P.hp); // 가슴 이하는 세운 채로 두고 엉덩이만 눕힌다
+      applyPose(R, Q, d, t); this.root.updateMatrixWorld(true); this.lowest();
+      const f = Math.min(this.pawY(R.elL, d.ll, 0.008), this.pawY(R.elR, d.ll, 0.008));
+      return this.minPart[0] - f; // 앞발을 바닥에 맞춘 뒤 엉덩이 최저 높이
+    };
+    let hp = P.hp;
+    if (g(hp) < 0) { let lo = hp, hi = 0.2; for (let i = 0; i < 9; i++) { const mid = (lo + hi) / 2; if (g(mid) < 0) lo = mid; else hi = mid; } hp = hi; }
+    Q.hp = hp; Q.cp = P.cp - (hp - P.hp); applyPose(R, Q, d, t); this.root.updateMatrixWorld(true);
+  }
   update(t, dt) {
     const P = this.pose;
     applyPose(this.rig, P, this.dim, t);
     this.root.updateMatrixWorld(true);
     this.inv.copy(this.rig.root.matrixWorld).invert();
     const mode = this.plant || 'all';
-    let shift = 0;
+    if (mode === 'sit' && this.ground !== false) this.solveSit(P, t);
+    let shift = 0, low = 0;
+    const net = this.ground !== false; // 바닥 안전망 (시험에서 false로 끄고 전후 비교)
+    if (net) low = this.lowest(); // 현재 자세에서 가장 낮은 피부 정점 (몸 기준 y)
     if (mode !== 'none') {
       const d = this.dim, R = this.rig;
       const f = Math.min(this.pawY(R.elL, d.ll, 0.008), this.pawY(R.elR, d.ll, 0.008));
       const hnd = Math.min(this.pawY(R.knL, d.hl, 0.011), this.pawY(R.knR, d.hl, 0.011));
-      shift = mode === 'front' ? -f : mode === 'hind' ? -hnd : mode === 'min' ? -Math.min(f, hnd) : -(f + hnd) / 2;
-    }
+      shift = mode === 'front' || mode === 'sit' ? -f : mode === 'hind' ? -hnd : mode === 'min' ? -Math.min(f, hnd) : -(f + hnd) / 2;
+    } else if (net) shift = -GROUND_SINK - low; // 눕는 자세는 높이 상수 대신 가장 낮은 곳이 바닥에 닿게
     this.hOff = dt ? damp(this.hOff || 0, shift, 14, dt) : shift;
-    if (Math.abs(this.hOff) > 1e-5) { R_shift(this.rig, this.hOff); this.root.updateMatrixWorld(true); }
+    // 안전망: 머리·귀·가슴·엉덩이·발·꼬리 어디도 바닥 아래로 내려가지 않게 올린다
+    const extra = net ? Math.max(0, -GROUND_SINK - (low + this.hOff)) : 0;
+    this.hFinal = this.hOff + extra;
+    if (Math.abs(this.hFinal) > 1e-5) { R_shift(this.rig, this.hFinal); this.root.updateMatrixWorld(true); }
     const B = this.mat.uniforms.bones.value;
     for (let i = 0; i < this.rig.list.length; i++) B[i].multiplyMatrices(this.inv, this.rig.list[i].matrixWorld);
     this.mat.uniforms.furPuff.value = P.puff;
@@ -983,6 +1055,7 @@ class CatView {
   }
 }
 
+const GROUND_SINK = 0.005; // 털이 눌리는 정도: 피부가 이만큼까지는 바닥에 파묻혀도 된다
 function R_shift(rig, dy) { rig.hips.position.y += dy; }
 const SHADOW_GEO = new THREE.CircleGeometry(0.5, 32);
 const SHADOW_MAT = (() => {
@@ -1056,6 +1129,7 @@ function traitTags(p) {
   return arr.slice(0, 2).map((t) => (t.d > 0 ? t.hi : t.lo));
 }
 
+const TNR_MIN_MONTHS = 6; // 중성화 표시는 6개월 이상부터
 function makeGenome(r, opts) {
   const { sex, months, mother } = opts;
   let pk;
@@ -1073,6 +1147,7 @@ function makeGenome(r, opts) {
     const mix = (a, b) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), t).getHexString();
     eye = [mix(EYES.kitten[0], eye[0]), mix(EYES.kitten[1], eye[1])];
   }
+  const tnrRoll = r.chance(0.5);
   const whiteBase = P.white ?? (r.chance(0.12) ? 0.25 : 0);
   const g = {
     pattern: pk, patternLabel: P.label, sex, months, growth,
@@ -1086,13 +1161,14 @@ function makeGenome(r, opts) {
     furLen: r.range(0.78, 1.18), fluff: r.range(0.3, 1),
     tipLight: ['black', 'tuxedo', 'tortie', 'cow'].includes(pk) ? 0.12 : pk.startsWith('mackerel') || pk === 'gray' ? 0.3 : 0.5,
     body: { chub: r.range(0.92, 1.16), legLen: r.range(0.93, 1.06), headSize: r.range(0.95, 1.06), earSize: r.range(0.9, 1.12), tailLen: r.range(0.85, 1.1), faceWidth: r.range(0.94, 1.08) },
-    tnr: months > 10 && r.chance(0.45),
+    tnr: months >= TNR_MIN_MONTHS && tnrRoll, // 성묘 약 50%, 수컷·암컷 모두. 월령과 상관없이 같은 값을 뽑아 새로고침·나이에 흔들리지 않는다
     personality: makePersonality(r, months < 6),
     seedF: r() * 100,
   };
   return g;
 }
 
+const sexText = (g) => (g.sex === 'f' ? '암컷' : '수컷') + (g.tnr ? '(중)' : ''); // (중) = 중성화
 function nameFor(r, g, used) {
   const pool = g.months < 6 ? KITTEN_NAMES : PATTERNS[g.pattern].names.concat(ADULT_NAMES.slice(0, 4));
   let name = r.pick(pool);
@@ -1206,11 +1282,11 @@ const THEME_LABEL = { alley: '골목 담벼락', market: '시장 골목', park: 
 
 // ==== 40_poses.js ====
 // ───────────────────────── 자세 사전 ─────────────────────────
-// 각 자세는 standPose 대비 바꿀 값만. plant: 'all' | 'front' | 'hind' | 'none' (발을 땅에 붙일지)
+// 각 자세는 standPose 대비 바꿀 값만. plant: 'all' | 'front' | 'hind' | 'min' | 'sit'(앞발 + 엉덩이 깔기) | 'none' (발을 땅에 붙일지)
 const POSES = {
   stand: (d) => ({ plant: 'all' }),
-  sit: (d) => ({ plant: 'front', hp: -0.62, cp: -0.42, np: 0.38, hdp: 0.5, fls: 1.04, fle: 0, frs: 1.04, fre: 0, fsp: 0.04,
-    hls: -0.42, hlk: -0.95, hrs: -0.42, hrk: -0.95, hsp: 0.12, tb: 0.42, tc: -0.03, tcs: 0.3, ts: 0.3, tw: 0.04, twf: 0.6, rump: 0.07 }),
+  sit: (d) => ({ plant: 'sit', hp: -0.62, cp: -0.42, np: 0.38, hdp: 0.5, fls: 1.04, fle: 0, frs: 1.04, fre: 0, fsp: 0.04,
+    hls: -0.9, hlk: -1.4, hrs: -0.9, hrk: -1.4, hsp: 0.3, tb: 0.42, tc: -0.03, tcs: 0.3, ts: 0.3, tw: 0.04, twf: 0.6, rump: 0.07 }),
   loaf: (d) => ({ plant: 'none', h: 0.088 * d.leg + 0.01, hp: 0.02, cp: -0.05, np: 0.1, hdp: 0.02, fls: 1.5, fle: -2.5, frs: 1.5, fre: -2.5, fsp: -0.1,
     hls: -1.55, hlk: 2.7, hrs: -1.55, hrk: 2.7, hsp: -0.1, tb: -0.15, tc: 0.0, tcs: 0.42, ts: 0.6, tw: 0.02, twf: 0.4, eye: 0.6 }),
   curl: (d) => ({ plant: 'none', h: 0.082 * d.leg + 0.008, hp: 0.04, hy: 0.32, cp: 0.08, cy: 0.5, cr: 0.1, np: 0.45, ny: 0.7, hdp: 0.35, hdr: 0.35,
@@ -1667,7 +1743,7 @@ const REACTIONS = {
   tail_up:    { label: '꼬리 세우고 인사', steps: (a) => [STEP.walk(...a.nearYou(0.8), 0.9), STEP.faceYou(), STEP.pose('greet', 3, null, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.5)] },
   meow_back:  { label: '대답하는 중', steps: (a) => [STEP.faceYou(), STEP.call((a) => { a.lookAtYou = 1; a.say(a.kitten ? '미야아' : '냐앙'); }), STEP.pose('sit', 1.6, null, (a, t) => { a.ov.mouth = t < 0.6 ? Math.sin(t / 0.6 * Math.PI) * 0.55 : 0; a.lookAtYou = 1; })] },
   head_tilt:  { label: '갸웃', steps: (a) => [STEP.faceYou(), STEP.pose('sit', 2.4, { hdr: 0.42 }, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.2)] },
-  ignore:     { label: '못 들은 척', steps: (a) => [STEP.call((a) => { a.earTwitch(0); a.earTwitch(1); }), STEP.wait(1.2)], keep: true },
+  ignore:     { label: '무심한 척', steps: (a) => [STEP.call((a) => { a.earTwitch(0); a.earTwitch(1); }), STEP.wait(1.2)], keep: true },
   stare:      { label: '빤히 쳐다봄', steps: (a) => [STEP.faceYou(), STEP.pose('alert', 3.5, { pupil: 0.95 }, (a) => { a.lookAtYou = 1; })] },
   back_off:   { label: '뒷걸음질', steps: (a) => { const y = a.world.youPoint(); return [STEP.pose('stand', 0.3, { eL: 0.6, eR: 0.6 }), STEP.walk(a.x + (a.x - y.x) * 0.8, a.z + (a.z - y.z) * 0.8, 0.9), STEP.faceYou(), STEP.pose('alert', 2.5, { eL: 0.4, eR: 0.4 })]; } },
   flee:       { label: '도망!', steps: (a) => { const y = a.world.youPoint(); const p = a.farFrom(y); return [STEP.call((a) => a.say('!')), STEP.walk(p.x, p.z, 3.2), STEP.pose('loaf', 5, { eL: 0.5, eR: 0.5, pupil: 0.9 })]; } },
@@ -1676,7 +1752,7 @@ const REACTIONS = {
   purr:       { label: '그르릉', steps: (a) => [STEP.call((a) => a.say('그르릉 그르릉')), STEP.pose(a.P.h < 0.12 ? 'loaf' : 'sit', 4, { eye: 0.12 }, (a, t) => { a.ov.hdr = Math.sin(t * 40) * 0.006; })] },
   eat_churu:  { label: '츄르 먹는 중', steps: (a) => [STEP.walk(...a.nearYou(0.42), 1.25), STEP.faceYou(), STEP.call((a) => a.say('냠냠')), STEP.pose('eat', 4.5, null, (a, t) => { a.ov.mouth = 0.2 + Math.sin(t * 11) * 0.18; a.ov.hdp = Math.sin(t * 11) * 0.05; }), STEP.call((a) => a.say('…더 줘')), STEP.pose('sit', 2.5, { eye: 0.6 }, (a) => { a.lookAtYou = 1; })] },
   sniff_only: { label: '킁킁, 냄새만', steps: (a) => [STEP.walk(...a.nearYou(0.9), 0.7), STEP.faceYou(), STEP.pose('crouch', 2.2, { np: 0.1, hdp: -0.05 }, (a, t) => { a.ov.hdp = Math.sin(t * 16) * 0.025; a.lookAtYou = 0.7; }), STEP.pose('sit', 2)] },
-  swat:       { label: '냥펀치!', steps: (a) => [STEP.walk(...a.nearYou(0.5), 1.1), STEP.faceYou(), STEP.pose('sit', 0.5), STEP.call((a) => a.say('냥!')), STEP.pose('groom', 0.5, { fls: -1.1, fle: -0.2, eL: 0.6, eR: 0.6, eye: 1, hdp: 0.2, np: 0.2 }, (a, t) => { a.ov.fls = Math.sin(t * 22) * 0.35; }), STEP.pose('sit', 1.8, { eL: 0.3, eR: 0.3 })] },
+  swat:       { label: '냥펀치!', steps: (a) => [STEP.walk(...a.nearYou(0.5), 1.1), STEP.faceYou(), STEP.pose('sit', 0.5), STEP.call((a) => a.say('캭!')), STEP.pose('groom', 0.5, { fls: -1.1, fle: -0.2, eL: 1, eR: 1, eye: 1, pupil: 1, mouth: 0.6, hdp: 0.2, np: 0.2 }, (a, t) => { a.ov.fls = Math.sin(t * 30) * 0.5; a.lookAtYou = 1; }), STEP.pose('hiss', 1.2, { eL: 1, eR: 1 }, (a) => { a.lookAtYou = 1; }), STEP.pose('sit', 1.5, { eL: 0.6, eR: 0.6 })] },
   roll_over:  { label: '발라당', steps: (a) => [STEP.walk(...a.nearYou(0.6), 1.0), STEP.pose('loaf', 0.8), STEP.pose('belly', 4.5, null, (a) => { a.lookAtYou = 0.6; }), STEP.pose('loaf', 1.2)] },
 };
 const REACTION_KEYS = Object.keys(REACTIONS);
@@ -1829,6 +1905,35 @@ class CatAgent {
     // 세계 시계 연동 (enterClock을 부르면 켜진다)
     this.clk = false; this.entry = null; this.sim = false; this.simNow = 0;
     this.override = false; this.manual = false; this.repeatKey = null;
+    // 놀러가기 (M0-3): ext = 일정 대신 바깥(외출·만남)이 움직임을 쥐고 있음, enc = 만남, hidden = 자리 비움, guest = 손님
+    this.ext = false; this.enc = null; this.hidden = false; this.guest = false; this._ph = null;
+  }
+  // 서로 바라보기의 목표 점: 머리 위치 (화면 없이 빨리 감는 중에는 몸 위치로 어림)
+  headPt() { if (!this.sim) { const v = this._hp || (this._hp = new THREE.Vector3()); this.v.rig.head.getWorldPosition(v); return v; } return { x: this.x, y: 0.22 * this.scale, z: this.z }; }
+  // 만남 중 매 프레임: 단계표(Encounter)를 따라 자리·방향·자세를 정하고 상대에게 시선과 몸을 묶는다 (설계 7장 서로 바라보기)
+  encTick(dt) {
+    const E = this.enc, ph = E.ph, role = this === E.host ? 'host' : 'guest', o = role === 'host' ? E.guest : E.host;
+    if (this._ph !== ph) {
+      this._ph = ph; this._posed = false; this._tgt = null; this._said = new Set();
+      const lb = ph.label && (typeof ph.label === 'string' ? ph.label : ph.label[role]);
+      if (lb) { this.label = lb; this.world.onLabel && this.world.onLabel(this); }
+    }
+    const tl = E.t - ph.t0;
+    this.lookAt = o; this.lookAtYou = 0; this.lookPt = null;
+    const tgt = ph.pos ? ph.pos(role, E, tl, ph) : null;
+    if (tgt && (!this._tgt || Math.hypot(tgt.x - this._tgt.x, tgt.z - this._tgt.z) > 0.04)) {
+      this._tgt = tgt;
+      const sp = ph.speed && typeof ph.speed === 'object' ? ph.speed[role] : ph.speed;
+      this.moveTo(tgt.x, tgt.z, sp || 1, { timeout: 30 }); this._posed = false;
+    }
+    const moving = this.move && !this.arrived;
+    if (!moving && !this._posed) {
+      const pp = (typeof ph.pose === 'function' ? ph.pose(role, E) : ph.pose) || ['stand'];
+      this.setPose(pp[0], pp[1]); this._posed = true; this.move = null;
+    }
+    if (!moving) this.yawTarget = ph.yaw ? ph.yaw(this, o, role, tl) : this.yawTo(o);
+    if (ph.says) ph.says.forEach((s, i) => { if (s[1] === role && tl >= s[0] && !this._said.has(i)) { this._said.add(i); this.say(s[2]); } });
+    if (ph.fx) ph.fx(this, tl, role, E, ph);
   }
   // ── 세계 시계: 지금 시각의 일정 행동에 들어가서 그 지점부터 이어 보여 준다 ──
   enterClock(now) {
@@ -1872,6 +1977,7 @@ class CatAgent {
   }
   // 어드민: 행동·반응 하나를 지금 재생 (일정보다 우선)
   play(k) {
+    if (this.enc || this.hidden) return; // 만남·외출 중에는 어드민 재생을 받지 않는다 (놀러가기 시험 구역에서 다룸)
     this.manual = false;
     if (REACTIONS[k]) { this.react(k); if (REACTIONS[k].keep) return; } else { this.jump = null; this.runAction(k, false); }
     this.override = true;
@@ -1883,7 +1989,7 @@ class CatAgent {
   setPose(name, extra) { const t = poseTarget(this.v.dim, name, extra); this.T = t; this.v.plant = t.plant; }
   yawTo(o) { return Math.atan2(o.x - this.x, o.z - this.z); }
   mom() { return this.cat.mother ? this.world.agents.find((x) => x.cat.id === this.cat.mother) : null; }
-  nearestCat(maxD) { let best = null, bd = maxD; for (const o of this.world.agents) { if (o === this) continue; const d = Math.hypot(o.x - this.x, o.z - this.z); if (d < bd) { bd = d; best = o; } } return best; }
+  nearestCat(maxD) { let best = null, bd = maxD; for (const o of this.world.agents) { if (o === this || o.hidden) continue; const d = Math.hypot(o.x - this.x, o.z - this.z); if (d < bd) { bd = d; best = o; } } return best; }
   randomPoint(r, maxStep) {
     for (let i = 0; i < 12; i++) {
       const x = clamp(this.x + r.range(-maxStep, maxStep), BOUNDS.x0, BOUNDS.x1), z = clamp(this.z + r.range(-maxStep, maxStep) * 0.7, BOUNDS.z0, BOUNDS.z1);
@@ -1934,7 +2040,14 @@ class CatAgent {
   }
   react(k) {
     const R = REACTIONS[k] || REACTIONS.stare;
-    if (R.keep) { for (const s of R.steps(this)) { s.start(this); } this.world.onLabel && this.world.onLabel(this, R.label); return; }
+    if (R.keep) { // 무관심: 직전 반응의 라벨·말풍선·몸짓을 남기지 않는다 (부정 몸짓은 즉시 해제, 그 외엔 지금 자세 유지)
+      const neg = this.isReaction && REACT_META[this.lastAction] && REACT_META[this.lastAction].pol < 0;
+      this.label = R.label; this.isReaction = true; this.lookAtYou = 0;
+      this.world.dropBubble && this.world.dropBubble(this);
+      if (neg) { this.jump = null; this.move = null; this.arrived = true; this.step = null; this.steps = [STEP.pose(this.lastAction === 'flee' ? 'loaf' : 'sit', 0.8, { eL: 0.7, eR: 0.7 })]; }
+      for (const s of R.steps(this)) { s.start(this); }
+      this.lastAction = 'ignore'; this.world.onLabel && this.world.onLabel(this); return;
+    }
     this.jump = null;
     this.runAction(k in REACTIONS ? k : 'stare', true);
   }
@@ -1947,14 +2060,17 @@ class CatAgent {
     this.E = clamp(this.E - dt * (moving ? 0.012 * (this.move.speed > 2 ? 3 : 1) : 0.002), 0, 1);
     this.B = clamp(this.B + dt * (moving ? -0.02 : 0.006), 0, 1);
     // 세계 시계: 일정이 바뀔 때가 되었는지
-    if (this.clk) { if (this.sim) this.simNow += dt * 1000; this.clockTick(this.sim ? this.simNow : Date.now()); }
-    // 단계 진행
-    if (!this.step) {
-      if (!this.steps.length) { if (this.clk) this.steps.push(STEP.hold()); else this.chooseAction(); }
-      this.step = this.steps.shift(); this.step.start(this);
+    if (this.clk && !this.ext) { if (this.sim) this.simNow += dt * 1000; this.clockTick(this.sim ? this.simNow : Date.now()); }
+    // 단계 진행 (만남 중에는 Encounter 단계표가 대신한다)
+    if (this.enc) { this.ov = {}; this.encTick(dt); }
+    else {
+      if (!this.step) {
+        if (!this.steps.length) { if (this.clk) this.steps.push(STEP.hold()); else this.chooseAction(); }
+        this.step = this.steps.shift(); this.step.start(this);
+      }
+      this.ov = {};
+      if (this.step.tick(this, dt)) this.step = null;
     }
-    this.ov = {};
-    if (this.step.tick(this, dt)) this.step = null;
     // 이동
     let speedNow = 0;
     if (this.jump) {
@@ -2021,18 +2137,28 @@ class CatAgent {
     // 시선
     let lt = null;
     if (this.lookAtYou > 0) lt = this.world.camPos;
-    else if (this.lookAt) lt = { x: this.lookAt.x, y: 0.15, z: this.lookAt.z };
+    else if (this.lookAt) lt = this.lookAt.headPt ? this.lookAt.headPt() : { x: this.lookAt.x, y: 0.15, z: this.lookAt.z };
     else if (this.lookPt) lt = this.lookPt;
     let wantYaw = 0, wantPitch = 0;
     if (lt && F.eye > 0.15) {
       const hy = this.yaw + F.hy + F.cy;
-      wantYaw = clamp(angDiff(hy, Math.atan2(lt.x - this.x, lt.z - this.z)), -1.1, 1.1);
-      const dd = Math.hypot(lt.x - this.x, lt.z - this.z);
-      wantPitch = clamp(-Math.atan2((lt.y || 0) - 0.25 * this.scale, dd) * 0.6, -0.5, 0.4);
-      if (Math.abs(angDiff(hy, Math.atan2(lt.x - this.x, lt.z - this.z))) > 1.9) { wantYaw = 0; wantPitch = 0; }
+      const lm = this.enc ? 2.6 : 1.1; // 만나는 동안엔 몸이 옆·뒤를 향해도 상대를 볼 수 있게 목·머리를 크게(최대 약 150도) 돌린다
+      // 만나는 동안은 몸 중심이 아니라 내 머리 자리에서 상대 머리를 잰다(나란히 설 때 머리가 몸보다 앞에 있어 각도가 크게 달라짐)
+      const hp0 = this.enc && !this.sim ? this.headPt() : null, ox = hp0 ? hp0.x : this.x, oz = hp0 ? hp0.z : this.z;
+      wantYaw = clamp(angDiff(hy, Math.atan2(lt.x - ox, lt.z - oz)), -lm, lm);
+      const dd = Math.hypot(lt.x - ox, lt.z - oz);
+      if (this.enc) { // 자세가 이미 몸·목·고개를 숙이거나 든 만큼(엉덩이·가슴·목·머리 기울기)을 빼서, 머리가 상대 머리 높이를 향하게
+        const oy = this.sim ? 0.22 * this.scale : this.headPt().y;
+        wantPitch = clamp(-Math.atan2((lt.y || 0) - oy, Math.max(dd, 0.2)) - (F.hp + F.cp + F.np + F.hdp), -1.1, 0.9);
+      } else {
+        wantPitch = clamp(-Math.atan2((lt.y || 0) - 0.25 * this.scale, dd) * 0.6, -0.5, 0.4);
+        if (Math.abs(angDiff(hy, Math.atan2(lt.x - ox, lt.z - oz))) > 1.9) { wantYaw = 0; wantPitch = 0; }
+      }
     }
-    this.lookYaw = damp(this.lookYaw, wantYaw, 5, dt); this.lookPitch = damp(this.lookPitch, wantPitch, 5, dt);
-    F.ny += this.lookYaw; F.hdp += this.lookPitch * (1 - Math.abs(F.hr) * 0.5);
+    const lk = this.enc ? 9 : 5;
+    this.lookYaw = damp(this.lookYaw, wantYaw, lk, dt); this.lookPitch = damp(this.lookPitch, wantPitch, lk, dt);
+    if (this.enc) { F.cy += this.lookYaw * 0.25; F.ny += this.lookYaw * 0.75; } else F.ny += this.lookYaw; // 만날 때는 등뼈도 조금 비튼다(몸 방향은 그대로)
+    F.hdp += this.lookPitch * (1 - Math.abs(F.hr) * 0.5);
     // 눈 깜빡임
     this.blinkT -= dt;
     if (this.blinkT < 0) { this.blink = 0.16; this.blinkT = this.r.range(2.5, 6.5); }
@@ -2045,12 +2171,229 @@ class CatAgent {
     }
     // 가끔 울기
     this.meowT -= dt;
-    if (this.meowT < 0) { this.meowT = this.r.range(25, 70); if (F.eye > 0.3 && !this.isReaction) this.say(this.kitten ? this.r.pick(['미야', '먀아', '삐약']) : this.r.pick(['냥', '야옹', '냐아', '앵'])); }
+    if (this.meowT < 0) { this.meowT = this.r.range(25, 70); if (F.eye > 0.3 && !this.isReaction && !this.enc) this.say(this.kitten ? this.r.pick(['미야', '먀아', '삐약']) : this.r.pick(['냥', '야옹', '냐아', '앵'])); }
     // 배치
     this.v.root.position.x = this.x; this.v.root.position.z = this.z;
     this.v.root.rotation.y = this.yaw;
     if (!this.sim) this.v.update(t, dt);
   }
+}
+
+// ==== 68_visit.js ====
+// ───────────────────────── 놀러가기 · 싸움 · 서로 바라보기 (R-13, D-18, 설계 7장) ─────────────────────────
+// 서버 없이 시각만으로 정해진다 (D-19). 30분 칸마다 (지역코드, 칸 번호) 난수로 "누가 어느 이웃으로 몇 시 몇 초에 얼마나(60~120초) 놀러 가는지"를 정하고,
+// 같은 칸 안의 외출끼리 겹치면 정해진 순서로 한쪽을 취소한다. 어느 탭에서 계산해도 같은 결과이므로 탭끼리 통신하지 않는다.
+// 시험용: ?admin&tripdur=12,14 로 외출 길이(초)를 줄여 볼 수 있다(어드민 주소에서만 열림) (일정이 바뀌므로 같은 주소끼리만 같은 결과)
+const TRIP_DUR = (() => { const q = new URLSearchParams(location.search); if (!q.has('admin')) return [60, 120]; const v = (q.get('tripdur') || '').split(',').map(Number); return v.length === 2 && v[0] > 0 && v[1] >= v[0] ? v : [60, 120]; })();
+const TRIP = { SLOT: 30 * 60000, PROB: 0.54, DUR: TRIP_DUR, FIGHT: 0.73, ENTER: 8, LEAVE: 8, WALKOUT: 6 };
+// 경계가 맞닿은 시/도 쌍 (경계 자료의 꼭짓점이 겹치는 곳을 한 번 계산해 둔 값). 제주는 이웃이 없어 놀러 가지 않는다.
+// 11 서울 12 전남광주 26 부산 27 대구 28 인천 30 대전 31 울산 36 세종 41 경기 43 충북 44 충남 47 경북 48 경남 50 제주 51 강원 52 전북
+const NEIGHBOR_PAIRS = '27-47 43-47 41-51 12-52 11-41 47-48 43-51 44-52 48-52 47-51 36-44 43-44 41-43 26-48 30-44 31-47 28-41 30-43 31-48 36-43 43-52 12-48 41-44 27-48 30-36 26-31 47-52 11-28';
+const NEIGHBORS = (() => {
+  const m = new Map();
+  for (const pr of NEIGHBOR_PAIRS.split(' ')) { const [a, b] = pr.split('-'); if (!m.has(a)) m.set(a, []); if (!m.has(b)) m.set(b, []); m.get(a).push(b); m.get(b).push(a); }
+  for (const v of m.values()) v.sort();
+  return m;
+})();
+const unitName = (c) => { const u = REGIONS.byUnit.get(c); return u ? u.n : c; };
+
+const Trips = {
+  cache: new Map(),
+  codes() { return REGIONS.units.map((u) => u.c).sort(); },
+  neighbors(code) { return REGION_LEVEL === 'sido' ? (NEIGHBORS.get(code) || []) : []; }, // 시/군/구 단계의 이웃은 아직 만들지 않았다
+  cat(code, ms) { const u = REGIONS.byUnit.get(code); return u ? dongPopulation(u, ms)[0] : null; },
+  // 싸움이냐 어울리기냐: 평균 70%, 까칠한 쌍은 더 자주 싸우고 사교적인 쌍은 덜 싸운다
+  kindOf(from, to, ms, id) {
+    const a = this.cat(from, ms), b = this.cat(to, ms); if (!a || !b) return 'fight';
+    const pa = a.g.personality, pb = b.g.personality;
+    const pf = clamp(TRIP.FIGHT + 0.3 * ((pa.grumpy + pb.grumpy) / 2 - 0.5) - 0.25 * ((pa.social + pb.social) / 2 - 0.5), 0.4, 0.92);
+    return makeRng('tripkind:' + id)() < pf ? 'fight' : 'play';
+  },
+  make(from, to, t0, durSec, kind, id) { return { id, from, to, t0, t1: t0 + durSec * 1000, kind: kind === 'fight' || kind === 'play' ? kind : this.kindOf(from, to, t0, id) }; },
+  // 칸 si(30분)의 외출 목록. 외출은 칸 안에서 끝나므로 칸끼리 서로 영향이 없다.
+  slot(si) {
+    const hit = this.cache.get(si); if (hit) return hit;
+    if (this.cache.size > 300) this.cache.clear();
+    const cand = [];
+    for (const from of this.codes()) {
+      const nb = this.neighbors(from); if (!nb.length) continue;
+      const r = makeRng('trip:' + from + ':' + si);
+      if (!r.chance(TRIP.PROB)) continue; // 칸당 50% = 평균 한 시간에 한 번
+      const to = r.pick(nb), dur = Math.round(r.range(TRIP.DUR[0], TRIP.DUR[1])), st = Math.round(r.range(30, 1800 - dur - 30)), pri = r();
+      cand.push({ from, to, dur, st, pri });
+    }
+    cand.sort((a, b) => a.pri - b.pri || (a.from < b.from ? -1 : 1));
+    const busy = {}, out = [];
+    const free = (c, t0, t1) => !(busy[c] || []).some((x) => t0 < x[1] && x[0] < t1);
+    for (const c of cand) { // 가려는 이웃이 그 시각에 외출 중이거나 이미 손님이 있으면, 또는 내가 손님을 맞는 중이면 이번 외출은 취소
+      const t0 = si * TRIP.SLOT + c.st * 1000, t1 = t0 + c.dur * 1000;
+      if (!free(c.from, t0, t1) || !free(c.to, t0, t1)) continue;
+      for (const k of [c.from, c.to]) (busy[k] = busy[k] || []).push([t0, t1]);
+      const id = si + ':' + c.from;
+      out.push({ id, from: c.from, to: c.to, t0, t1, kind: this.kindOf(c.from, c.to, t0, id) });
+    }
+    out.sort((a, b) => a.t0 - b.t0);
+    this.cache.set(si, out);
+    return out;
+  },
+  at(code, ms) { // 그 시각 code 지역의 마스코트가 나가 있는지(away) / 손님을 맞는 중인지(host)
+    let away = null, host = null;
+    for (const t of this.slot(Math.floor(ms / TRIP.SLOT))) if (ms >= t.t0 && ms < t.t1) { if (t.from === code) away = t; if (t.to === code) host = t; }
+    return { away, host };
+  },
+  between(t0, t1) {
+    const out = [];
+    for (let si = Math.floor(t0 / TRIP.SLOT); si * TRIP.SLOT < t1; si++) for (const t of this.slot(si)) if (t.t1 > t0 && t.t0 < t1) out.push(t);
+    return out;
+  },
+};
+
+// 두 마리가 만나는 동안의 단계표. 시각(초)만으로 어느 단계인지 정해지고, 두 고양이는 그 단계표를 따라 움직인다.
+// 서로 바라보기: 만나는 내내 두 마리의 시선(lookAt)을 상대 머리에 묶고, 단계마다 몸 방향(yaw)과 떨어진 거리를 정한다.
+class Encounter {
+  constructor(app, trip, host, guest, o = {}) {
+    this.app = app; this.trip = trip; this.host = host; this.guest = guest; this.kind = trip.kind;
+    this.dur = (trip.t1 - trip.t0) / 1000; this.t = 0; this.wall = !o.manual; this.paused = false; this.stepMode = !!o.stepMode; this.done = false;
+    this.build();
+    this.ph = this.phases[0];
+    host.enc = guest.enc = this; host.ext = guest.ext = true; host._ph = guest._ph = null;
+    host.steps = []; host.step = null; host.move = null; host.arrived = true; host.jump = null; host.lookAtYou = 0; host.v.root.position.y = 0;
+    guest.x = this.edge.x; guest.z = this.edge.z;
+    guest.yaw = guest.yawTarget = Math.atan2(this.M.x - guest.x, this.M.z - guest.z);
+    guest.setPose('stand'); Object.assign(guest.P, guest.T);
+  }
+  build() {
+    const E = this, H = this.host, G = this.guest, W = H.world, r = makeRng('enc:' + this.trip.id), B = 0.3 * (H.scale + G.scale);
+    this.B = B;
+    const narrow = innerWidth <= 720;
+    let M = { x: 0, z: 0 }, u = { x: 1, z: 0 };
+    for (let i = 0; i < 40; i++) { // 만나는 자리(M)와 두 마리를 잇는 축(u): 옆에서 보이도록 가로로 두고, 장애물이 없는 곳
+      const th = r.range(-0.3, 0.3) + (r.chance(0.5) ? 0 : Math.PI), uu = { x: Math.cos(th), z: Math.sin(th) };
+      const m = { x: r.range(-1, 1) * (narrow ? 0.3 : 0.9), z: r.range(-0.5, 0.45) };
+      if ([-0.9, 0, 0.9].every((k) => !W.blocked(m.x + uu.x * B * k, m.z + uu.z * B * k, 0.2))) { M = m; u = uu; break; }
+    }
+    this.M = M; this.u = u;
+    const side = u.x >= 0 ? 1 : -1;
+    this.edge = { x: side > 0 ? BOUNDS.x1 - 0.03 : BOUNDS.x0 + 0.03, z: clamp(M.z + r.range(-0.15, 0.15), BOUNDS.z0 + 0.25, BOUNDS.z1 - 0.2) };
+    // 중심 c에서 축 uu 방향으로 sep(몸길이 단위, 1 = 코끼리 닿는 거리)만큼 떨어진 두 마리의 자리
+    const at = (c, uu, sep, role) => ({ x: c.x + (role === 'host' ? -1 : 1) * uu.x * sep * B / 2, z: c.z + (role === 'host' ? -1 : 1) * uu.z * sep * B / 2 });
+    const sc = (a) => a.p.bold + 0.5 * a.p.grumpy + r.range(-0.25, 0.25);
+    const hostWins = sc(H) >= sc(G);
+    this.winner = hostWins ? 'host' : 'guest'; this.loser = hostWins ? 'guest' : 'host';
+    const ph = [];
+    const add = (id, name, w, o2) => ph.push({ id, name, w, ...o2 });
+    const fight = this.kind === 'fight';
+    add('enter', '손님이 들어옴', 0, {
+      fixed: TRIP.ENTER, pos: (role) => at(M, u, fight ? 1.7 : 1.5, role), speed: { host: 1.0, guest: 1.8 },
+      pose: (role) => (fight ? (role === 'host' ? ['alert', { pupil: 0.85 }] : ['stand', { pupil: 0.8 }]) : ['greet']),
+      label: { host: fight ? '낯선 고양이를 경계하는 중' : '손님을 맞는 중', guest: '낯선 골목을 구경하며 들어오는 중' },
+    });
+    let endC = M; // 마지막 단계들의 중심
+    if (fight) {
+      // 진 쪽이 달아날 곳: 이긴 쪽의 반대 방향으로 멀리, 장애물이 없는 자리
+      const lp = at(M, u, 1.1, this.loser), wp = at(M, u, 1.1, this.winner), away = Math.atan2(lp.z - wp.z, lp.x - wp.x);
+      let P = null;
+      for (let i = 0; i < 14 && !P; i++) {
+        const ang = away + r.range(-0.9, 0.9), d = r.range(1.3, 2.0);
+        const q = { x: clamp(lp.x + Math.cos(ang) * d, BOUNDS.x0 + 0.3, BOUNDS.x1 - 0.3), z: clamp(lp.z + Math.sin(ang) * d, BOUNDS.z0 + 0.3, BOUNDS.z1 - 0.2) };
+        if (!W.blocked(q.x, q.z, 0.25)) P = q;
+      }
+      this.fleeTo = P || { x: clamp(lp.x + Math.cos(away) * 0.8, BOUNDS.x0 + 0.3, BOUNDS.x1 - 0.3), z: clamp(lp.z + Math.sin(away) * 0.5, BOUNDS.z0 + 0.3, BOUNDS.z1 - 0.2) };
+      add('glare', '노려보기', 0.2, { pos: (role) => at(M, u, 1.5, role), speed: 0.6,
+        pose: ['crouch', { pupil: 1, eL: 0.85, eR: 0.85, puff: 0.55, tb: 1.25, twf: 2.2, tw: 0.2 }],
+        label: '귀를 젖히고 노려보는 중', fx: (a, tl) => { a.ov.hdp = Math.sin(tl * 1.6) * 0.02; },
+        says: [[0.8, 'host', '으르릉…'], [2.6, 'guest', '…']] });
+      add('side', '옆으로 몸 세우기', 0.14, { pos: (role) => at(M, u, 1.3, role), speed: 0.5,
+        pose: ['hiss', { mouth: 0 }], label: '털을 세우고 몸을 옆으로 세우는 중',
+        yaw: (a, o, role) => a.yawTo(o) + (role === 'host' ? 1 : -1) * Math.PI / 2, fx: (a, tl) => { a.ov.hr = Math.sin(tl * 2) * 0.04; } });
+      add('cry', '울음소리', 0.12, { pos: (role) => at(M, u, 1.15, role), speed: 0.5,
+        pose: ['hiss', {}], label: '긴 울음소리를 내는 중', fx: (a, tl) => { a.ov.mouth = -0.45 * (0.5 + 0.5 * Math.sin(tl * 7)); },
+        says: [[0.3, 'host', '라오오- 니겅니겅니겅'], [2.6, 'guest', '캬아아악!']] });
+      add('swat', '앞발 치기', 0.2, { pos: (role) => at(M, u, 1.1, role), speed: 0.5,
+        pose: ['groom', { fls: -1.1, fle: -0.2, eL: 0.6, eR: 0.6, eye: 1, hdp: 0.2, np: 0.2, pupil: 1, puff: 0.4 }], label: '앞발을 휘두르는 중',
+        fx: (a, tl, role) => { const k = (tl * 0.9 + (role === 'guest' ? 0.5 : 0)) % 1; a.ov.fls = Math.sin(tl * 22) * 0.35 * (k < 0.4 ? 1 : 0.1); },
+        says: [[0.2, 'host', '냥!'], [1.4, 'guest', '캭!'], [3.0, 'host', '냥냥!']] });
+      add('chase', '추격', 0.2, {
+        pos: (role, _E, tl) => {
+          if (role === E.loser) return tl < 0.4 ? null : E.fleeTo;
+          const l = E[E.loser], c = E[E.winner], dx = c.x - l.x, dz = c.z - l.z, d = Math.hypot(dx, dz) || 1, stop = 0.8 * B;
+          return d <= stop ? null : { x: l.x + dx / d * stop, z: l.z + dz / d * stop };
+        },
+        speed: { [this.loser]: 3.1, [this.winner]: 2.4 },
+        pose: (role) => (role === E.loser ? ['crouch', { pupil: 0.9, eL: 0.6, eR: 0.6 }] : ['alert', { pupil: 0.8 }]),
+        label: { [this.winner]: '쫓아가는 중', [this.loser]: '도망치는 중' },
+        says: [[0.2, this.loser, '!']] });
+      add('retreat', '한쪽이 물러남', 0.14, { pos: null,
+        pose: (role) => (role === E.loser ? ['loaf', { eL: 0.5, eR: 0.5, pupil: 0.9 }] : ['sit', { puff: 0.2, pupil: 0.7 }]),
+        label: { [this.winner]: '으스대는 중', [this.loser]: '움츠러든 중' },
+        yaw: (a, o, role) => (role === E.loser ? a.yawTo(o) + Math.PI * 0.55 : a.yawTo(o)), // 진 쪽은 몸은 돌려도 고개는 돌아본다
+        says: [[1.0, this.winner, '흥']] });
+    } else {
+      add('sniff', '코인사', 0.22, { pos: (role) => at(M, u, 1.0, role), speed: 0.5,
+        pose: ['greet', { np: 0.25, hdp: 0.2 }], label: '코를 맞대고 인사하는 중', fx: (a, tl) => { a.ov.hdp = Math.sin(tl * 3) * 0.03; },
+        says: [[0.8, 'host', '냥'], [2.0, 'guest', '먀']] });
+      // 나란히 걷기: 세 곳을 차례로 지나며 두 마리가 옆에 붙어 걷는다
+      const wps = []; let cur = M;
+      for (let k = 0; k < 3; k++) {
+        let q = null;
+        for (let i = 0; i < 14 && !q; i++) {
+          const ang = r.range(0, TAU), d = r.range(0.6, 0.9);
+          const c = { x: clamp(cur.x + Math.cos(ang) * d, BOUNDS.x0 + 0.5, BOUNDS.x1 - 0.5), z: clamp(cur.z + Math.sin(ang) * d * 0.7, BOUNDS.z0 + 0.4, BOUNDS.z1 - 0.3) };
+          if (!W.blocked(c.x, c.z, 0.3)) q = c;
+        }
+        q = q || cur; wps.push(q); cur = q;
+      }
+      endC = wps[2];
+      add('walk', '나란히 걷기', 0.3, {
+        pos: (role, _E, tl, p) => {
+          const seg = clamp(Math.floor(tl / (p.dur / 3)), 0, 2), p0 = seg === 0 ? M : wps[seg - 1], p1 = wps[seg];
+          const dx = p1.x - p0.x, dz = p1.z - p0.z, d = Math.hypot(dx, dz) || 1, off = (role === 'host' ? -1 : 1) * 0.32 * B;
+          return { x: p1.x - dz / d * off, z: p1.z + dx / d * off };
+        },
+        speed: 0.9, label: '나란히 걷는 중' });
+      add('groom', '서로 그루밍', 0.24, { pos: (role) => at(endC, u, 1.0, role), speed: 0.6, pose: ['groom', {}], label: '서로 털을 핥아 주는 중',
+        fx: (a, tl, role, _E, p) => {
+          if ((tl < p.dur / 2) === (role === 'host')) { a.ov.hdp = Math.sin(tl * 9) * 0.09; a.ov.fle = Math.sin(tl * 9) * 0.12; a.ov.mouth = 0.12 + Math.sin(tl * 9) * 0.1; }
+          else { a.ov.fls = 1.5; a.ov.fle = 1.25; a.ov.hdr = 0.2; a.ov.eye = -0.25; } // 받는 쪽은 앞발을 내리고 눈을 가늘게
+        } });
+      const n = { x: -u.z, z: u.x }; if (n.z < 0) { n.x = -n.x; n.z = -n.z; } // 식빵은 같은 쪽(화면 앞쪽)을 보고 나란히
+      add('loaf', '나란히 식빵', 0.2, { pos: (role) => at(endC, u, 0.75, role), speed: 0.6, pose: ['loaf', {}], label: '나란히 식빵을 굽는 중',
+        yaw: () => Math.atan2(n.x, n.z), says: [[2.0, 'host', '그르릉']] });
+    }
+    add('leave', '손님이 돌아감', 0, {
+      fixed: TRIP.LEAVE, pos: (role) => (role === 'guest' ? { x: this.edge.x, z: this.edge.z } : null), speed: 1.7,
+      pose: (role) => (fight && role === E.loser ? ['loaf', { eL: 0.4, eR: 0.4, pupil: 0.8 }] : ['sit']),
+      label: { host: '떠나는 손님을 지켜보는 중', guest: '자기 동네로 돌아가는 중' },
+      yaw: (a, o, role) => (fight && role === 'host' && E.loser === 'host' ? a.yawTo(o) + Math.PI * 0.55 : a.yawTo(o)),
+    });
+    // 단계 길이: 들어옴·돌아감은 고정, 나머지는 남은 시간을 가중치대로 나눔
+    const mid = Math.max(10, this.dur - TRIP.ENTER - TRIP.LEAVE), sw = ph.reduce((s, p) => s + (p.fixed ? 0 : p.w), 0);
+    let t = 0;
+    for (const p of ph) { p.dur = p.fixed || (p.w / sw) * mid; p.t0 = t; t += p.dur; p.t1 = t; }
+    this.phases = ph; this.total = t;
+  }
+  phaseAt(t) { const ps = this.phases; for (const p of ps) if (t < p.t1) return p; return ps[ps.length - 1]; }
+  // 매 프레임 (앱이 부름). wall이면 시계(지금 - 시작)를 따르고, manual이면 dt만큼 흘러가며 멈춤·다음 단계가 된다.
+  step(dt) {
+    if (this.done) return;
+    const target = this.wall ? (Date.now() - this.trip.t0) / 1000 : this.paused ? this.t : this.t + dt;
+    if (target - this.t > 1.2) this.ffTo(target); else this.t = target;
+    const ph = this.phaseAt(this.t);
+    if (this.stepMode && !this.wall && !this.paused && ph !== this.ph && this.t < this.dur) { this.paused = true; this.t = ph.t0 + 0.001; } // 단계가 바뀌는 곳에서 멈춤
+    this.ph = this.phaseAt(this.t);
+    if (this.t >= this.dur) this.finish();
+  }
+  ffTo(target) { // 화면 없이 빨리 감기 (중간에 들어온 사람도 같은 자리에서 시작)
+    const a = this.host, b = this.guest; a.sim = b.sim = true;
+    target = Math.min(target, this.dur);
+    while (this.t < target - 1e-6) { const d = Math.min(0.1, target - this.t); this.t += d; this.ph = this.phaseAt(this.t); a.update(d); b.update(d); }
+    a.sim = b.sim = false;
+  }
+  nextPhase() { // 다음 단계 시작으로 건너뛰기 (멈춘 채로)
+    this.wall = false; const i = this.phases.indexOf(this.phaseAt(this.t)), nx = this.phases[Math.min(i + 1, this.phases.length - 1)];
+    this.t = nx.t0 + 0.001; this.ph = nx; this.paused = true;
+  }
+  finish() { if (this.done) return; this.done = true; this.app.endEnc(this); }
 }
 
 // ==== 65_caps.js ====
@@ -2061,18 +2404,18 @@ const GATE = {
   promo: '회원', churu: '회원',
   board_write: '회원', board_comment: '회원', // 게시판은 관리 편의상 회원
   pet: '누구나', cat_words: '누구나', drop_item: '누구나',
-  name_suggest: '누구나', name_like: '누구나', board_like: '누구나',
+  name_suggest: '누구나', name_like: '누구나', name_report: '누구나', board_like: '누구나',
   capture: '누구나', share: '누구나',
 };
 const GATE_LABEL = { promo: '홍보하기', churu: '츄르 주기', board_write: '게시판 글쓰기', board_comment: '게시판 댓글', pet: '쓰다듬기', cat_words: '고양이 말', drop_item: '물건 놓기',
-  name_suggest: '이름 제안', name_like: '이름 좋아요', board_like: '게시판 좋아요', capture: '캡쳐', share: '공유' };
+  name_suggest: '이름 제안', name_like: '이름 좋아요·싫어요', name_report: '이름 신고', board_like: '게시판 좋아요', capture: '캡쳐', share: '공유' };
 const Admin = { active: false, wantsPage: new URLSearchParams(location.search).has('admin'), view: 'admin' }; // active는 소유자 확인 뒤 켜진다. view: 어드민 | 회원 | 비회원 화면 (설계 9장 이벤트 시험)
 const adminPowers = () => Admin.active && Admin.view === 'admin'; // 어드민 화면에서만 설정표를 무시한다
 const isMemberNow = () => (Admin.active && Admin.view === 'member') || (!(Admin.active && Admin.view === 'guest') && !!Member.me);
 const gateNeedsMember = (key) => !adminPowers() && GATE[key] === '회원' && !isMemberNow();
 const nickOf = () => (Member.me ? Member.me.nick : Admin.active ? '어드민' : '이웃');
 // 공유 채널 켜짐 설정 (D-17). 카카오톡·인스타는 만들어 두고 비활성. 어드민이 화면 확인용으로 켜 볼 수 있다
-const SHARE_ENABLED = { link: true, x: true, threads: true, device: true, kakao: false, insta: false };
+const SHARE_ENABLED = { link: true, x: true, threads: true, kakao: false, insta: false };
 const PROMO = { lockMs: 10000, showMs: 5000, cooldownMs: 60000 }; // D-15
 // 숫자 표기 (D-20): 999까지 그대로, 1,000 이상 1.2K, 1,000,000 이상 1.2M
 function fmtCount(n) {
@@ -2085,7 +2428,14 @@ const Local = {
   member: () => store.get('member', null),
   setMember: (m) => store.set('member', m),
   posts: () => store.get('posts', []),
-  setPosts: (p) => store.set('posts', p.slice(0, 12)),
+  // 게시판 글 보관 상한 60개(이전 12). 글마다 사진이 최대 약 190KB라 브라우저 저장 한도(약 5MB)를 넘으면 오래된 글부터 덜어 내고 다시 저장한다
+  POSTS_MAX: 60,
+  setPosts(p) {
+    let n = Math.min(p.length, this.POSTS_MAX);
+    for (;;) { // n=0(빈 목록)도 반드시 저장한다. 저장 실패 시에만 덜어 내고 다시 시도
+      try { localStorage.setItem('golmok:posts', JSON.stringify(p.slice(0, n))); return n; } catch (e) { if (n < 1) return 0; n = Math.floor(n * 0.7); }
+    }
+  },
   bonds: () => store.get('bonds', {}),
   setBonds: (b) => store.set('bonds', b),
 };
@@ -2149,26 +2499,30 @@ const Board = {
           this.posts = snap.docs.map((d) => ({ id: d.id, ...d.data() })); this.emit();
         }, () => { this.posts = []; this.emit(); });
       } catch (e) { this.posts = []; this.emit(); }
-    } else { this.posts = Local.posts(); this.emit(); }
+    } else {
+      this.posts = Local.posts(); this.emit();
+      // 로컬 모드: 다른 탭이 올린 글·좋아요·댓글이 새로고침 없이 보이게 저장소 변경을 듣는다
+      if (!this.storageOn) { this.storageOn = true; addEventListener('storage', (e) => { if (!Caps.db && (e.key === 'golmok:posts' || e.key === null)) { this.posts = Local.posts(); this.emit(); } }); }
+    }
   },
   async add(post) {
     if (Caps.db) { const ref = await Caps.db.collection('posts').add(post); return ref.id; }
-    const id = 'l' + Date.now(); this.posts = [{ id, ...post }, ...this.posts]; Local.setPosts(this.posts); this.emit(); return id;
+    const id = 'l' + Date.now(); this.posts = [{ id, ...post }, ...Local.posts()]; Local.setPosts(this.posts); this.emit(); return id;
   },
   async like(post, on) {
     const me = Caps.uid || 'local';
     if (Caps.db) await Caps.db.doc('posts/' + post.id).update({ likes: { [me]: on } });
-    else { const p = this.posts.find((x) => x.id === post.id); p.likes = { ...(p.likes || {}), [me]: on }; Local.setPosts(this.posts); this.emit(); }
+    else { this.posts = Local.posts(); const p = this.posts.find((x) => x.id === post.id); if (!p) return; p.likes = { ...(p.likes || {}), [me]: on }; Local.setPosts(this.posts); this.emit(); }
   },
   async comment(post, text) {
     const cid = 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
     const c = { uid: Caps.uid || 'local', nick: Member.me ? Member.me.nick : '이웃', text, at: Date.now() };
     if (Caps.db) await Caps.db.doc('posts/' + post.id).update({ comments: { [cid]: c } });
-    else { const p = this.posts.find((x) => x.id === post.id); p.comments = { ...(p.comments || {}), [cid]: c }; Local.setPosts(this.posts); this.emit(); }
+    else { this.posts = Local.posts(); const p = this.posts.find((x) => x.id === post.id); if (!p) return; p.comments = { ...(p.comments || {}), [cid]: c }; Local.setPosts(this.posts); this.emit(); }
   },
   async remove(post) {
     if (Caps.db) await Caps.db.doc('posts/' + post.id).delete();
-    else { this.posts = this.posts.filter((x) => x.id !== post.id); Local.setPosts(this.posts); this.emit(); }
+    else { this.posts = Local.posts().filter((x) => x.id !== post.id); Local.setPosts(this.posts); this.emit(); }
   },
 };
 
@@ -2262,26 +2616,93 @@ function interpret(text) {
 const QUICK_WORDS = ['마-아', '냥', '냐옹?', '그르릉', '하악', '라오오- 니겅니겅니겅'];
 const PET_PARTS = [['head', '머리'], ['chin', '턱'], ['back', '등'], ['belly', '배']];
 
+// ── 교감 반응 데이터 (D-30): 극성·감정·속마음·손길 선호를 이 블록 한 곳에 둔다 ──
+// 극성: +1 긍정 / 0 중립 / -1 부정. 속마음 문구와 행동(반응)은 같은 극성끼리만 짝지어진다 (resolveRule, 검사: pp/b2_polarity.js)
+const EMO_POL = { happy: 1, calm: 1, playful: 1, curious: 0, lonely: 0, indifferent: 0, wary: -1, scared: -1, grumpy: -1 };
+const EMO_LABEL = { happy: '기쁨', calm: '편안', playful: '장난', curious: '호기심', indifferent: '무관심', wary: '경계', scared: '겁', grumpy: '짜증', lonely: '외로움' };
+const REACT_META = { // 행동의 극성(눈에 보이는 몸짓 기준)과 그때의 감정
+  approach: { pol: 1, emo: 'happy' }, rub: { pol: 1, emo: 'happy' }, slow_blink: { pol: 1, emo: 'calm' }, tail_up: { pol: 1, emo: 'happy' },
+  meow_back: { pol: 1, emo: 'happy' }, purr: { pol: 1, emo: 'calm' }, eat_churu: { pol: 1, emo: 'happy' }, roll_over: { pol: 1, emo: 'playful' },
+  head_tilt: { pol: 0, emo: 'curious' }, ignore: { pol: 0, emo: 'indifferent' }, stare: { pol: 0, emo: 'curious' }, sniff_only: { pol: 0, emo: 'curious' },
+  back_off: { pol: -1, emo: 'wary' }, flee: { pol: -1, emo: 'scared' }, hiss_back: { pol: -1, emo: 'grumpy' }, puff_side: { pol: -1, emo: 'scared' }, swat: { pol: -1, emo: 'grumpy' },
+};
+// 속마음 문구. pol·emo는 문구 자신의 극성/감정(행동에서 가져오지 않는다). acts: 이 교감에서만, part: 이 쓰다듬기 부위에서만
+const THOUGHTS = [
+  { r: ['approach'], pol: 1, emo: 'happy', t: '불렀지? 가 볼게' }, { r: ['approach'], pol: 1, emo: 'happy', t: '가까이 가 봐도 되겠네' },
+  { r: ['rub'], pol: 1, emo: 'happy', t: '이 사람 냄새, 내 거 해야지' }, { r: ['rub'], pol: 1, emo: 'happy', t: '여기 좋아, 더 해 줘', acts: ['pet'] },
+  { r: ['slow_blink'], pol: 1, emo: 'calm', t: '…너 나쁜 사람 아니구나' }, { r: ['slow_blink'], pol: 1, emo: 'calm', t: '눈 깜빡깜빡, 마음이 편해' },
+  { r: ['tail_up'], pol: 1, emo: 'happy', t: '어, 왔어? 반가워' }, { r: ['tail_up'], pol: 1, emo: 'happy', t: '꼬리 세우고 인사해야지' },
+  { r: ['meow_back'], pol: 1, emo: 'happy', t: '불렀어? 왜애', acts: ['word'] }, { r: ['meow_back'], pol: 1, emo: 'happy', t: '대답해 줄게, 냐앙', acts: ['word'] },
+  { r: ['purr'], pol: 1, emo: 'calm', t: '거기… 거기 좋아…' }, { r: ['purr'], pol: 1, emo: 'calm', t: '기분 좋아서 저절로 골골' },
+  { r: ['eat_churu'], pol: 1, emo: 'happy', t: '츄르는 못 참지' }, { r: ['eat_churu'], pol: 1, emo: 'happy', t: '이거 맛있다, 더 줘' },
+  { r: ['roll_over'], pol: 1, emo: 'playful', t: '배 보여주는 건 특별히다', part: ['belly'] }, { r: ['roll_over'], pol: 1, emo: 'playful', t: '너니까 보여주는 거야', part: ['belly'] },
+  { r: ['head_tilt'], pol: 0, emo: 'curious', t: '무슨 소리야 그게', acts: ['word'] }, { r: ['head_tilt'], pol: 0, emo: 'curious', t: '음? 뭐라는 거지', acts: ['word'] }, { r: ['head_tilt'], pol: 0, emo: 'curious', t: '어? 뭘 하려는 거야', acts: ['pet'] },
+  { r: ['ignore'], pol: 0, emo: 'indifferent', t: '못 들은 척해야지', acts: ['word'] }, { r: ['ignore'], pol: 0, emo: 'indifferent', t: '지금은 별 관심 없어' }, { r: ['ignore'], pol: 0, emo: 'indifferent', t: '만지든 말든…', acts: ['pet'] },
+  { r: ['stare'], pol: 0, emo: 'curious', t: '…' }, { r: ['stare'], pol: 0, emo: 'curious', t: '뭐 하는 사람이지' },
+  { r: ['sniff_only'], pol: 0, emo: 'curious', t: '수상한 냄새… 일단 보류' }, { r: ['sniff_only'], pol: 0, emo: 'curious', t: '먹어도 되나… 일단 킁킁' },
+  { r: ['back_off'], pol: -1, emo: 'wary', t: '너무 가까워' }, { r: ['back_off'], pol: -1, emo: 'wary', t: '아직은 만지지 마', acts: ['pet'] }, { r: ['back_off'], pol: -1, emo: 'wary', t: '거긴 안 돼, 비켜', acts: ['pet'], part: ['belly'] }, { r: ['back_off'], pol: -1, emo: 'wary', t: '츄르라도 아직은 못 믿어', acts: ['churu'] },
+  { r: ['flee'], pol: -1, emo: 'scared', t: '으악 도망!' }, { r: ['flee'], pol: -1, emo: 'scared', t: '무서워, 숨어야지' },
+  { r: ['hiss_back'], pol: -1, emo: 'grumpy', t: '감히 나한테!' }, { r: ['hiss_back'], pol: -1, emo: 'grumpy', t: '건드리지 마!', acts: ['pet'] },
+  { r: ['puff_side'], pol: -1, emo: 'scared', t: '나 커 보이지? 무섭지?' },
+  { r: ['swat'], pol: -1, emo: 'grumpy', t: '배는 안 된다고 했지', acts: ['pet'], part: ['belly'] }, { r: ['swat'], pol: -1, emo: 'grumpy', t: '손 치워, 싫어', acts: ['pet'] },
+];
+function pickThought(r, reaction, act) {
+  const M = REACT_META[reaction] || REACT_META.stare;
+  const ok = THOUGHTS.filter((x) => x.r.includes(reaction) && x.pol === M.pol && (!x.acts || x.acts.includes(act.kind)) && (!x.part || (act.kind === 'pet' && x.part.includes(act.part))));
+  if (!ok.length) return null;
+  return r.weighted(ok.map((x) => [x, x.part ? 3 : 1]));
+}
+// 손길 선호 (D-30): 고양이마다 결정적으로 정해진다 (고양이 id 해시 + 성격, 새로고침해도 같다). 개냥이는 약 20%.
+const TOUCH_TYPES = { dog: '개냥이', tolerant: '참아줌', aloof: '무관심', wary: '경계', avoid: '피함' };
+function erf(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); return s * (1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x)); }
+function touchType(id, p) {
+  const g = makeRng(String(id) + ':touch').gauss();
+  const L = 0.8 * g + 0.6 * (p.social - 0.5) / 0.22 - 0.4 * (p.grumpy - 0.5) / 0.22; // 분산 약 1.16
+  const q = 0.5 * (1 + erf(L / 1.077 / Math.SQRT2)); // 0~1 분위
+  return q > 0.83 ? 'dog' : q > 0.58 ? 'tolerant' : q > 0.43 ? 'aloof' : q > 0.17 ? 'wary' : 'avoid';
+}
+// 쓰다듬기 부위별 [긍정, 중립, 부정] 비율: 신뢰 0일 때 -> 신뢰 1일 때 (신뢰가 쌓이면 허용 쪽으로 옮겨 간다)
+const PET_PREF = {
+  dog:      { head: [[.75, .15, .10], [.92, .07, .01]], chin: [[.80, .12, .08], [.94, .05, .01]], back: [[.65, .20, .15], [.86, .10, .04]], belly: [[.08, .20, .72], [.30, .20, .50]] },
+  tolerant: { head: [[.15, .55, .30], [.45, .45, .10]], chin: [[.20, .50, .30], [.55, .40, .05]], back: [[.08, .50, .42], [.30, .55, .15]], belly: [[0, .10, .90], [.05, .25, .70]] },
+  aloof:    { head: [[.03, .80, .17], [.20, .75, .05]], chin: [[.05, .75, .20], [.30, .65, .05]], back: [[.02, .80, .18], [.12, .80, .08]], belly: [[0, .20, .80], [.03, .40, .57]] },
+  wary:     { head: [[0, .20, .80], [.12, .50, .38]], chin: [[.02, .20, .78], [.20, .50, .30]], back: [[0, .20, .80], [.08, .50, .42]], belly: [[0, .05, .95], [.02, .20, .78]] },
+  avoid:    { head: [[0, .10, .90], [.05, .35, .60]], chin: [[0, .10, .90], [.10, .40, .50]], back: [[0, .10, .90], [.03, .35, .62]], belly: [[0, 0, 1], [0, .10, .90]] },
+};
+// 츄르를 먹을 확률 = 기본 + 신뢰 x 증가분 + 식탐 보정 (먹지 않으면 냄새만 맡거나 물러난다)
+const CHURU_PREF = { dog: [.85, .10], tolerant: [.72, .22], aloof: [.62, .30], wary: [.35, .55], avoid: [.15, .62] };
+const WORD_POS = { dog: 1, tolerant: 0.55, aloof: 0.25, wary: 0.2, avoid: 0.1 }; // 고양이 말에 긍정으로 답할 정도
+function petPolarityWeights(type, part, trust) {
+  const t = clamp(trust, 0, 1), tab = PET_PREF[type][part] || PET_PREF[type].head;
+  return [0, 1, 2].map((i) => lerp(tab[0][i], tab[1][i], t));
+}
 function ruleReaction(a, act, trust) {
-  const p = a.p, r = a.r;
-  const shy = (1 - p.bold) * (1 - trust);
+  const p = a.p, r = a.r, type = touchType(a.cat.id, p), tr = clamp(trust, 0, 1);
   const pick = (pairs) => r.weighted(pairs.filter((x) => x[1] > 0));
   switch (act.kind) {
-    case 'pet':
-      if (shy > 0.55) return pick([['back_off', 2], ['flee', shy], ['stare', 1]]);
-      if (act.part === 'belly') return pick([['swat', 1 + p.grumpy * 2], ['roll_over', p.bold * p.playful * 2], ['back_off', 0.5]]);
-      if (act.part === 'tail') return pick([['swat', 1.5], ['back_off', 1]]);
-      if (p.grumpy > 0.72 && trust < 0.3) return pick([['hiss_back', 1], ['back_off', 1]]);
-      return pick([['purr', 1.4 + trust], ['rub', p.social * 2], ['slow_blink', 1], ['tail_up', p.social]]);
-    case 'churu':
-      if (shy > 0.6) return 'sniff_only';
-      return pick([['eat_churu', 1 + p.food * 3], ['sniff_only', (1 - p.food) * 1.2]]);
+    case 'pet': {
+      const w = petPolarityWeights(type, act.part, tr);
+      const pol = r.weighted([[1, w[0] * (0.8 + 0.4 * p.social)], [0, w[1]], [-1, w[2] * (0.8 + 0.4 * p.grumpy)]]);
+      if (pol > 0) return act.part === 'belly' ? 'roll_over' : pick([['purr', 1.4 + tr], ['rub', 0.3 + p.social * 2], ['slow_blink', 1], ['tail_up', 0.2 + p.social]]);
+      if (pol === 0) return pick([['ignore', 1 + (1 - p.social)], ['stare', 1], ['head_tilt', 0.4]]);
+      const shy = (1 - p.bold) * (1 - tr);
+      return act.part === 'belly'
+        ? pick([['swat', 1.5 + p.grumpy * 2], ['back_off', 0.8], ['hiss_back', p.grumpy * 1.5], ['flee', shy]])
+        : pick([['back_off', 2], ['flee', shy * 2], ['swat', 0.3 + p.grumpy], ['hiss_back', p.grumpy * 1.5], ['puff_side', p.bold * 0.5]]);
+    }
+    case 'churu': {
+      const [b0, gain] = CHURU_PREF[type];
+      const pe = clamp(b0 + gain * tr + 0.3 * (p.food - 0.5), 0.05, 0.98);
+      if (r() < pe) return 'eat_churu';
+      const shy = (1 - p.bold) * (1 - tr);
+      return pick([['sniff_only', 1 + (1 - p.food)], ['back_off', shy * 2 + (type === 'avoid' ? 1 : 0)]]);
+    }
     case 'word': {
-      const i = act.word.intent;
-      if (i === 'come') return (p.social * 0.6 + trust * 0.6 + p.bold * 0.3 > 0.72) ? pick([['approach', 2], ['tail_up', p.social * 2]]) : pick([['stare', 1], ['head_tilt', 1], ['ignore', 1 + p.grumpy]]);
-      if (i === 'greet') return pick([['meow_back', 1.5], ['tail_up', p.social], ['slow_blink', trust * 2], ['ignore', p.grumpy]]);
-      if (i === 'question') return pick([['head_tilt', 2], ['meow_back', 1]]);
-      if (i === 'calm') return pick([['slow_blink', 2], ['purr', trust * 2], ['stare', 0.5]]);
+      const i = act.word.intent, pf = WORD_POS[type];
+      if (i === 'come') return ((p.social * 0.6 + tr * 0.6 + p.bold * 0.3) * (0.5 + 0.65 * pf) > 0.72) ? pick([['approach', 2], ['tail_up', p.social * 2]]) : pick([['stare', 1], ['head_tilt', 1], ['ignore', 1 + p.grumpy]]);
+      if (i === 'greet') return pick([['meow_back', 1.5 * pf], ['tail_up', p.social * pf], ['slow_blink', tr * 2 * pf], ['ignore', p.grumpy + 0.4], ['stare', 0.5], ['head_tilt', 0.5]]);
+      if (i === 'question') return pick([['head_tilt', 2], ['meow_back', pf], ['stare', 0.5]]);
+      if (i === 'calm') return pick([['slow_blink', 2 * pf], ['purr', tr * 2 * pf], ['stare', 0.5], ['ignore', 0.4], ['head_tilt', 0.4]]);
       if (i === 'hiss') return pick([['hiss_back', p.grumpy * 2.5], ['back_off', 1.2], ['flee', (1 - p.bold) * 2], ['puff_side', p.bold]]);
       if (i === 'fight') return pick([['puff_side', p.bold * 2 + p.grumpy], ['hiss_back', p.grumpy * 2], ['flee', (1 - p.bold) * 2.5]]);
       return pick([['head_tilt', 1.5], ['stare', 1], ['ignore', 1]]);
@@ -2290,93 +2711,134 @@ function ruleReaction(a, act, trust) {
   return 'stare';
 }
 const TRUST_D = { purr: 0.07, rub: 0.09, slow_blink: 0.06, tail_up: 0.06, eat_churu: 0.12, sniff_only: 0.02, approach: 0.04, meow_back: 0.03, head_tilt: 0.01, roll_over: 0.06, ignore: 0, stare: 0, back_off: -0.03, flee: -0.06, hiss_back: -0.08, puff_side: -0.06, swat: -0.02 };
-const FALLBACK_THOUGHT = {
-  approach: '누구냐… 냄새 좀 맡아볼까', rub: '이 사람 냄새, 내 거 해야지', slow_blink: '…너 나쁜 사람 아니구나', tail_up: '어, 왔어?', meow_back: '불렀어? 왜애',
-  head_tilt: '무슨 소리야 그게', ignore: '못 들은 척해야지', stare: '…', back_off: '너무 가까워', flee: '으악 도망!', hiss_back: '감히 나한테!', puff_side: '나 커 보이지? 무섭지?',
-  purr: '거기… 거기 좋아…', eat_churu: '츄르는 못 참지', sniff_only: '수상한 냄새… 일단 보류', swat: '배는 안 된다고 했지', roll_over: '배 보여주는 건 특별히다',
-};
+// 규칙 엔진 한 번 실행: 반응 + 같은 극성의 속마음 + 감정을 함께 돌려준다 (검사 스크립트도 이 함수를 쓴다)
+function resolveRule(a, act, trust) {
+  const reaction = ruleReaction(a, act, trust), M = REACT_META[reaction];
+  const line = pickThought(a.r, reaction, act);
+  return { reaction, thought: line ? line.t : '…', thoughtPol: line ? line.pol : null, thoughtEmo: line ? line.emo : null, pol: M.pol, emo: M.emo, trust_delta: TRUST_D[reaction] || 0, by: 'rule' };
+}
 
 async function askCat(a, act) {
   const bond = Bonds.get(a.cat.id);
-  const rule = ruleReaction(a, act, bond.trust);
-  if (!Caps.sample || Caps.sampleOff) return { reaction: rule, thought: FALLBACK_THOUGHT[rule], trust_delta: TRUST_D[rule] || 0, by: 'rule' };
+  const rule = resolveRule(a, act, bond.trust);
+  if (!Caps.sample || Caps.sampleOff) return rule;
   const g = a.cat.g, P = g.personality, f = (x) => x.toFixed(2);
-  const st = stageOf(g.months);
+  const st = stageOf(g.months), type = touchType(a.cat.id, P);
   const actDesc = act.kind === 'pet' ? `사람이 손을 뻗어 ${PET_PARTS.find((x) => x[0] === act.part)[1]}를 쓰다듬으려 한다`
     : act.kind === 'churu' ? '사람이 츄르 봉지를 뜯어 내민다'
     : `사람이 고양이 말로 "${act.text}"라고 한다 (사전 해석: ${act.word.meaning})`;
   const prompt = [
     '너는 한국 골목에 사는 길고양이의 반응을 고르는 엔진이다. 고양이답게, 성격에 맞게 고른다.',
-    `고양이: 이름 "${a.cat.name}", ${g.patternLabel} 무늬, ${ageText(g.months)} (${st.label}), ${g.sex === 'f' ? '암컷' : '수컷'}.`,
-    `성격(0~1): 대담함 ${f(P.bold)}, 사교성 ${f(P.social)}, 장난기 ${f(P.playful)}, 식탐 ${f(P.food)}, 활동량 ${f(P.energy)}, 까칠함 ${f(P.grumpy)}.`,
+    `고양이: 이름 "${a.cat.name}", ${g.patternLabel} 무늬, ${ageText(g.months)} (${st.label}), ${sexText(g)}${g.tnr ? ', 왼쪽 귀 끝이 잘려 있음' : ''}.`,
+    `성격(0~1): 대담함 ${f(P.bold)}, 사교성 ${f(P.social)}, 장난기 ${f(P.playful)}, 식탐 ${f(P.food)}, 활동량 ${f(P.energy)}, 까칠함 ${f(P.grumpy)}. 손길 성향: ${TOUCH_TYPES[type]} (길고양이의 약 20%만 개냥이).`,
     `지금 하던 일: ${a.label}. 시간대: ${a.world.night > 0.5 ? '밤' : '낮'}.`,
     `이 사람에 대한 신뢰도(0~1): ${f(bond.trust)}. 최근 이 사람과 있었던 일: ${bond.last && bond.last.length ? bond.last.join(' / ') : '없음'}.`,
     `사람의 행동: ${actDesc}.`,
     `반응 목록: ${REACTION_KEYS.join(', ')}.`,
-    '규칙: 츄르가 아니면 eat_churu와 sniff_only는 고르지 않는다. 신뢰도가 낮고 겁이 많으면 다가가지 않는다. 하악질이나 싸움 소리에는 피하거나 경계하거나 맞선다. 배 쓰다듬기는 대부분의 고양이가 싫어한다.',
-    `참고로 규칙 기반 엔진은 "${rule}"을 골랐다. 더 그럴듯한 게 있으면 바꿔도 된다.`,
-    '다음 JSON 하나만 답한다: {"reaction":"목록 중 하나","thought":"고양이 속마음 한 줄 (반말, 20자 안팎)","trust_delta":-0.2~0.2 숫자}',
+    '규칙: 츄르가 아니면 eat_churu와 sniff_only는 고르지 않는다. 신뢰도가 낮고 겁이 많으면 다가가지 않는다. 하악질이나 싸움 소리에는 피하거나 경계하거나 맞선다. 배 쓰다듬기는 대부분의 고양이가 싫어한다. 대부분의 길고양이는 낯선 사람의 손길을 좋아하지 않는다.',
+    `참고로 규칙 기반 엔진은 "${rule.reaction}"(${rule.pol > 0 ? '긍정' : rule.pol < 0 ? '부정' : '중립'})을 골랐다. 같은 극성 안에서만 바꿔도 된다.`,
+    '다음 JSON 하나만 답한다: {"reaction":"목록 중 하나","polarity":"pos|neu|neg (속마음의 극성)","thought":"고양이 속마음 한 줄 (반말, 20자 안팎)","trust_delta":-0.2~0.2 숫자}',
   ].join('\n');
   try {
     const out = await Caps.sample.json(prompt, { modelTier: 'quick' });
-    const reaction = REACTIONS[out && out.reaction] ? out.reaction : rule;
-    if (act.kind !== 'churu' && (reaction === 'eat_churu' || reaction === 'sniff_only')) return { reaction: rule, thought: FALLBACK_THOUGHT[rule], trust_delta: TRUST_D[rule] || 0, by: 'rule' };
-    return { reaction, thought: String((out && out.thought) || FALLBACK_THOUGHT[reaction]).slice(0, 60), trust_delta: clamp(Number(out && out.trust_delta) || 0, -0.2, 0.2), by: 'ai' };
+    const reaction = REACTIONS[out && out.reaction] ? out.reaction : rule.reaction;
+    const M = REACT_META[reaction];
+    // 극성이 규칙 엔진과 달라지거나(예: 싫어하는 부위인데 반긴다), 츄르가 아닌데 먹는 경우는 규칙 결과를 쓴다
+    if ((act.kind !== 'churu' && (reaction === 'eat_churu' || reaction === 'sniff_only')) || M.pol !== rule.pol) return rule;
+    const pp = { pos: 1, neu: 0, neg: -1 }[out && out.polarity];
+    if (pp !== M.pol) { const line = pickThought(a.r, reaction, act); return { ...rule, reaction, thought: line ? line.t : rule.thought, thoughtPol: M.pol, thoughtEmo: M.emo, emo: M.emo, trust_delta: TRUST_D[reaction] || 0 }; } // 속마음 극성이 행동과 다르면 표의 문구로 바꾼다
+    return { reaction, thought: String((out && out.thought) || rule.thought).slice(0, 60), thoughtPol: pp, thoughtEmo: M.emo, pol: M.pol, emo: M.emo, trust_delta: clamp(Number(out && out.trust_delta) || 0, -0.2, 0.2), by: 'ai' };
   } catch (e) {
     if (e && ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(e.code)) Caps.sampleOff = true;
-    return { reaction: rule, thought: FALLBACK_THOUGHT[rule], trust_delta: TRUST_D[rule] || 0, by: 'rule', err: e && e.code };
+    return { ...rule, err: e && e.code };
   }
 }
 
 // ==== 66_names.js ====
-// ───────────────────────── 이름 짓기 · 좋아요 랭킹 ─────────────────────────
+// ───────────────────────── 이름 짓기 · 좋아요/싫어요 랭킹 (D-31) ─────────────────────────
+// 규칙: 세션(Caps.uid, 없으면 이 브라우저 'local')당 지역 고양이마다 이름 5개까지 제안 / 이름마다 좋아요·싫어요 중 하나(토글, 배타)
+//  · 싫어요가 좋아요보다 많아지면 삭제 (제안자는 제안과 함께 좋아요 1로 시작) · 신고가 5개 쌓이면 삭제 (한 세션 한 번, 횟수는 화면에 안 보임)
+//  · 랭킹: 좋아요 많은 순 -> 싫어요 적은 순 -> 먼저 제안한 순 · 지역당 이름은 최대 NAME_CAP개
+// 저장 위치는 names2/ (예전 names/ 하트 기록은 지우지 않고 읽지 않는다 = 보이지 않음, D-20)
+const NAME_BAD = new RegExp('[\\u0000-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u2028-\\u202f\\u2060-\\u206f\\ufeff]', 'g'); // 제어문자·보이지 않는 글자
+const NAME_RULE = { PER_SESSION: 5, CAP: 40, REPORT_DEL: 5, MAXLEN: 8, SHOW: 10 };
 const Names = {
-  dong: null, list: [], unsub: null, listeners: [], ready: false,
+  dong: null, list: [], unsub: null, listeners: [], ready: false, asUid: null, // asUid: 어드민 시험용 가짜 세션
   on(fn) { this.listeners.push(fn); },
-  emit() { for (const f of this.listeners) f(this.list); },
-  me() { return Caps.uid || 'local'; },
+  emit() { for (const f of this.listeners) f(this.visible()); },
+  me() { return this.asUid || Caps.uid || 'local'; },
+  cnt: (m) => Object.values(m || {}).filter(Boolean).length,
+  dead(n) { return !!n.gone || this.cnt(n.down) > this.cnt(n.up) || this.cnt(n.rep) >= NAME_RULE.REPORT_DEL; },
+  visible() { return this.list.filter((n) => !this.dead(n)); },
   watch(code, force) {
     if (this.dong === code && !force) return;
     if (this.unsub) { try { this.unsub(); } catch (e) {} this.unsub = null; }
     this.dong = code; this.list = []; this.ready = false;
     if (Caps.db) {
       try {
-        this.unsub = Caps.db.collection('names/' + code + '/list').limit(300).onSnapshot((snap) => {
+        this.unsub = Caps.db.collection('names2/' + code + '/list').limit(300).onSnapshot((snap) => {
           if (this.dong !== code) return;
           this.list = snap.docs.map((d) => ({ id: d.id, ...d.data() })); this.ready = true; this.emit();
         }, () => { this.ready = true; this.emit(); });
       } catch (e) { this.ready = true; this.emit(); }
-    } else { this.list = store.get('names:' + code, []); this.ready = true; this.emit(); }
+    } else { this.loadLocal(); }
+    if (!this.storageOn) { // 로컬 모의: 다른 탭에서 바뀐 이름 목록을 반영
+      this.storageOn = true;
+      addEventListener('storage', (e) => { if (!Caps.db && this.dong && (e.key === 'golmok:names2:' + this.dong || e.key === null)) this.loadLocal(); });
+    }
   },
-  score(n) { return Object.values(n.likes || {}).filter(Boolean).length; },
+  loadLocal() { this.list = store.get('names2:' + this.dong, []); this.ready = true; this.emit(); },
+  score(n) { return this.cnt(n.up); },
   ranked() {
-    return this.list.map((n) => ({ ...n, score: this.score(n) }))
-      .sort((a, b) => b.score - a.score || (a.createdAt || 0) - (b.createdAt || 0)).slice(0, 10);
+    return this.visible().map((n) => ({ ...n, score: this.score(n), dislikes: this.cnt(n.down) }))
+      .sort((a, b) => b.score - a.score || a.dislikes - b.dislikes || (a.createdAt || 0) - (b.createdAt || 0)).slice(0, NAME_RULE.SHOW);
   },
   top() { const r = this.ranked()[0]; return r && r.score > 0 ? r : null; },
-  mine() { const me = this.me(); return this.list.filter((n) => n.uid === me).length; },
-  saveLocal() { store.set('names:' + this.dong, this.list); this.emit(); },
+  mine() { const me = this.me(); return this.list.filter((n) => n.uid === me && !this.dead(n)).length; },
+  saveLocal() { store.set('names2:' + this.dong, this.list); this.emit(); },
+  // 입력 정리: 제어문자·보이지 않는 글자 제거, 공백 정리, 길이·글자 종류 제한
+  clean(raw) { return String(raw || '').replace(NAME_BAD, ' ').replace(/\s+/g, ' ').trim(); },
   check(raw) {
-    const name = String(raw || '').replace(/\s+/g, ' ').trim();
-    if (name.length < 1 || name.length > 8) return { err: '이름은 1~8자로 지어 주세요.' };
+    const name = this.clean(raw);
+    if (name.length < 1 || name.length > NAME_RULE.MAXLEN) return { err: `이름은 1~${NAME_RULE.MAXLEN}자로 지어 주세요.` };
     if (!/^[가-힣a-zA-Z0-9 ]+$/.test(name)) return { err: '한글, 영문, 숫자만 쓸 수 있어요.' };
-    if (/[ㄱ-ㅎㅏ-ㅣ]/.test(raw)) return { err: '완성된 글자로 적어 주세요.' };
     return { name };
+  },
+  norm: (s) => String(s || '').replace(/\s/g, '').toLowerCase(),
+  async patch(item, fields) { // 바뀐 필드를 저장하고, 규칙에 걸리면 삭제 표시까지 한 번에
+    const n = this.list.find((x) => x.id === item.id) || item;
+    Object.assign(n, fields);
+    const gone = this.dead(n);
+    if (gone) n.gone = true;
+    if (Caps.db) await Caps.db.doc('names2/' + this.dong + '/list/' + item.id).update(gone ? { ...fields, gone: true } : fields);
+    else this.saveLocal();
+    if (Caps.db) this.emit();
+    return { gone };
   },
   async propose(raw) {
     const c = this.check(raw); if (c.err) throw new Error(c.err);
-    const same = this.list.find((n) => n.name.replace(/\s/g, '') === c.name.replace(/\s/g, ''));
+    const same = this.list.find((n) => this.norm(n.name) === this.norm(c.name));
     const me = this.me();
-    if (same) { if (!(same.likes || {})[me]) await this.like(same, true); return { dup: true, item: same }; }
-    if (this.mine() >= 3) throw new Error('한 지역 고양이에게는 이름을 3개까지 제안할 수 있어요.');
-    const item = { name: c.name, uid: me, nick: Member.me ? Member.me.nick : '이웃', createdAt: Date.now(), likes: { [me]: true } };
-    if (Caps.db) { const ref = await Caps.db.collection('names/' + this.dong + '/list').add(item); return { item: { id: ref.id, ...item } }; }
-    const id = 'n' + Date.now().toString(36); this.list.push({ id, ...item }); this.saveLocal(); return { item: { id, ...item } };
+    if (same) {
+      if (this.dead(same)) throw new Error('이 이름은 이웃들의 판단으로 내려졌어요. 다른 이름을 지어 주세요.');
+      if (!(same.up || {})[me]) await this.vote(same, 'up'); return { dup: true, item: same };
+    }
+    if (this.mine() >= NAME_RULE.PER_SESSION) throw new Error(`한 지역 고양이에게는 이름을 ${NAME_RULE.PER_SESSION}개까지 제안할 수 있어요.`);
+    if (this.visible().length >= NAME_RULE.CAP) throw new Error('이 고양이의 이름 후보가 가득 찼어요. 싫어요가 많은 이름이 정리되면 다시 제안해 주세요.');
+    const item = { name: c.name, uid: me, nick: Member.me ? Member.me.nick : '이웃', createdAt: Date.now(), up: { [me]: true }, down: {}, rep: {} };
+    if (Caps.db) { const ref = await Caps.db.collection('names2/' + this.dong + '/list').add(item); return { item: { id: ref.id, ...item } }; }
+    const id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); this.list.push({ id, ...item }); this.saveLocal(); return { item: { id, ...item } };
   },
-  async like(item, on) {
-    const me = this.me();
-    if (Caps.db) await Caps.db.doc('names/' + this.dong + '/list/' + item.id).update({ likes: { [me]: on } });
-    else { const n = this.list.find((x) => x.id === item.id); if (n) { n.likes = { ...(n.likes || {}), [me]: on }; this.saveLocal(); } }
+  // 좋아요('up') / 싫어요('down'): 한 세션이 하나만, 같은 걸 다시 누르면 취소
+  async vote(item, kind) {
+    const me = this.me(), n = this.list.find((x) => x.id === item.id) || item, was = !!(n[kind] || {})[me], other = kind === 'up' ? 'down' : 'up';
+    return this.patch(n, { [kind]: { ...(n[kind] || {}), [me]: !was }, [other]: { ...(n[other] || {}), [me]: false } });
+  },
+  async report(item) {
+    const me = this.me(), n = this.list.find((x) => x.id === item.id) || item;
+    if ((n.rep || {})[me]) return { already: true };
+    const r = await this.patch(n, { rep: { ...(n.rep || {}), [me]: true } });
+    return { ...r, already: false };
   },
 };
 
@@ -2387,6 +2849,10 @@ const ICON = {
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   hand: '<svg class="i" viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-4.5a1.5 1.5 0 0 1 3 0V12m0-2.5a1.5 1.5 0 0 1 3 0V15c0 4-3 7-7 7h-1c-2.5 0-4-1-5.3-3L4 15a1.6 1.6 0 0 1 2.5-2l1.5 1.5"/></svg>',
   churu: '<svg class="i" viewBox="0 0 24 24"><path d="M7 3h10l-1 4H8z"/><path d="M8 7l1.2 13.5a1 1 0 0 0 1 .9h3.6a1 1 0 0 0 1-.9L16 7"/><path d="M10 12h4"/></svg>',
+  thumbUp: '<svg class="i" viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-7c1.5 0 2.5 1 2.2 2.6L12.6 10H19a2 2 0 0 1 2 2.4l-1.2 6A2 2 0 0 1 17.8 20H7"/></svg>',
+  thumbDown: '<svg class="i" viewBox="0 0 24 24"><path d="M7 13V4H4v9zM7 13l4 7c1.5 0 2.5-1 2.2-2.6L12.6 14H19a2 2 0 0 0 2-2.4l-1.2-6A2 2 0 0 0 17.8 4H7"/></svg>',
+  paw: '<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><ellipse cx="12" cy="16.5" rx="4.6" ry="3.8"/><ellipse cx="5.6" cy="11" rx="1.9" ry="2.5"/><ellipse cx="9.4" cy="6.6" rx="1.9" ry="2.6"/><ellipse cx="14.6" cy="6.6" rx="1.9" ry="2.6"/><ellipse cx="18.4" cy="11" rx="1.9" ry="2.5"/></svg>',
+  flag: '<svg class="i" viewBox="0 0 24 24"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>',
   heart: '<svg class="i" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
   heartF: '<svg class="i" viewBox="0 0 24 24" style="fill:currentColor"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
   chat: '<svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>',
@@ -2569,6 +3035,14 @@ function openPicker(app) {
   );
   const close = openScrim(sheet, { center: true });
   listSidos(); setHot(hot); drawMap();
+  // 마우스를 올려 시/도가 바뀔 때마다 아래 시/군/구 목록 길이가 달라지면 시트 높이가 변하고, 그 바람에 마우스 아래 칸이 다른 지역으로 바뀌어
+  // 시트가 커졌다 작아졌다 반복했다(hover가 목록을 바꾸고 목록이 높이를 바꾸는 되먹임). 16곳 중 가장 긴 목록의 높이를 미리 잡아 둔다
+  const reserve = () => {
+    const keep = hot; let mh = 0, hh = 0; soonList.style.height = ''; soonHead.style.minHeight = '';
+    for (const u of units) { setHot(u.c.slice(0, 2)); mh = Math.max(mh, soonList.scrollHeight); hh = Math.max(hh, soonHead.offsetHeight); }
+    soonList.style.height = mh + 'px'; soonHead.style.minHeight = hh + 'px'; setHot(keep);
+  };
+  reserve();
 }
 
 // ── 고양이 이름표 ──
@@ -2581,18 +3055,19 @@ function renderCard(app) {
   const bond = Bonds.get(a.cat.id);
   const mom = a.cat.mother ? app.cats.find((c) => c.id === a.cat.mother) : null;
   const kids = app.cats.filter((c) => c.mother === a.cat.id);
-  const metaBits = [g.patternLabel, ageText(g.months) + ' · ' + st.label, g.sex === 'f' ? '암컷' : '수컷'];
-  if (g.tnr) metaBits.push('귀 끝 TNR 표식');
+  const metaBits = [g.patternLabel, ageText(g.months) + ' · ' + st.label, sexText(g)];
+  if (g.tnr) metaBits.push('왼쪽 귀 끝 컷');
   const family = mom ? `엄마는 ${mom.name}` : kids.length ? `아기 ${kids.map((k) => k.name).join(', ')}의 엄마` : '';
   const head = h('div', { class: 'head' },
     h('div', { class: 'sw', style: `background:${swatch(g)}` }),
-    h('div', {}, h('h2', { text: a.cat.name }), h('div', { class: 'meta', text: metaBits.join(' · ') }), family ? h('div', { class: 'meta', text: family }) : null),
+    h('div', {}, h('h2', { text: a.guest ? '손님 고양이 · ' + a.cat.name : a.cat.name }), h('div', { class: 'meta', text: metaBits.join(' · ') }), family ? h('div', { class: 'meta', text: family }) : null),
     h('button', { class: 'close', type: 'button', 'aria-label': '이름표 닫기', onclick: () => app.select(null) }),
   );
   head.querySelector('.close').innerHTML = ICON.close;
   const tags = h('div', { class: 'tags' }, ...traitTags(g.personality).map((t) => h('span', { class: 'tag', text: t })), bond.n ? h('span', { class: 'tag', text: bond.trust > 0.6 ? '나를 반겨 줌' : bond.trust > 0.3 ? '나를 알아봄' : '아직 낯섦' }) : null);
   const now = h('div', { class: 'now' }, h('span', { class: 'dot' }), h('span', { id: 'nowLabel', text: a.label || '' }));
-  const thought = app.thought && app.thought.id === a.cat.id ? h('div', { class: 'thought' }, h('small', { text: app.thought.by === 'ai' ? '속마음 · AI가 성격을 보고 고름' : '속마음' }), app.thought.text) : null;
+  if (a.guest) { el.replaceChildren(head, h('div', { class: 'tags' }, ...traitTags(g.personality).map((t) => h('span', { class: 'tag', text: t }))), now, h('div', { class: 'note', text: '멀리서 놀러 온 손님이에요. 손님 고양이는 구경만 할 수 있어요.' })); return; }
+  const thought = app.thought && app.thought.id === a.cat.id ? h('div', { class: 'thought' }, h('small', { text: '속마음' + (app.thought.emo ? ' · ' + (EMO_LABEL[app.thought.emo] || '') : '') + (app.thought.by === 'ai' ? ' · AI가 성격을 보고 고름' : '') }), app.thought.text) : null;
   const churuLocked = gateNeedsMember('churu');
   const petRow = h('div', { class: 'row' }, h('span', { class: 'lbl', text: '쓰다듬기' }), ...PET_PARTS.map(([k, l]) => h('button', { class: 'btn', type: 'button', text: l, disabled: app.busy, onclick: () => app.interact({ kind: 'pet', part: k }) })));
   const churu = h('button', { class: 'btn primary', type: 'button', disabled: app.busy, onclick: () => app.interact({ kind: 'churu' }) }); churu.innerHTML = ICON.churu + '츄르 주기';
@@ -2616,7 +3091,7 @@ function renderCard(app) {
 }
 
 function namesPanel(app, a) {
-  const input = h('input', { type: 'text', id: 'nameDraft', maxlength: '8', placeholder: '새 이름 제안 (1~8자)', 'aria-label': '새 이름', value: app.nameDraft || '' });
+  const input = h('input', { type: 'text', id: 'nameDraft', maxlength: '8', placeholder: `새 이름 제안 (1~8자, 최대 ${NAME_RULE.PER_SESSION}개)`, 'aria-label': '새 이름', value: app.nameDraft || '' });
   input.addEventListener('input', () => { app.nameDraft = input.value; });
   const err = h('div', { class: 'err', id: 'nameErr', role: 'alert' });
   const btn = h('button', { class: 'btn primary', type: 'submit', text: '제안하기' });
@@ -2636,36 +3111,50 @@ function namesPanel(app, a) {
     });
   } }, input, btn);
   return h('div', { class: 'names' },
-    h('p', { class: 'nhelp', text: `좋아요를 가장 많이 받은 이름이 이 고양이의 이름이 돼요. 투표 전에는 이 지역에서 부르던 '${a.cat.defaultName || a.cat.name}'(으)로 불려요.` }),
+    h('p', { class: 'nhelp', text: `좋아요를 가장 많이 받은 이름이 이 고양이의 이름이 돼요. 싫어요가 좋아요보다 많아지면 이름이 내려가요. 투표 전에는 이 지역에서 부르던 '${a.cat.defaultName || a.cat.name}'(으)로 불려요.` }),
     h('ol', { class: 'rank', id: 'rankList', 'aria-label': '이름 랭킹 상위 10' }),
     form, err);
 }
 
+function confirmReport(n, onYes) {
+  let close;
+  const yes = h('button', { class: 'btn primary', type: 'button', text: '신고', onclick: () => { close(); onYes(); } });
+  const no = h('button', { class: 'btn', type: 'button', text: '취소', onclick: () => close() });
+  close = openScrim(h('div', { class: 'sheet' }, h('p', { text: `"${n.name}" 이름을 신고할까요?` }), h('div', { class: 'foot' }, no, yes)), { center: true });
+}
 function renderRanking(app) {
   const ol = $('#rankList'); if (!ol) return;
   const me = Names.me();
   const items = Names.ranked();
   if (!Names.ready) { ol.replaceChildren(h('li', { class: 'rempty', text: '이름 목록을 불러오는 중…' })); return; }
   if (!items.length) { ol.replaceChildren(h('li', { class: 'rempty', text: '아직 지어 준 이름이 없어요. 첫 이름을 제안해 보세요.' })); return; }
+  const vote = (n, kind) => requireGate(app, 'name_like', '이름 투표는 이웃만 할 수 있어요', () => Names.vote(n, kind).then((r) => { if (r && r.gone) toast('싫어요가 더 많아 이 이름이 내려갔어요'); }).catch(() => toast('반영하지 못했어요')));
   ol.replaceChildren(...items.map((n, i) => {
-    const liked = !!(n.likes && n.likes[me]);
-    const lb = h('button', { class: 'btn ghost like', type: 'button', 'aria-pressed': liked ? 'true' : 'false', 'aria-label': `${n.name} 좋아요 ${n.score}`,
-      onclick: () => requireGate(app, 'name_like', '좋아요는 이웃만 누를 수 있어요', () => Names.like(n, !liked).catch(() => toast('반영하지 못했어요'))) });
-    lb.innerHTML = (liked ? ICON.heartF : ICON.heart) + `<span class="num">${n.score}</span>`;
+    const up = !!(n.up && n.up[me]), down = !!(n.down && n.down[me]), reported = !!(n.rep && n.rep[me]);
+    const ub = h('button', { class: 'btn ghost like', type: 'button', 'aria-pressed': up ? 'true' : 'false', 'aria-label': `${n.name} 좋아요 ${n.score}`, onclick: () => vote(n, 'up') });
+    ub.innerHTML = ICON.thumbUp + `<span class="num">${n.score}</span>`;
+    const db = h('button', { class: 'btn ghost dislike', type: 'button', 'aria-pressed': down ? 'true' : 'false', 'aria-label': `${n.name} 싫어요 ${n.dislikes}`, onclick: () => vote(n, 'down') });
+    db.innerHTML = ICON.thumbDown + `<span class="num">${n.dislikes}</span>`;
+    const rb = h('button', { class: 'btn ghost rep', type: 'button', 'aria-label': '신고', title: '신고', 'aria-pressed': reported ? 'true' : 'false', onclick: () => {
+      if (reported) return toast('이미 신고한 이름이에요');
+      confirmReport(n, () => requireGate(app, 'name_report', '신고는 이웃만 할 수 있어요', () => Names.report(n).then((r) => toast(r.already ? '이미 신고한 이름이에요' : '신고했어요. 알려 주셔서 고마워요')).catch(() => toast('신고하지 못했어요'))));
+    } });
+    rb.innerHTML = ICON.flag;
     return h('li', { class: i === 0 && n.score > 0 ? 'top' : '' },
       h('span', { class: 'rk', text: String(i + 1) }),
       h('span', { class: 'nm' }, h('b', { text: n.name }), h('small', { text: n.nick ? `${n.nick} 제안` : '' })),
-      lb);
+      ub, db, rb);
   }));
 }
 
 function renderRoster(app) {
   const el = $('#roster');
-  const here = app.agents;
+  const here = app.agents.filter((a) => !a.hidden);
   el.replaceChildren(...here.map((a) => {
     const g = a.cat.g;
-    return h('button', { class: 'catchip', type: 'button', 'aria-pressed': app.selected === a ? 'true' : 'false', onclick: () => app.select(a, true) },
-      h('span', { class: 'sw', style: `background:${swatch(g)}` }), a.cat.name, h('small', { text: stageOf(g.months).label }));
+    const paw = h('span', { class: 'gt', 'aria-hidden': 'true' }); paw.innerHTML = ICON.paw;
+    return h('button', { class: 'catchip' + (a.guest ? ' guest' : ''), type: 'button', 'aria-label': a.guest ? `손님 고양이 ${a.cat.name}` : null, 'aria-pressed': app.selected === a ? 'true' : 'false', onclick: () => app.select(a, true) },
+      h('span', { class: 'sw', style: `background:${swatch(g)}` }), a.guest ? paw : null, h('span', { class: 'nm', text: a.cat.name }), h('small', { text: stageOf(g.months).label }));
   }));
 }
 
@@ -2810,9 +3299,10 @@ const Promo = {
   },
   left() { return PROMO.cooldownMs - (Date.now() - this.lastAt); },
   async press(app) {
+    if (app.away) return toast('고양이가 인근 지역에 놀러 가서 지금은 홍보할 수 없어요');
     if (!adminPowers() && this.left() > 0) return toast(`홍보는 1분에 한 번만 할 수 있어요 (${Math.ceil(this.left() / 1000)}초 뒤)`);
     if (!Caps.room || !Caps.lock) return toast('이 화면에서는 홍보를 내보낼 수 없어요');
-    const m = app.selected || app.mascot; if (!m) return;
+    const m = app.selected && !app.selected.guest ? app.selected : app.mascot; if (!m) return;
     const data = { code: app.dong.c, name: m.cat.name, where: app.dong.n, thumb: this.thumb(app), at: Date.now() };
     const ok = await Caps.lock.acquire('promo', { holder: Caps.room.id, ttlMs: PROMO.lockMs });
     if (!ok) return toast('지금은 다른 동네 홍보가 나가는 중이라 이번엔 묻혔어요', 3600);
@@ -2849,7 +3339,6 @@ const SHARE_ICON = {
   threads: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M15.2 12v1.2a2.3 2.3 0 0 0 4.6 0V12a7.8 7.8 0 1 0-3 6.2"/></svg>',
   kakao: ICON.chat,
   insta: '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><path d="M16.8 7.2h.01"/></svg>',
-  device: '<svg class="i" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>',
 };
 function shareUrl(code) { try { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('r', code); return u.toString(); } catch (e) { return location.href; } }
 async function copyText(t) {
@@ -2857,35 +3346,32 @@ async function copyText(t) {
   try { const ta = h('textarea', { style: 'position:fixed;opacity:0;left:-999px' }); ta.value = t; document.body.append(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e) { return false; }
 }
 function openShare(app) {
-  const d = app.dong, a = app.selected || app.mascot;
+  const d = app.dong, a = app.selected || (app.mascot && !app.mascot.hidden ? app.mascot : null);
   const url = shareUrl(d.c);
-  const text = a ? `${d.n} 골목냥 ${a.cat.name} (지금: ${a.label}) 같이 구경해요` : `${d.n} 골목냥 같이 구경해요`;
+  const text = a ? `${d.n} 골목냥 ${josa(a.cat.name, "이", "가")} 지금 ${a.label} 🐈 골목냥에서 만나 보세요` : `${d.n} 골목냥을 만나 보세요 🐈`;
   const note = h('div', { class: 'note', hidden: true });
   const say = (t) => { note.hidden = false; note.textContent = t; };
-  const link = h('input', { class: 'sharelink', type: 'text', readonly: true, value: url, 'aria-label': '공유 링크', onfocus: (e) => e.target.select() });
   const open = (u) => { try { window.open(u, '_blank', 'noopener'); } catch (e) {} };
+  // 글자 이름 없이 색 있는 동그란 버튼만 보인다. 이름은 aria-label·title로 유지 (기기 공유는 뺐다)
   const defs = [
-    ['link', '링크 복사', async () => { toast((await copyText(url)) ? '링크를 복사했어요' : '복사하지 못했어요. 위 링크를 길게 눌러 복사해 주세요'); }],
+    ['link', '링크 복사', async () => { if (await copyText(url)) toast('링크를 복사했어요'); else say('복사하지 못했어요. 아래 링크를 길게 눌러 복사해 주세요. ' + url); }],
     ['x', 'X', () => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`)],
     ['threads', '스레드', () => open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text + ' ' + url)}`)],
     ['kakao', '카카오톡', () => say('화면 확인용이에요. 배포 뒤 카카오 JavaScript SDK(Kakao.Share)로 이 자리에 연결돼요.')],
     ['insta', '인스타그램', async () => { await copyText(url); say('화면 확인용이에요. 휴대폰은 기기 공유 시트로 캡쳐 사진과 링크를 보내고, PC는 사진을 저장한 뒤 링크를 복사해 올려 주세요. (링크는 복사했어요)'); }],
-    ['device', '기기 공유', () => { navigator.share({ title: '골목냥', text, url }).catch(() => {}); }],
   ];
   const grid = h('div', { class: 'sharegrid' }, ...defs.map(([k, label, fn]) => {
-    const noDevice = k === 'device' && typeof navigator.share !== 'function';
-    const on = SHARE_ENABLED[k] && !noDevice;
-    const b = h('button', { class: 'btn', type: 'button', 'data-ch': k, 'aria-disabled': on ? 'false' : 'true', title: noDevice ? '이 기기에서는 쓸 수 없어요' : '',
-      onclick: () => { if (!on) { toast(noDevice ? '이 기기에서는 기기 공유를 쓸 수 없어요' : '배포 후 열려요'); return; } fn(); } });
-    b.innerHTML = SHARE_ICON[k]; b.append(label);
+    const on = !!SHARE_ENABLED[k];
+    const b = h('button', { class: 'sharebtn', type: 'button', 'data-ch': k, 'aria-label': on ? label : label + ' (배포 후 열려요)', 'aria-disabled': on ? 'false' : 'true', title: on ? label : label + ' · 배포 후 열려요',
+      onclick: () => { if (!on) { toast('배포 후 열려요'); return; } fn(); } });
+    b.innerHTML = SHARE_ICON[k];
+    if (!on) { const l = h('span', { class: 'lockbadge', 'aria-hidden': 'true' }); l.innerHTML = ICON.lock; b.append(l); }
     return b;
   }));
-  const sheet = h('div', { class: 'sheet' },
-    h('h3', { text: '같이 구경해요' }),
-    h('p', { text }),
-    link, grid, note,
-    h('div', { class: 'foot' }, h('button', { class: 'btn ghost', type: 'button', text: '닫기', onclick: () => close() })));
-  const close = openScrim(sheet, { center: true });
+  const close = openScrim(h('div', { class: 'sheet sharesheet' },
+    h('div', { class: 'sharehead' }, h('h3', { text: '공유하기' }), h('button', { class: 'close btn ghost', type: 'button', 'aria-label': '닫기', onclick: () => close() })),
+    grid, note), { center: true });
+  const cb = $('.sharesheet .close'); if (cb) cb.innerHTML = ICON.close;
 }
 
 // ==== 80_admin.js ====
@@ -3004,13 +3490,68 @@ const AdminPanel = {
       h('div', { class: 'adrow2' }, h('button', { type: 'button', class: 'btn adbtn', text: '10초 잠금·1분 쿨다운 풀기', onclick: () => { if (Caps.lock) Caps.lock.clear('promo'); Promo.lastAt = 0; store.set('promoAt', 0); toast('홍보 잠금을 풀었어요'); } })),
       h('div', { class: 'adsub', text: '공유 비활성 채널 켜 보기 (화면 확인용)' }), shareBox('kakao', '카카오톡'), shareBox('insta', '인스타그램'));
 
+    // 6) 놀러가기 시험 (설계 7장 어드민 시험 기능)
+    const guestSel = h('select', { 'aria-label': '손님이 올 지역' }, ...REGIONS.units.map((u) => h('option', { value: u.c, text: u.n, selected: u.c === '41' })));
+    const kindSel = h('select', { 'aria-label': '상호작용 종류' }, ...[['random', '무작위(시각대로)'], ['fight', '싸움'], ['play', '어울리기']].map(([v, l]) => h('option', { value: v, text: l })));
+    const stepChk = h('input', { type: 'checkbox', id: 'adStep', onchange: () => { if (app.enc) app.enc.stepMode = stepChk.checked; } });
+    const gazeChk = h('input', { type: 'checkbox', id: 'adGaze', onchange: () => { app.gaze = gazeChk.checked; self.refresh(); } });
+    const act = (label, fn) => h('button', { type: 'button', class: 'btn adbtn', text: label, onclick: () => { fn(); self.refresh(); } });
+    this.visitInfo = h('div', { class: 'note adinfo', id: 'adVisitInfo' });
+    this.tripList = h('div', { class: 'adsched adtrips', id: 'adTrips' });
+    const s6 = sec('놀러가기 시험', true,
+      h('div', { class: 'adsub', text: '손님이 오는 지역 · 상호작용 종류' }),
+      h('div', { class: 'adrow2' }, guestSel, kindSel),
+      h('label', { class: 'check' }, stepChk, h('span', { text: '단계마다 멈춤 (계속·다음 단계를 눌러야 넘어가요)' })),
+      h('div', { class: 'adrow2' }, act('지금 놀러 오기', () => app.forceVisit(guestSel.value, kindSel.value, stepChk.checked)), act('이 지역 고양이 지금 놀러 보내기', () => app.forceAway()), act('바로 돌아오기', () => app.returnNow())),
+      h('div', { class: 'adsub', text: '진행' }), this.visitInfo,
+      h('div', { class: 'adrow2' }, act('멈춤 / 계속', () => { const E = app.enc; if (E) { E.wall = false; E.paused = !E.paused; } }), act('다음 단계', () => { if (app.enc) app.enc.nextPhase(); }), act('만남 끝내기', () => app.abortEnc())),
+      h('label', { class: 'check' }, gazeChk, h('span', { text: '시선 선 보기 (흰 선 = 상대 머리까지, 주황 선 = 머리가 실제로 향한 방향)' })),
+      h('div', { class: 'adsub', text: '외출 일정표 (앞으로 3시간, 16마리)' }), this.tripList);
+
     this.info = h('div', { class: 'note adinfo' });
-    body.append(s1, s2, s3, s4, s5, this.info);
+    // 이름 규칙 시험 (D-31): 가짜 세션으로 투표·신고를 넣어 삭제 규칙을 눈으로 확인
+    let fake = 0;
+    const nameSel = h('select', { 'aria-label': '시험할 이름' });
+    const fillNames = () => { nameSel.replaceChildren(...Names.list.filter((n) => !Names.dead(n)).map((n) => h('option', { value: n.id, text: `${n.name} (좋아요 ${Names.cnt(n.up)} / 싫어요 ${Names.cnt(n.down)} / 신고 ${Names.cnt(n.rep)})` }))); };
+    Names.on(fillNames);
+    const asFake = async (fn) => { const keep = Names.asUid; Names.asUid = 'fake' + (++fake); try { const n = Names.list.find((x) => x.id === nameSel.value); if (!n) return toast('이름이 없어요'); const r = await fn(n); toast('가짜 ' + Names.asUid + (r && r.gone ? ' - 이름이 내려갔어요' : ' 완료')); } finally { Names.asUid = keep; fillNames(); renderRanking(app); } };
+    const s7 = sec('이름 규칙 시험', false,
+      h('div', { class: 'note', text: '다른 사람인 척(가짜 세션) 투표·신고를 넣어요. 싫어요 > 좋아요면 삭제, 신고 5개면 삭제.' }), nameSel,
+      h('div', { class: 'adrow2' }, act('가짜 좋아요 +1', () => asFake((n) => Names.vote(n, 'up'))), act('가짜 싫어요 +1', () => asFake((n) => Names.vote(n, 'down'))), act('가짜 신고 +1', () => asFake((n) => Names.report(n)))),
+      h('div', { class: 'adrow2' }, act('가짜 이름 5개 채우기(내 세션)', async () => { for (let i = 1; i <= 6; i++) { try { await Names.propose('시험' + i); } catch (e) { toast(e.message); break; } } fillNames(); }), act('이 지역 이름 모두 지우기', async () => { if (Caps.db) return toast('로컬에서만 지울 수 있어요'); Names.list = []; Names.saveLocal(); })));
+    fillNames();
+    // 교감 극성 표 (D-30): 고른 고양이의 손길 유형과 부위별 긍정/중립/부정 비율(현재 신뢰도)
+    const touchInfo = h('div', { class: 'note adinfo' });
+    const showTouch = () => { const a = self.agent(); if (!a) return; const ty = touchType(a.cat.id, a.cat.g.personality), tr = Bonds.get(a.cat.id).trust;
+      const rows = PET_PARTS.map(([k, l]) => { const w = petPolarityWeights(ty, k, tr), t = w[0] + w[1] + w[2]; return `${l}: 긍정 ${Math.round(w[0] / t * 100)}% · 중립 ${Math.round(w[1] / t * 100)}% · 부정 ${Math.round(w[2] / t * 100)}%`; });
+      touchInfo.textContent = `손길 유형: ${TOUCH_TYPES[ty]} · 신뢰도 ${tr.toFixed(2)}` + '\n' + rows.join('\n'); touchInfo.style.whiteSpace = 'pre-line'; };
+    const s8 = sec('교감 극성 표', false, act('고른 고양이 손길 유형 보기', showTouch), touchInfo);
+    body.append(s1, s2, s3, s6, s4, s5, s7, s8, this.info);
     document.body.append(el); this.el = el;
     this.refresh();
     this.timer = setInterval(() => this.refresh(), 1000);
   },
   currentState() { const a = this.agent(); return this.over || Clock.stateAt(a.cat, Date.now(), true); },
+  refreshVisit(now) {
+    const app = this.app, E = app.enc, KO = { fight: '싸움', play: '어울리기' };
+    let s;
+    if (E && !E.done) {
+      s = `${KO[E.kind]} · 단계 ${E.phases.indexOf(E.ph) + 1}/${E.phases.length} ${E.ph.name} · ${E.t.toFixed(1)}/${E.dur.toFixed(0)}초${E.paused ? ' · 멈춤' : ''}${E.wall ? '' : ' · 수동'}`;
+      if (E.kind === 'fight') s += ` · 이긴 쪽 ${E.winner === 'host' ? '이 지역' : '손님'}`;
+      if (app.gaze && app.gazeAng) s += ` · 시선 오차 이 지역 ${app.gazeAng[0]}° / 손님 ${app.gazeAng[1]}°`;
+    } else if (app.away) s = '이 지역 고양이가 인근 지역에 놀러 가 있어요 (표지판 화면)';
+    else s = '진행 중인 만남 없음';
+    const mine = Trips.between(now, now + 3 * 3600000).filter((x) => x.from === app.dong.c || x.to === app.dong.c)[0];
+    if (mine) s += ` · 이 지역 다음 일정 ${fmtKST(mine.t0)} ${mine.from === app.dong.c ? '나감 → ' + unitName(mine.to) : '손님 ← ' + unitName(mine.from)}`;
+    this.visitInfo.textContent = s;
+    const key = Math.floor(now / 5000) + ':' + app.dong.c;
+    if (this._tripKey !== key) { // 일정표는 5초마다만 다시 그린다
+      this._tripKey = key;
+      const list = Trips.between(now, now + 3 * 3600000), nf = list.filter((x) => x.kind === 'fight').length;
+      this.tripList.replaceChildren(h('div', { class: 'adsrow' }, h('span', { class: 'tm', text: '합계' }), h('span', { text: `${list.length}건 (싸움 ${nf} · 어울림 ${list.length - nf})` }), h('small', { text: '' })),
+        ...list.map((x) => h('div', { class: 'adsrow' + (x.from === app.dong.c || x.to === app.dong.c ? ' now' : '') }, h('span', { class: 'tm', text: fmtKST(x.t0) }), h('span', { text: `${unitName(x.from)} → ${unitName(x.to)}` }), h('small', { text: `${Math.round((x.t1 - x.t0) / 1000)}초 ${KO[x.kind]}` }))));
+    }
+  },
   refresh() {
     const a = this.agent(); if (!a || !this.el) return;
     const now = Date.now();
@@ -3031,6 +3572,7 @@ const AdminPanel = {
       const cur = now >= e.t0 && now < e.t1;
       return h('div', { class: 'adsrow' + (cur ? ' now' : '') }, h('span', { class: 'tm', text: fmtKST(e.t0) }), h('span', { text: e.label }), h('small', { text: cur ? `${Math.round((e.t1 - now) / 1000)}초 남음` : `${Math.round((e.t1 - e.t0) / 1000)}초` }));
     }));
+    this.refreshVisit(now);
     const slot = Math.floor(now / CLOCK.SLOT);
     this.info.textContent = `지역 ${this.app.dong.n}(${this.app.dong.c}) · 고양이 ${a.cat.id} · 칸 ${slot} (30초) · 시각 ${fmtKST(now)} KST · 사람 ${Live.real()}명(실제)${Caps.room && !Caps.room.live ? ' · 탭 통신 없음' : ''}`;
   },
@@ -3056,6 +3598,7 @@ class App {
       blocked: (x, z, r) => this.blocked(x, z, r),
       resolve: (a, x, z) => this.resolve(a, x, z),
       say: (a, text) => this.say(a, text),
+      dropBubble: (a) => this.dropBubble(a),
       onLabel: (a, override) => { if (a === this.selected) { const n = $('#nowLabel'); if (n) n.textContent = override || a.label; } },
     };
     this.rng = makeRng(Date.now() >>> 0);
@@ -3114,7 +3657,8 @@ class App {
     const locked = gateNeedsMember('promo'), bd = b.querySelector('.lockbadge');
     if (locked && !bd) { const s = h('span', { class: 'lockbadge', 'aria-hidden': 'true' }); s.innerHTML = ICON.lock; b.append(s); }
     else if (!locked && bd) bd.remove();
-    b.setAttribute('aria-label', '구경 오세요 홍보하기' + (locked ? ' (이웃 등록 필요)' : ''));
+    b.disabled = !!this.away; // 자리 비운 동안은 홍보 버튼이 꺼진다 (설계 7장)
+    b.setAttribute('aria-label', '구경 오세요 홍보하기' + (this.away ? ' (고양이가 놀러 가서 잠시 꺼짐)' : locked ? ' (이웃 등록 필요)' : ''));
     const sh = $('#share'); if (sh) sh.title = gateNeedsMember('share') ? '공유하기 (이웃 등록 필요)' : '공유하기';
   }
   // ── 동네 이동 ──
@@ -3124,6 +3668,7 @@ class App {
     $('#pUp').textContent = d.level === 'sido' ? '대한민국' : d.sido + (d.level === 'sgg' ? '' : ' ' + sggShort(d.sgg));
     $('#pDong').textContent = d.level === 'sido' ? d.sido : d.n; $('#pCode').textContent = ({ sido: '시/도 ', sgg: '시/군/구 ' }[d.level] || '행정동 ') + d.c;
     this.theme = themeFor(d);
+    this.resetVisit();
     this.s.build(this.theme, d, 'scene:' + d.c);
     this.updateClock();
     for (const v of this.views) { this.s.scene.remove(v.root); v.dispose(); }
@@ -3145,11 +3690,171 @@ class App {
     renderRoster(this); renderCard(this);
     Names.watch(d.c);
     this.s.camera.position.set(0.0, 0.95, 3.4); this.s.controls.target.set(this.mascot.x * 0.5, 0.24, this.mascot.z * 0.5 - 0.2);
+    this.tripTick(nowMs, true); // 놀러가기 (M0-3): 지금 시각에 자리를 비웠거나 손님이 와 있으면 그 지점부터 이어 보여 준다
     const narrow = innerWidth <= 720;
-    if (focusCatId || !narrow) setTimeout(() => { if (this.mascot && this.dong === d) this.select(this.mascot, true); }, focusCatId ? 300 : 1400);
+    if (focusCatId || !narrow) setTimeout(() => { if (this.mascot && !this.mascot.hidden && this.dong === d) this.select(this.mascot, true); }, focusCatId ? 300 : 1400);
     if (this.boardOpen) renderBoard(this);
   }
   clockMs() { return Date.now(); }
+  // ── 놀러가기 (M0-3, 설계 7장): 자리 비움 · 손님 · 만남 ──
+  resetVisit() { this.enc = null; this.away = null; this.forced = null; this.done = new Set(); this.hideSign(); this.clearGaze(); }
+  // 지금 이 지역에서 일어나는 일: 어드민이 강제로 만든 것이 있으면 그것, 없으면 세계 시계 일정
+  tripState(now) {
+    const f = this.forced;
+    if (f) {
+      if (f.type === 'visit') return { away: null, host: f.trip };
+      if (now < f.trip.t1) return { away: f.type === 'away' ? f.trip : null, host: null };
+      this.forced = null;
+    }
+    return Trips.at(this.dong.c, now);
+  }
+  tripTick(now, init) {
+    const m = this.mascot; if (!m || !this.dong) return;
+    const st = this.tripState(now);
+    if (st.away) {
+      if (!this.away || this.away.id !== st.away.id) this.beginAway(st.away, now, init);
+      else if (!m.hidden && (now - st.away.t0) / 1000 >= TRIP.WALKOUT) this.hideMascot();
+    } else if (this.away) this.endAway(now);
+    if (st.host && !this.enc && !this.done.has(st.host.id) && !m.hidden && now < st.host.t1 - 500) this.beginEnc(st.host, now);
+  }
+  beginAway(trip, now, instant) {
+    const m = this.mascot; this.away = trip;
+    if (this.enc) this.abortEnc();
+    if (this.selected === m) this.select(null);
+    if (instant || (now - trip.t0) / 1000 >= TRIP.WALKOUT) this.hideMascot();
+    else { // 가장자리로 걸어 나간다
+      m.ext = true; m.step = null; m.jump = null; m.lookAtYou = 0; m.lookAt = null; m.label = '인근 지역으로 놀러 가는 중';
+      // 화면 중앙에서 출발해도 WALKOUT 안에 가장자리에 닿도록, 남은 시간으로 속도를 정한다(방향 전환·감속 여유 1.7초)
+      const ex = m.x >= 0 ? BOUNDS.x1 - 0.03 : BOUNDS.x0 + 0.03, left = Math.max(1.5, TRIP.WALKOUT - Math.max(0, (now - trip.t0) / 1000) - 1.7);
+      const sp = clamp(Math.abs(ex - m.x) / (left * 0.26 * (0.65 + 0.35 * m.scale)), 1.7, 3.2);
+      m.steps = [STEP.walk(ex, m.z, sp, { timeout: 8 })];
+    }
+    this.refreshFab();
+  }
+  hideMascot() {
+    const m = this.mascot; m.hidden = true; m.ext = true; m.v.root.visible = false;
+    if (this.selected === m) this.select(null);
+    this.showSign(); renderRoster(this); this.refreshFab();
+    if (!this.camAnim) { // 표지판이 보이도록 기본 구도로 물러난다
+      const cam = this.s.camera.position, s = this.sign.position, to = new THREE.Vector3(s.x * 0.5, 0.95, s.z + (innerWidth <= 720 ? 3.0 : 3.4));
+      if (cam.distanceTo(to) > 0.3) this.camAnim = { from: cam.clone(), to, t: 0 };
+    }
+  }
+  endAway(now) {
+    const m = this.mascot, trip = this.away, was = m.hidden; this.away = null; this.hideSign();
+    m.ext = false; m.hidden = false; m.v.root.visible = true; m.steps = []; m.step = null; m.move = null; m.arrived = true; m.jump = null;
+    if (was) { // 화면 가장자리에서 걸어 들어온다
+      const r = makeRng('ret:' + trip.id), side = r.chance(0.5) ? 1 : -1;
+      m.x = side > 0 ? BOUNDS.x1 - 0.03 : BOUNDS.x0 + 0.03; m.z = r.range(-0.5, 0.5);
+      m.yaw = m.yawTarget = Math.atan2(-m.x, -m.z * 0.2); m.setPose('stand'); Object.assign(m.P, m.T);
+    }
+    m.beginEntry(Clock.entryAt(m.cat, now).entry, true);
+    renderRoster(this); this.refreshFab();
+  }
+  makeGuest(trip) {
+    const cat = Trips.cat(trip.from, trip.t0); cat.geo = { lat: this.dong.lat, lng: this.dong.lng };
+    const v = new CatView(cat.g, this.shells); this.s.scene.add(v.root);
+    const a = new CatAgent(cat, v, this.world, makeRng(cat.id + ':g:' + trip.id));
+    a.guest = true; a.ext = true; a.label = '손님 고양이';
+    this.views.push(v); this.agents.push(a);
+    return a;
+  }
+  beginEnc(trip, now) {
+    const host = this.mascot, guest = this.makeGuest(trip), f = this.forced;
+    const E = new Encounter(this, trip, host, guest, { manual: !!(f && f.type === 'visit' && f.step), stepMode: !!(f && f.step) });
+    this.enc = E;
+    const el = Math.min(E.dur, (now - trip.t0) / 1000);
+    if (el > 0.05) E.ffTo(el); // 중간에 들어왔으면 그 지점부터
+    renderRoster(this);
+    if (innerWidth <= 720 && !this.selected) { // 휴대폰은 화면이 좁아서 두 마리가 보이게 조금 물러난다
+      const cam = this.s.camera.position, T = this.s.controls.target, dir = cam.clone().sub(T), len = dir.length();
+      if (len < 4.4) this.camAnim = { from: cam.clone(), to: T.clone().addScaledVector(dir.normalize(), 4.7), t: 0 };
+    }
+  }
+  endEnc(E) {
+    const host = E.host, guest = E.guest;
+    host.enc = null; host.ext = false; host._ph = null; host.lookAt = null; host.steps = []; host.step = null; host.move = null; host.arrived = true;
+    host.beginEntry(Clock.entryAt(host.cat, Date.now()).entry, true);
+    this.removeAgent(guest);
+    if (this.enc === E) this.enc = null;
+    this.done.add(E.trip.id);
+    if (this.forced && this.forced.type === 'visit' && this.forced.trip.id === E.trip.id) this.forced = null;
+    this.clearGaze(); renderRoster(this);
+  }
+  abortEnc() { const E = this.enc; if (E) { E.done = true; this.endEnc(E); } }
+  removeAgent(a) {
+    if (this.selected === a) this.select(null);
+    this.s.scene.remove(a.v.root); a.v.dispose();
+    const vi = this.views.indexOf(a.v); if (vi >= 0) this.views.splice(vi, 1);
+    const ai = this.agents.indexOf(a); if (ai >= 0) this.agents.splice(ai, 1);
+    this.bubbles = this.bubbles.filter((b) => { if (b.a === a) { b.el.remove(); return false; } return true; });
+  }
+  // 어드민 시험: 지금 손님이 오게 / 지금 내 마스코트를 내보내기 / 바로 돌아오기
+  forceVisit(from, kind, step) {
+    if (from === this.dong.c) return toast('손님이 올 다른 지역을 골라 주세요');
+    const now = Date.now();
+    if (this.enc) this.abortEnc();
+    this.forced = { type: 'visit', step: !!step, trip: Trips.make(from, this.dong.c, now, 90, kind, 'f' + now) };
+    this.tripTick(now);
+  }
+  forceAway() {
+    const now = Date.now(); if (this.enc) this.abortEnc();
+    this.forced = { type: 'away', trip: Trips.make(this.dong.c, Trips.neighbors(this.dong.c)[0] || '11', now, 90, 'fight', 'f' + now) };
+    this.tripTick(now);
+  }
+  returnNow() { const now = Date.now(); if (this.away) { this.forced = { type: 'none', trip: { t1: now + 120000 } }; this.tripTick(now); } }
+  // 자리 비운 지역의 표지판 (행선지는 쓰지 않는다)
+  makeSign() {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 280; const x = c.getContext('2d');
+    x.fillStyle = '#b98a55'; x.fillRect(0, 0, 512, 280);
+    for (let i = 0; i < 9; i++) { x.fillStyle = i % 2 ? 'rgba(90,55,25,0.10)' : 'rgba(255,230,190,0.10)'; x.fillRect(0, i * 31, 512, 31); }
+    x.strokeStyle = '#6b4a2b'; x.lineWidth = 14; x.strokeRect(7, 7, 498, 266);
+    x.fillStyle = '#3a2410'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '700 62px "Gowun Batang","Noto Serif KR",serif'; x.fillText('인근 지역 놀러감', 256, 108);
+    x.font = '400 40px "Gowun Dodum","Noto Sans KR",sans-serif'; x.fillText('곧 돌아와요', 256, 200);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const g = new THREE.Group(), wood = new THREE.MeshStandardMaterial({ color: '#7a5532', roughness: 0.95 });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.017, 0.26, 10), wood); post.position.y = 0.13;
+    const board = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.022), wood); board.position.y = 0.34;
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.24), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.5 }));
+    face.position.set(0, 0.34, 0.0125);
+    for (const m of [post, board]) m.castShadow = true;
+    g.add(post, board, face); g.name = 'awaySign';
+    return g;
+  }
+  showSign() {
+    if (!this.sign) this.sign = this.makeSign();
+    const p = [[0, -0.1], [0.45, -0.05], [-0.45, -0.05], [0, 0.3], [0.8, 0.1], [-0.8, 0.1]].find(([x, z]) => !this.blocked(x, z, 0.2)) || [0, 0];
+    this.sign.position.set(p[0], 0, p[1]); this.s.scene.add(this.sign);
+  }
+  hideSign() { if (this.sign && this.sign.parent) this.sign.parent.remove(this.sign); }
+  visitFrame() {
+    if (this.sign && this.sign.parent) { const c = this.s.camera.position; this.sign.rotation.y = Math.atan2(c.x - this.sign.position.x, c.z - this.sign.position.z); }
+    this.updateGaze();
+  }
+  // 어드민: 두 고양이의 시선을 선으로 보기. 흰 선 = 상대 머리까지의 이상적인 방향, 주황 선 = 머리가 실제로 향한 방향
+  updateGaze() {
+    const E = this.enc;
+    if (!this.gaze || !E || E.done) { this.clearGaze(); return; }
+    if (!this.gazeG) {
+      const g = new THREE.Group();
+      for (const col of ['#ffffff', '#ff8a1f', '#ffffff', '#ff8a1f']) {
+        const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, 1)]), new THREE.LineBasicMaterial({ color: col, depthTest: false, transparent: true }));
+        ln.renderOrder = 20; ln.frustumCulled = false; g.add(ln);
+      }
+      this.gazeG = g; this.s.scene.add(g);
+    }
+    const q = new THREE.Quaternion(), ang = [];
+    [[E.host, E.guest], [E.guest, E.host]].forEach(([a, b], i) => {
+      const pa = a.headPt().clone(), pb = b.headPt().clone(), d = pa.distanceTo(pb) || 0.1;
+      const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(a.v.rig.head.getWorldQuaternion(q)).normalize();
+      const set = (ln, p0, p1) => { const at = ln.geometry.attributes.position; at.setXYZ(0, p0.x, p0.y, p0.z); at.setXYZ(1, p1.x, p1.y, p1.z); at.needsUpdate = true; };
+      set(this.gazeG.children[i * 2], pa, pb); set(this.gazeG.children[i * 2 + 1], pa, pa.clone().addScaledVector(fwd, d));
+      ang.push(Math.round(fwd.angleTo(pb.clone().sub(pa).normalize()) * 180 / Math.PI));
+    });
+    this.gazeAng = ang;
+  }
+  clearGaze() { if (this.gazeG) { this.s.scene.remove(this.gazeG); this.gazeG.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); this.gazeG = null; } this.gazeAng = null; }
   visit(code, catId) {
     const d = REGIONS.unitOf(code); if (!d) return toast('그 지역을 찾지 못했어요');
     this.boardOpen = false; renderBoard(this);
@@ -3184,7 +3889,7 @@ class App {
       if (d < m) { x = o.x + (dx / (d || 1)) * m; z = o.z + (dz / (d || 1)) * m; stuck = true; }
     }
     for (const o of this.agents) {
-      if (o === a) continue;
+      if (o === a || o.hidden) continue;
       const dx = x - o.x, dz = z - o.z, d = Math.hypot(dx, dz), m = 0.17 * (a.scale + o.scale);
       if (d < m && d > 1e-4) { x += (dx / d) * (m - d) * 0.5; z += (dz / d) * (m - d) * 0.5; }
     }
@@ -3212,6 +3917,7 @@ class App {
     let best = null, bd = 1e9;
     const v = new THREE.Vector3();
     for (const a of this.agents) {
+      if (a.hidden) continue;
       a.v.rig.chest.getWorldPosition(v); v.project(this.s.camera);
       if (v.z > 1) continue;
       const sx = (v.x * 0.5 + 0.5) * innerWidth, sy = (-v.y * 0.5 + 0.5) * innerHeight;
@@ -3239,10 +3945,12 @@ class App {
     const gateKey = act.kind === 'churu' ? 'churu' : act.kind === 'pet' ? 'pet' : 'cat_words';
     requireGate(this, gateKey, null, async () => {
       const a = this.selected;
+      if (this.away) return toast('고양이가 인근 지역에 놀러 가서 지금은 만날 수 없어요');
+      if (a && a.guest) return toast('손님 고양이는 구경만 할 수 있어요');
       if (!a || this.busy) return;
       this.busy = true; renderCard(this);
       a.lookAtYou = 1; a.earTwitch(0); a.earTwitch(1);
-      if (act.kind === 'pet') this.showHand(a);
+      if (act.kind === 'pet') this.showHand(a, act.part);
       if (act.kind === 'churu') this.showChuru();
       if (act.kind === 'word') this.youSay(act.text);
       const t0 = performance.now();
@@ -3252,18 +3960,27 @@ class App {
       if (!this.agents.includes(a)) { renderCard(this); return; }
       a.react(res.reaction);
       Clock.markTouch(a.cat); if (res.reaction === 'eat_churu') Clock.markFed(a.cat); // 표시용 상태에만 반영 (일정은 모두에게 같게 유지)
-      this.thought ={ id: a.cat.id, text: res.thought, by: res.by };
+      this.thought = { id: a.cat.id, text: res.thought, by: res.by, emo: res.emo };
       const what = act.kind === 'pet' ? `${PET_PARTS.find((x) => x[0] === act.part)[1]} 쓰다듬기` : act.kind === 'churu' ? '츄르' : `"${act.text}"`;
       await Bonds.bump(a.cat.id, res.trust_delta, `${what} → ${REACTIONS[res.reaction].label}`);
       renderCard(this);
     });
   }
-  showHand(a) {
+  // 쓰다듬는 부위의 월드 좌표: 뼈대(머리·가슴·엉덩이)에 붙은 자리에서 계산해 앉음·누움·걷기 어느 자세에서도 그 부위를 따라간다
+  petPoint(a, part, out) {
+    const R = a.v.rig; a.v.root.updateWorldMatrix(true, true);
+    // 뼈대 로컬 좌표(앞이 +z, 위가 +y). 머리는 머리 크기만큼 배율이 걸려 있다
+    if (part === 'chin') return R.head.localToWorld(out.set(0, -0.07, 0.07));
+    if (part === 'back') return R.chest.localToWorld(out.set(0, 0.09, -0.04));
+    if (part === 'belly') return R.chest.localToWorld(out.set(0, -0.07, -0.02));
+    return R.head.localToWorld(out.set(0, 0.075, 0));
+  }
+  showHand(a, part = 'head') {
     const el = $('#hand'); const v = new THREE.Vector3(); const t0 = performance.now();
     el.style.opacity = '1';
     const tick = () => {
       const k = (performance.now() - t0) / 1700; if (k > 1 || !this.agents.includes(a)) { el.style.opacity = '0'; return; }
-      a.v.rig.head.getWorldPosition(v); v.y += 0.06 * a.scale; v.project(this.s.camera);
+      this.petPoint(a, part, v); v.project(this.s.camera);
       const sx = (v.x * 0.5 + 0.5) * innerWidth + Math.sin(k * 14) * 16, sy = (-v.y * 0.5 + 0.5) * innerHeight - 10;
       el.style.left = sx + 'px'; el.style.top = sy + 'px'; el.style.transform = `translate(-50%,-50%) rotate(${Math.sin(k * 14) * 8 - 10}deg)`;
       requestAnimationFrame(tick);
@@ -3285,6 +4002,7 @@ class App {
     const el = h('div', { class: 'bubble', style: `left:50%;top:${innerHeight * 0.74}px;background:var(--lamp-soft);color:var(--ink)`, text: '나: ' + text });
     $('#bubbles').append(el); setTimeout(() => { el.style.opacity = '0'; }, 1800); setTimeout(() => el.remove(), 2300);
   }
+  dropBubble(a) { this.bubbles = this.bubbles.filter((b) => { if (b.a === a) { b.el.remove(); return false; } return true; }); }
   say(a, text) {
     const old = this.bubbles.find((b) => b.a === a); if (old) { old.el.remove(); this.bubbles.splice(this.bubbles.indexOf(old), 1); }
     const el = h('div', { class: 'bubble', text });
@@ -3330,7 +4048,10 @@ class App {
     requestAnimationFrame((t) => this.frame(t));
     const dt = TEST.dt || Math.min(0.05, (now - this.last) / 1000); this.last = now;
     this.world.camPos.copy(this.s.camera.position);
-    for (const a of this.agents) a.update(dt * (this.speed || 1));
+    if (this.enc) this.enc.step(dt * (this.speed || 1)); // 만남 단계표를 먼저 흘려 두 마리가 같은 단계를 보게 한다
+    for (const a of this.agents.slice()) if (!a.hidden) a.update(dt * (this.speed || 1));
+    if (now - (this.tripAt || 0) > 250) { this.tripAt = now; this.tripTick(Date.now()); } // 실제 시계 기준 0.25초마다
+    this.visitFrame(dt);
     // 카메라
     if (this.camAnim) {
       const A = this.camAnim; A.t = Math.min(1, A.t + dt / 1.1);
@@ -3340,6 +4061,12 @@ class App {
     if (this.selected) {
       const a = this.selected, T = this.s.controls.target;
       T.x = damp(T.x, a.x, 3, dt); T.z = damp(T.z, a.z, 3, dt); T.y = damp(T.y, 0.16 * a.scale + 0.04, 3, dt);
+    } else if (this.away && this.mascot.hidden && this.sign) {
+      const T = this.s.controls.target, s = this.sign.position;
+      T.x = damp(T.x, s.x, 3, dt); T.z = damp(T.z, s.z - 0.1, 3, dt); T.y = damp(T.y, 0.26, 3, dt);
+    } else if (this.enc && !this.enc.done) { // 선택한 고양이가 없으면 두 마리의 가운데를 비춘다
+      const E = this.enc, T = this.s.controls.target;
+      T.x = damp(T.x, (E.host.x + E.guest.x) / 2, 2, dt); T.z = damp(T.z, (E.host.z + E.guest.z) / 2 - 0.1, 2, dt); T.y = damp(T.y, 0.2, 2, dt);
     }
     this.s.controls.update();
     // 이름표가 열리면 장면을 옆(데스크톱)이나 위(휴대폰)로 살짝 밀어 고양이가 가려지지 않게
@@ -3377,7 +4104,7 @@ class App {
   }
 }
 const app = new App();
-window.__app = app;
+window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; } // 시험용 노출은 ?admin일 때만
 window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); };
 app.start();
 
