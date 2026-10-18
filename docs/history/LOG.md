@@ -63,3 +63,9 @@
 2026-10-18 | tester | [테스트] M0-4 통과, 악성 입력 91종 오염·주입 0건, 블로커 없음
 2026-10-18 | user | [승인] M0-4 승인, 커밋·푸시 승인, 보완은 안내 문서 동기화만(BiDi 차단·새 동작 경고는 보류)
 2026-10-18 | documenter | [문서] 숏츠 행동 가져오기 안내의 프롬프트에 이름·장소·길이·단계 한도 반영 (R-14)
+2026-10-18 | developer | [구현] 리팩토링 단계 0: 시험 7종을 tests/로 이전(BASE_URL·CHROME_PATH·TEST_SLOW), package.json (D-33)
+2026-10-18 | developer | [테스트] 기준값 tests/baseline/(state.json: 고정 시각 Clock 해시·지역 11·26·41 요약, pose_after.json) (D-33)
+2026-10-18 | developer | [구현] 단계 1: style.css·data/regions.json 분리(바이트 동일, 한 줄), 최상위 await fetch·실패 안내 (D-33)
+2026-10-18 | developer | [테스트] 분리 전후 reg 38·pose 0·극성 0·레시피 35·홍보 12/12·기준값 동일·오류 0, 옛 스크립트도 동일 (D-33)
+2026-10-18 | developer | [이슈] file://로 열면 이제 안내 문구만 뜸(예전 단일 파일은 열렸음). 제안서의 JSON 줄바꿈 저장 대신 한 줄 유지 (D-33)
+2026-10-18 | user | [결정] 푸시는 단계 3 뒤 한 번에, file:// 미지원 수용, lock·기준 스크린샷 미보관, tester는 기존과 같은 모델·노력 (D-35)

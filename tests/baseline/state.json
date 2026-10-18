@@ -1,0 +1,356 @@
+{
+ "meta": {
+  "fixed": "2026-10-18T03:00:05.000Z",
+  "t0": "2026-10-18T00:00:00.000Z",
+  "codes": [
+   "11",
+   "26",
+   "41"
+  ],
+  "note": "비교할 때 meta는 빼고 본다"
+ },
+ "regions": {
+  "11": {
+   "dong": {
+    "c": "11",
+    "n": "서울",
+    "level": "sido",
+    "sido": "서울특별시",
+    "lat": 37.5497,
+    "lng": 126.9942
+   },
+   "plate": {
+    "up": "대한민국",
+    "dong": "서울특별시",
+    "code": "시/도 11"
+   },
+   "census": "골목 담벼락 · 이 지역 마스코트 점순이",
+   "clock": "오후 12:00",
+   "clockLabel": "한낮",
+   "roster": [
+    "점순이성체"
+   ],
+   "live": {
+    "agents": 1,
+    "mascotId": "11-m",
+    "mascotName": "점순이"
+   },
+   "recipes": {
+    "saved": 0,
+    "enabled": 0,
+    "actions": 15,
+    "actionsHash": 1575335941
+   },
+   "cat": {
+    "id": "11-m",
+    "name": "점순이",
+    "sex": "m",
+    "months": 35.155,
+    "personality": {
+     "bold": 0.5773,
+     "social": 0.5614,
+     "playful": 0.4851,
+     "food": 0.7455,
+     "energy": 0.4396,
+     "grumpy": 0.5891
+    },
+    "touchType": "aloof",
+    "genomeHash": 900598442
+   },
+   "clockAtFixed": {
+    "entry": "loaf",
+    "state": {
+     "needs": {
+      "sleep": 0.6759,
+      "hunger": 0.0551,
+      "play": 0.4462,
+      "social": 0.3856
+     },
+     "emo": {
+      "calm": 0.5557,
+      "happy": 0.5967,
+      "playful": 0.2272,
+      "curious": 0.3972,
+      "wary": 0.3655,
+      "scared": 0.2502,
+      "grumpy": 0.5792,
+      "lonely": 0.3802
+     }
+    }
+   },
+   "schedule6h": {
+    "entries": 250,
+    "hash": 2232747656,
+    "head": "11-m:wander:1792281600000;11-m:nap:1792281690000;11-m:wander:1792281750000;11-m:sit:1792281840000;11"
+   },
+   "trips3h": {
+    "n": 34,
+    "hash": 1481467068,
+    "mine": [
+     [
+      "fight",
+      "28",
+      "11",
+      2756,
+      2843
+     ],
+     [
+      "play",
+      "28",
+      "11",
+      4792,
+      4856
+     ],
+     [
+      "fight",
+      "28",
+      "11",
+      7323,
+      7439
+     ],
+     [
+      "fight",
+      "11",
+      "28",
+      10006,
+      10110
+     ]
+    ]
+   },
+   "theme": {
+    "len": 7,
+    "hash": 435556376
+   }
+  },
+  "26": {
+   "dong": {
+    "c": "26",
+    "n": "부산",
+    "level": "sido",
+    "sido": "부산광역시",
+    "lat": 35.1588,
+    "lng": 129.0555
+   },
+   "plate": {
+    "up": "대한민국",
+    "dong": "부산광역시",
+    "code": "시/도 26"
+   },
+   "census": "골목 담벼락 · 이 지역 마스코트 대장",
+   "clock": "오후 12:00",
+   "clockLabel": "한낮",
+   "roster": [
+    "대장성체"
+   ],
+   "live": {
+    "agents": 1,
+    "mascotId": "26-m",
+    "mascotName": "대장"
+   },
+   "recipes": {
+    "saved": 0,
+    "enabled": 0,
+    "actions": 15,
+    "actionsHash": 1575335941
+   },
+   "cat": {
+    "id": "26-m",
+    "name": "대장",
+    "sex": "f",
+    "months": 13.507,
+    "personality": {
+     "bold": 0.3186,
+     "social": 0.02,
+     "playful": 0.5327,
+     "food": 0.4241,
+     "energy": 0.5566,
+     "grumpy": 0.3422
+    },
+    "touchType": "tolerant",
+    "genomeHash": 914849196
+   },
+   "clockAtFixed": {
+    "entry": "wander",
+    "state": {
+     "needs": {
+      "sleep": 0.5751,
+      "hunger": 0.1452,
+      "play": 0.5944,
+      "social": 0.4118
+     },
+     "emo": {
+      "calm": 0.5855,
+      "happy": 0.5321,
+      "playful": 0.4328,
+      "curious": 0.4226,
+      "wary": 0.5199,
+      "scared": 0.2971,
+      "grumpy": 0.3558,
+      "lonely": 0.1527
+     }
+    }
+   },
+   "schedule6h": {
+    "entries": 264,
+    "hash": 4178718266,
+    "head": "26-m:wander:1792281600000;26-m:sit:1792281660000;26-m:groom:1792281720000;26-m:loaf:1792281810000;26"
+   },
+   "trips3h": {
+    "n": 34,
+    "hash": 1481467068,
+    "mine": [
+     [
+      "play",
+      "31",
+      "26",
+      589,
+      676
+     ],
+     [
+      "fight",
+      "26",
+      "31",
+      6504,
+      6594
+     ],
+     [
+      "play",
+      "31",
+      "26",
+      8724,
+      8819
+     ]
+    ]
+   },
+   "theme": {
+    "len": 7,
+    "hash": 435556376
+   }
+  },
+  "41": {
+   "dong": {
+    "c": "41",
+    "n": "경기",
+    "level": "sido",
+    "sido": "경기도",
+    "lat": 37.4463,
+    "lng": 127.0297
+   },
+   "plate": {
+    "up": "대한민국",
+    "dong": "경기도",
+    "code": "시/도 41"
+   },
+   "census": "시장 골목 · 이 지역 마스코트 깜순이",
+   "clock": "오후 12:00",
+   "clockLabel": "한낮",
+   "roster": [
+    "깜순이성체"
+   ],
+   "live": {
+    "agents": 1,
+    "mascotId": "41-m",
+    "mascotName": "깜순이"
+   },
+   "recipes": {
+    "saved": 0,
+    "enabled": 0,
+    "actions": 15,
+    "actionsHash": 1575335941
+   },
+   "cat": {
+    "id": "41-m",
+    "name": "깜순이",
+    "sex": "f",
+    "months": 31.46,
+    "personality": {
+     "bold": 0.4342,
+     "social": 0.5295,
+     "playful": 0.3727,
+     "food": 0.4097,
+     "energy": 0.446,
+     "grumpy": 0.3707
+    },
+    "touchType": "tolerant",
+    "genomeHash": 3388918020
+   },
+   "clockAtFixed": {
+    "entry": "sit",
+    "state": {
+     "needs": {
+      "sleep": 0.543,
+      "hunger": 0.2364,
+      "play": 0.5076,
+      "social": 0.3135
+     },
+     "emo": {
+      "calm": 0.4827,
+      "happy": 0.6984,
+      "playful": 0.2632,
+      "curious": 0.3517,
+      "wary": 0.3626,
+      "scared": 0.3564,
+      "grumpy": 0.4174,
+      "lonely": 0.2172
+     }
+    }
+   },
+   "schedule6h": {
+    "entries": 256,
+    "hash": 3888536066,
+    "head": "41-m:nap:1792281600000;41-m:wander:1792281660000;41-m:nap:1792281750000;41-m:sit:1792281870000;41-m:"
+   },
+   "trips3h": {
+    "n": 34,
+    "hash": 1481467068,
+    "mine": [
+     [
+      "play",
+      "41",
+      "44",
+      1631,
+      1707
+     ],
+     [
+      "play",
+      "51",
+      "41",
+      9384,
+      9496
+     ]
+    ]
+   },
+   "theme": {
+    "len": 8,
+    "hash": 2495368705
+   }
+  }
+ },
+ "picker": {
+  "sido": 16,
+  "list": [
+   "서울 / 지금 여기",
+   "부산 / 부산광역시",
+   "대구 / 대구광역시",
+   "인천 / 인천광역시",
+   "전남광주 / 전남광주통합특별시",
+   "대전 / 대전광역시",
+   "울산 / 울산광역시",
+   "세종 / 세종특별자치시",
+   "경기 / 경기도",
+   "강원 / 강원특별자치도",
+   "충북 / 충청북도",
+   "충남 / 충청남도",
+   "경북 / 경상북도",
+   "경남 / 경상남도",
+   "제주 / 제주특별자치도",
+   "전북 / 전북특별자치도"
+  ],
+  "soonhead": "서울의 시/군/구 25곳 · 준비 중",
+  "map": {
+   "len": 1198138,
+   "hash": 2910185961,
+   "paths": 16
+  }
+ }
+}

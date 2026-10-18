@@ -80,10 +80,11 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
 - 되돌리기 어려운 작업(배포, 저장소 공개 설정, 데이터 삭제, 외부 계정 변경)은 사용자 확인 후에 한다.
 - 계정(GitHub, Cloudflare, Supabase, 카카오 디벨로퍼스)은 모두 사용자 명의다. Claude가 만들거나 설정을 바꾸지 않는다.
 - 코드에는 Supabase 공개용 anon 키만 넣는다. service_role 등 관리자 키는 저장소 어디에도 쓰지 않는다 (D-11).
-- `prototype/index.html` 227번째 줄은 행정구역 경계 JSON(`#regions-data`)이라 한 줄이 매우 길다.
-  **이 줄을 통째로 읽거나 출력하지 않는다.** `sed -n`/`grep`으로 범위를 좁혀 읽는다. 파일 나누기(M1) 뒤에는 `data/regions.json`도 같은 규칙.
+- 행정구역 경계 JSON은 `prototype/data/regions.json`(약 1.3MB, **한 줄**)이다. 모듈이 최상위 await `fetch`로 읽는다.
+  **이 파일을 통째로 읽거나 출력하지 않는다.** 크기·키만 확인하거나 `node`로 필요한 부분만 뽑는다. 스타일은 `prototype/style.css`.
 - 로컬 확인: 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
-  (`window.claude`가 없으면 로그인·DB 기능만 빠지고 화면과 고양이는 동작한다.)
+  (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
+- 회귀 시험·기준값: `tests/README.md` (`npm install` 뒤 `npm test`, 기준값 비교 `npm run compare`).
 - 빌드 도구 없이 ES 모듈 + CDN import map을 쓴다 (D-13). 의존성 추가는 CDN 버전 고정으로만, 먼저 확인받는다.
 - 기획·행동 설계 원문은 claude.ai 문서 링크(docs/PLAN.md 참고 문서)다. 이 링크는 Claude Code에서 열리지 않을 수 있으니, 필요한 내용은 사용자에게 붙여 달라고 요청한다.
 - 이관 전 원본 문서는 docs/archive/legacy/에 있다. 평소에는 읽지 않는다.

@@ -61,6 +61,8 @@ __pycache__/
 .venv/
 venv/
 target/
+# 시험 결과물(스크린샷·뽑아낸 모듈 등). 기준값은 tests/baseline/ 에 둔다
+tests/out/
 
 # ===== OS =====
 .DS_Store

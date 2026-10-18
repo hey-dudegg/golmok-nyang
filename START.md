@@ -5,7 +5,8 @@
 ## 처음 한 번
 1. 이 폴더를 원하는 위치(예: `~/golmok-nyang`)에 둡니다. 숨김 폴더 `.claude`, `.private`와 `.gitignore`, `.env.example`이 함께 있는지 확인합니다 (`ls -la`).
 2. `git init` (또는 GitHub에서 만든 빈 Private 저장소를 clone한 뒤 이 내용을 그 안에 복사). 이름 제안은 `golmok-nyang` (P-06).
-3. 화면 확인: 이 폴더에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
+3. 화면 확인: 이 폴더에서 `python3 -m http.server 8000`(Windows는 `python -m http.server 8000`) → http://localhost:8000/prototype/
+   `index.html`을 파일로 직접 열면(file://) 지역 자료(`prototype/data/regions.json`)를 못 읽어 안내 문구만 뜹니다. 시험 실행법은 `tests/README.md`.
 4. 이 폴더에서 `claude` 실행 → `/report`로 현황 확인. `/migrate`는 이미 했으니 다시 하지 않습니다.
 5. `/milestone M0 수정 4단계` → 1단계(시/도 16곳·세계 시계·회원 범위 설정표·어드민 기본) 계획을 보고 승인합니다.
 6. 첫 커밋 전에는 `/secure-check`를 돌리고, `.private/`가 커밋 대상에 없는지 확인합니다.

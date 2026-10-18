@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node tests/run_all.js",
+    "test:syntax": "node tests/check_syntax.js",
+    "test:reg": "node tests/reg.js",
+    "test:pose": "node tests/pose_check.js after",
+    "test:polarity": "node tests/b2_polarity.js",
+    "test:recipe": "node tests/m04_unit.js",
+    "test:promo": "node tests/m02c.js",
+    "snapshot": "node tests/snapshot.js",
+    "baseline": "node tests/snapshot.js --baseline && node tests/pose_check.js after --baseline",
+    "compare": "node tests/compare.js",
+    "shots": "node tests/shots.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "22.15.0"
+  }
+}
