@@ -29,6 +29,7 @@ import { renderCard, renderRoster } from './ui/card.js';
 import { $, ICON, h, toast } from './ui/dom.js';
 import { renderRanking } from './ui/names_panel.js';
 import { openPicker } from './ui/picker.js';
+import { openFeedback } from './ui/feedback.js';
 import { openShare } from './ui/share.js';
 import { openSignup, requireGate } from './ui/signup.js';
 import { Live, Promo } from './ui/together.js';
@@ -66,6 +67,7 @@ class App {
     $('#btnMove').addEventListener('click', () => openPicker(this));
     $('#btnBoard').addEventListener('click', () => this.openBoard());
     $('#btnMember').addEventListener('click', () => { if (isMemberNow() && Member.me) toast(`${Member.me.nick}님은 이미 골목 이웃이에요`); else if (adminPowers()) toast('어드민은 가입 없이 모든 기능을 쓸 수 있어요'); else if (isMemberNow()) toast('회원 화면을 시험 중이에요'); else openSignup(this, '골목 이웃이 되어 주세요'); });
+    $('#btnFeedback').addEventListener('click', (e) => requireGate(this, 'feedback', '의견은 이웃 등록 뒤에 보낼 수 있어요', () => openFeedback(this, { opener: e.currentTarget })));
     $('#capture').addEventListener('click', () => this.capture());
     $('#share').addEventListener('click', () => requireGate(this, 'share', '공유는 이웃 등록 뒤에 할 수 있어요', () => openShare(this)));
     $('#promo').addEventListener('click', () => requireGate(this, 'promo', '구경 오세요 홍보는 이웃 등록 뒤에 할 수 있어요', () => Promo.press(this)));

@@ -1,8 +1,9 @@
 // 런타임 기능 어댑터 Caps (D-10): window.claude(user·db·sample·downloads)가 있으면 그것, 없으면 로컬 모의(D-21)
+import { Feedback } from './feedback.js';
 import { LocalMock } from './local_mock.js';
 
 // ───────────────────────── 회원 · 저장소 · AI (런타임 기능, 없으면 이 브라우저 안에서 체험) ─────────────────────────
-export const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false, room: null, lock: null };
+export const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false, room: null, lock: null, feedback: Feedback }; // feedback: 의견 보내기(R-16). 전송 방법은 어댑터 안에서 고른다
 export async function initCaps() {
   if (!window.claude || typeof window.claude.use !== 'function') {
     if (LocalMock.usable()) { Caps.user = LocalMock.user(); Caps.mock = true; Caps.room = LocalMock.room(); Caps.lock = LocalMock.lock(); }

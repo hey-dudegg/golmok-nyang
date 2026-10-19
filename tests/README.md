@@ -35,7 +35,7 @@
 |---|---|---|---|
 | `npm run test:syntax` | check_syntax.js | 모든 모듈 문법(`node --check`: index.html 로더·src/**), import map·data JSON 파싱 | 실패 0 (브라우저·서버 불필요) |
 | `npm run test:imports` | check_imports.js | import 그래프(로더의 동적 import 포함) 순환, 층 규칙(아래), export 안 된 이름, import 없이 쓴 다른 모듈 이름, core 규칙(three·DOM 금지) | 문제 0, 순환 0 (브라우저·서버 불필요) |
-| `npm run test:unit` | unit/*.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json), 표기·레시피 행동·시/도 지도 | fail 0 (브라우저·서버 불필요) |
+| `npm run test:unit` | unit/*.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json), 표기·레시피 행동·시/도 지도, 의견 규칙(feedback.test.mjs: 악의 입력 20종+·링크·길이·쿨다운) | fail 0 (브라우저·서버 불필요) |
 | `npm run test:reg` | reg.js | 어드민 행동 버튼 전수 클릭(약 60초) | 멈춤 0, 오류 0 |
 | `npm run test:pose` | pose_check.js | 자세 x 체형 바닥 뚫림 | 뚫린 칸 0, 기준값 동일 |
 | `npm run test:polarity` | b2_polarity.js | 교감 반응 극성(D-30) 14만 건 모의 | 불일치 0 |
@@ -43,9 +43,10 @@
 | `npm run test:promo` | m02c.js | 홍보 잠금 두 탭 12회 + 만료 + 저장 지역(약 70초) | 12/12, 오류 0 |
 | `npm run compare` | snapshot.js + compare.js | 상태 기준값 비교 | `tests/baseline/state.json`과 동일 |
 | `npm run compare:core` | core_ref.js | 페이지의 시험용 노출로 core 계산(unit/ref_cases.js) 기준값 비교 | `tests/baseline/core_ref.json`과 동일 |
+| `npm run test:feedback` | feedback_ui.js | R-16 의견 보내기 실제 화면 경로: 팝업 열고 닫기·포커스·전송·쿨다운·500자·빈 값·허니팟·링크·XSS·실패 유지·어드민 의견함, 390x800 겹침 확인. 그림은 `tests/out/fb_*.png` | 전부 ok, 오류 0 (약 50초) |
 | `npm run shots` | shots.js | 일반·어드민·지역 시트 x 390x800·1100x800 스크린샷 | 화면별 오류 0. 그림은 눈으로 본다 |
 | `npm run test:loadfail` | load_fail.js | src 모듈(core·main·ui) 404, 지역 자료 404일 때 로딩 화면에 role=alert 안내 + 정상 열기 | 경우 4개 + 정상 PASS |
-| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·compare·core, shots 제외) | 전부 PASS |
+| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·compare·core, shots 제외) | 전부 PASS |
 
 모든 시험은 마지막 줄에 `RESULT PASS|FAIL`을 찍고, 종료 코드도 0/1로 돌려준다.
 오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style.css`, `data/*.json`) 요청 실패가 들어간다.
@@ -88,6 +89,7 @@ import 는 아래 표의 방향으로만 한다(`check_imports.js`의 LAYERS 표
 | ui/ | 위 전부 | 화면(패널·카드·시트·게시판·공유·홍보·이름·어드민·레시피 구역) |
 | app/, main.js | 위 전부 | App 조립. app/ 은 App 의 부분(놀러가기·교감)이고 main.js 가 붙인다 |
 
+- `src/config.js`(배포 설정 자리, 아무것도 import 하지 않음)는 adapters 만 불러올 수 있다(검사표의 config 층).
 - 화면 함수는 App 인스턴스를 인자(`app`)나 `init(app)`으로 받는다(주입). 전역 `app`을 쓰는 모듈은 main.js 뿐이다.
 - 아래 층이 화면을 다시 그려야 할 때는 알림을 쓴다: `Member.onJoined(fn)`(가입 뒤), `Recipes.notify`(레시피 오류), `Board.on`·`Names.on`·`Recipes.on`.
 - 시험용 `window.__*` 노출은 main.js 끝 한곳에서만 한다(일반 주소: `__app`·`__advance`, three 가 스스로 `__THREE__`. `?admin`일 때만 나머지).

@@ -20,3 +20,5 @@ C-13 | 2026-10-18 | 승인 | M0-4 행동 레시피 완료, 안내 문서 한도 
 C-14 | 2026-10-18 | 구현 | 리팩토링 단계 0·1: tests/ 이전·기준값, style.css·data/regions.json 분리(index.html 1.62MB -> 0.30MB) | D-33 | developer, tester
 C-15 | 2026-10-18 | 구현 | 리팩토링 단계 2: 순수 로직을 prototype/src/core/ 11개 모듈로 분리(index.html 298KB -> 237KB), node 단위 시험·import 검사 추가 | D-33 | developer
 C-16 | 2026-10-18 | 구현 | 리팩토링 단계 3: 나머지 코드를 src/ 아래 47개 모듈(core 14·adapters·state·render·sim·ui·app·main)로 분리(index.html 237KB -> 6KB), 층 규칙 검사, 모듈 불러오기 실패 안내 | D-33 | developer, tester
+C-17 | 2026-10-19 | 구현 | R-16 의견 보내기 화면·모의 어댑터·어드민 의견함(core/feedback_rules, adapters/feedback, config.js, ui/feedback*), GATE에 feedback 추가 | D-24, D-25 | developer
+C-18 | 2026-10-19 | 결정 | 의견 보내기 결함 수정 승인, 명소 1단계 후보표 확정 -> D-36 | 사용자 | developer, architect, tester

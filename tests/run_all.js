@@ -13,6 +13,7 @@ const ALL = [
   ['recipe', 'm04_unit.js'],
   ['promo', 'm02c.js'],
   ['loadfail', 'load_fail.js'],
+  ['feedback', 'feedback_ui.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];

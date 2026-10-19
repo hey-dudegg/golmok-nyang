@@ -7,10 +7,10 @@ export const GATE = {
   board_write: '회원', board_comment: '회원', // 게시판은 관리 편의상 회원
   pet: '누구나', cat_words: '누구나', drop_item: '누구나',
   name_suggest: '누구나', name_like: '누구나', name_report: '누구나', board_like: '누구나',
-  capture: '누구나', share: '누구나',
+  capture: '누구나', share: '누구나', feedback: '누구나', // 의견 보내기는 비회원도 (R-16)
 };
 export const GATE_LABEL = { promo: '홍보하기', churu: '츄르 주기', board_write: '게시판 글쓰기', board_comment: '게시판 댓글', pet: '쓰다듬기', cat_words: '고양이 말', drop_item: '물건 놓기',
-  name_suggest: '이름 제안', name_like: '이름 좋아요·싫어요', name_report: '이름 신고', board_like: '게시판 좋아요', capture: '캡쳐', share: '공유' };
+  name_suggest: '이름 제안', name_like: '이름 좋아요·싫어요', name_report: '이름 신고', board_like: '게시판 좋아요', capture: '캡쳐', share: '공유', feedback: '의견 보내기' };
 export const Admin = { active: false, wantsPage: new URLSearchParams(location.search).has('admin'), view: 'admin' }; // active는 소유자 확인 뒤 켜진다. view: 어드민 | 회원 | 비회원 화면 (설계 9장 이벤트 시험)
 export const adminPowers = () => Admin.active && Admin.view === 'admin'; // 어드민 화면에서만 설정표를 무시한다
 export const isMemberNow = () => (Admin.active && Admin.view === 'member') || (!(Admin.active && Admin.view === 'guest') && !!Member.me);
