@@ -10,6 +10,7 @@
     "test:polarity": "node tests/b2_polarity.js",
     "test:recipe": "node tests/m04_unit.js",
     "test:promo": "node tests/m02c.js",
+    "test:loadfail": "node tests/load_fail.js",
     "snapshot": "node tests/snapshot.js",
     "baseline": "node tests/snapshot.js --baseline && node tests/pose_check.js after --baseline && node tests/core_ref.js --baseline",
     "compare": "node tests/compare.js",

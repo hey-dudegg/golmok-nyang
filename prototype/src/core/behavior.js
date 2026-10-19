@@ -1,6 +1,8 @@
 // core/behavior.js: 행동 단계(STEP)·자율 행동표(ACTIONS)·교감 반응표(REACTIONS) (원래 index.html 60_behavior 구역, D-33 단계 2)
 // 표의 함수는 넘겨받은 고양이(CatAgent) 객체만 다룬다. 레시피(R-14)가 ACTIONS 에 rcp_* 행동을 더하고 지운다(같은 객체를 공유).
 import { angDiff } from './util.js';
+// 고양이가 다닐 수 있는 무대 범위(장면 좌표, m). 원래 50_scene 구역에 있던 값 (D-33 단계 3)
+export const BOUNDS = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 1.2 };
 // ───────────────────────── 행동 엔진 (효용 기반) ─────────────────────────
 export const STEP = {
   pose(name, dur, extra, fx) { return { start(a) { a.setPose(name, extra); this.t = 0; }, tick(a, dt) { this.t += dt; if (fx) fx(a, this.t, dt); return this.t >= dur; } }; },

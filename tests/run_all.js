@@ -12,6 +12,7 @@ const ALL = [
   ['polarity', 'b2_polarity.js'],
   ['recipe', 'm04_unit.js'],
   ['promo', 'm02c.js'],
+  ['loadfail', 'load_fail.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];

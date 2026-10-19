@@ -33,9 +33,9 @@
 
 | 명령 | 파일 | 확인 내용 | 통과 조건 |
 |---|---|---|---|
-| `npm run test:syntax` | check_syntax.js | 모듈 문법(`node --check`), 인라인·data JSON 파싱 | 실패 0 (브라우저·서버 불필요) |
-| `npm run test:imports` | check_imports.js | import 그래프 순환, export 안 된 이름, import 없이 쓴 다른 모듈 이름, core 규칙(three·DOM 금지) | 문제 0, 순환 0 (브라우저·서버 불필요) |
-| `npm run test:unit` | unit/core.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json) | fail 0 (브라우저·서버 불필요) |
+| `npm run test:syntax` | check_syntax.js | 모든 모듈 문법(`node --check`: index.html 로더·src/**), import map·data JSON 파싱 | 실패 0 (브라우저·서버 불필요) |
+| `npm run test:imports` | check_imports.js | import 그래프(로더의 동적 import 포함) 순환, 층 규칙(아래), export 안 된 이름, import 없이 쓴 다른 모듈 이름, core 규칙(three·DOM 금지) | 문제 0, 순환 0 (브라우저·서버 불필요) |
+| `npm run test:unit` | unit/*.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json), 표기·레시피 행동·시/도 지도 | fail 0 (브라우저·서버 불필요) |
 | `npm run test:reg` | reg.js | 어드민 행동 버튼 전수 클릭(약 60초) | 멈춤 0, 오류 0 |
 | `npm run test:pose` | pose_check.js | 자세 x 체형 바닥 뚫림 | 뚫린 칸 0, 기준값 동일 |
 | `npm run test:polarity` | b2_polarity.js | 교감 반응 극성(D-30) 14만 건 모의 | 불일치 0 |
@@ -44,7 +44,8 @@
 | `npm run compare` | snapshot.js + compare.js | 상태 기준값 비교 | `tests/baseline/state.json`과 동일 |
 | `npm run compare:core` | core_ref.js | 페이지의 시험용 노출로 core 계산(unit/ref_cases.js) 기준값 비교 | `tests/baseline/core_ref.json`과 동일 |
 | `npm run shots` | shots.js | 일반·어드민·지역 시트 x 390x800·1100x800 스크린샷 | 화면별 오류 0. 그림은 눈으로 본다 |
-| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·compare·core, shots 제외) | 전부 PASS |
+| `npm run test:loadfail` | load_fail.js | src 모듈(core·main·ui) 404, 지역 자료 404일 때 로딩 화면에 role=alert 안내 + 정상 열기 | 경우 4개 + 정상 PASS |
+| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·compare·core, shots 제외) | 전부 PASS |
 
 모든 시험은 마지막 줄에 `RESULT PASS|FAIL`을 찍고, 종료 코드도 0/1로 돌려준다.
 오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style.css`, `data/*.json`) 요청 실패가 들어간다.
@@ -71,7 +72,27 @@
 - reg.js·m02c.js는 원래 60~70초 걸린다. 다른 시험·브라우저와 동시에 돌리면 시간 초과가 나기 쉽다.
 - 시험 주소에는 이미 `pr`(픽셀 배율)·`shells`(털 겹 수)·`still`(N프레임 뒤 멈춤)을 낮게 넣어 두었다.
 
-## node 단위 시험 (tests/unit/, 리팩토링 단계 2)
+## 모듈 구조와 층 규칙 (리팩토링 단계 3)
+
+`prototype/index.html`은 HTML 뼈대·import map·로더만 있고, 코드는 `prototype/src/` 아래 ES 모듈이다(시작 `src/main.js`).
+로더는 모듈을 하나라도 못 받으면 로딩 화면에 안내(role=alert)를 띄운다(`load_fail.js`로 확인).
+import 는 아래 표의 방향으로만 한다(`check_imports.js`의 LAYERS 표). 위 층이 아래 층을 부르고, 아래 층이 위를 불러야 하면 콜백·알림으로 바꾼다.
+
+| 층(폴더) | import 해도 되는 층 | 들어 있는 것 |
+|---|---|---|
+| core/ | core | 순수 계산(three·DOM 없음). node 단위 시험 대상 |
+| adapters/ | core | 바깥 세상: 브라우저 저장, Caps(window.claude), 로컬 모의, 지역 자료 fetch, 레시피 저장 |
+| state/ | core, adapters | 회원·유대·게시판·이름·레시피 목록·회원 범위(GATE)·세계 시계 인스턴스 |
+| render/ | core | three.js 장면·고양이 모델·자세·셰이더 |
+| sim/ | core, adapters, state, render | 고양이 행동 실행(CatAgent)·만남(Encounter)·놀러가기 인스턴스·교감 반응 고르기 |
+| ui/ | 위 전부 | 화면(패널·카드·시트·게시판·공유·홍보·이름·어드민·레시피 구역) |
+| app/, main.js | 위 전부 | App 조립. app/ 은 App 의 부분(놀러가기·교감)이고 main.js 가 붙인다 |
+
+- 화면 함수는 App 인스턴스를 인자(`app`)나 `init(app)`으로 받는다(주입). 전역 `app`을 쓰는 모듈은 main.js 뿐이다.
+- 아래 층이 화면을 다시 그려야 할 때는 알림을 쓴다: `Member.onJoined(fn)`(가입 뒤), `Recipes.notify`(레시피 오류), `Board.on`·`Names.on`·`Recipes.on`.
+- 시험용 `window.__*` 노출은 main.js 끝 한곳에서만 한다(일반 주소: `__app`·`__advance`, three 가 스스로 `__THREE__`. `?admin`일 때만 나머지).
+
+## node 단위 시험 (tests/unit/, 리팩토링 단계 2·3)
 
 - `prototype/src/core/*.js`(three·DOM을 쓰지 않는 순수 계산)를 node가 직접 import 한다. 브라우저·서버·npm 의존성이 필요 없다(Node.js 18 이상).
 - 실행: `npm run test:unit` 또는 `node --test tests/unit/`. 정적 검사: `npm run test:imports`.

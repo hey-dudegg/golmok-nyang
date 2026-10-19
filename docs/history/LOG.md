@@ -74,3 +74,8 @@
 2026-10-18 | developer | [설계] 눈 색 섞기 THREE.Color를 core/color.js mixHex(three 0.160과 같은 선형 계산)로 대체, 기준값 동일 (D-33)
 2026-10-18 | developer | [테스트] node 단위 29건·import 검사 순환 0·core_ref 동일, 분리 전후 reg·pose·극성·레시피·홍보·compare 통과 (D-33)
 2026-10-18 | developer | [구현] file://면 core import가 막혀 안내가 안 뜨던 것을 앞쪽 일반 script로 같은 문구 표시 (D-35)
+2026-10-18 | developer | [구현] 단계 3: 로더가 모듈 불러오기 실패(404 등) 시 role=alert 안내. 전에는 core 404면 로딩 화면에서 멈춤 (D-33)
+2026-10-18 | developer | [구현] 단계 3: 인라인 모듈 3,350줄을 src/ 47개 모듈로 분리(index.html 237KB -> 6KB), 층 규칙·순환 0 검사 (D-33)
+2026-10-18 | developer | [설계] App 은 ctx 로 인자 주입(전역 app 은 main.js 만), 역호출은 Member.onJoined·Recipes.notify 알림 (D-33)
+2026-10-18 | developer | [설계] 순수 부분 core 로 추가: format·recipe_action·sido_map(경계는 인자), BOUNDS 는 core/behavior (D-33)
+2026-10-18 | developer | [테스트] 분리 전후 reg·pose·극성·레시피·홍보 12/12·compare·core_ref 동일, node 단위 34건, 실패 안내 4경우 (D-33)

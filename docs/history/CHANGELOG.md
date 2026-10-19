@@ -19,3 +19,4 @@ C-12 | 2026-10-18 | 결정 | 중성화 약 50%, 수컷(중)·암컷(중), 귀 �
 C-13 | 2026-10-18 | 승인 | M0-4 행동 레시피 완료, 안내 문서 한도 동기화, 리팩토링 마일스톤 예고(D-33,34) | 사용자 | developer, tester, documenter
 C-14 | 2026-10-18 | 구현 | 리팩토링 단계 0·1: tests/ 이전·기준값, style.css·data/regions.json 분리(index.html 1.62MB -> 0.30MB) | D-33 | developer, tester
 C-15 | 2026-10-18 | 구현 | 리팩토링 단계 2: 순수 로직을 prototype/src/core/ 11개 모듈로 분리(index.html 298KB -> 237KB), node 단위 시험·import 검사 추가 | D-33 | developer
+C-16 | 2026-10-18 | 구현 | 리팩토링 단계 3: 나머지 코드를 src/ 아래 47개 모듈(core 14·adapters·state·render·sim·ui·app·main)로 분리(index.html 237KB -> 6KB), 층 규칙 검사, 모듈 불러오기 실패 안내 | D-33 | developer, tester

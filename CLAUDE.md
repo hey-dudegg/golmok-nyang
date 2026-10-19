@@ -85,6 +85,18 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
 - 로컬 확인: 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 회귀 시험·기준값: `tests/README.md` (`npm install` 뒤 `npm test`, 기준값 비교 `npm run compare`).
+
+### 소스 구조 (D-33, 리팩토링 단계 3) — 어디에 무엇이 있나
+`prototype/index.html`은 HTML 뼈대·import map·로더(모듈 못 받으면 안내)만. 코드는 `prototype/src/` ES 모듈, 시작은 `src/main.js`.
+import 방향은 한쪽만: core ← adapters ← state ← render·sim ← ui ← app·main (순환 금지, `npm run test:imports`가 검사).
+- `src/core/` 순수 계산(three·DOM 없음, node 단위 시험): util·time·color·genome·regions·behavior(행동표·BOUNDS)·clock·trips·
+  touch_rules(교감 규칙)·recipe_rules(레시피 검증)·recipe_action(레시피→행동)·name_rules·format(표기)·sido_map(시/도 지도)
+- `src/adapters/` 바깥 세상: store(localStorage·Local)·caps(Caps·initCaps)·local_mock(모의 room·lock)·regions_data(경계 fetch)·recipe_store
+- `src/state/` 상태: members(Member·Bonds)·gate(GATE·Admin·SHARE_ENABLED·PROMO)·board·names·recipes·clock(세계 시계 인스턴스)
+- `src/render/` three.js: shaders·cat_model(CatView)·poses·scene(Scene3D)  / `src/sim/` agent(CatAgent)·encounter·trips·ask_cat
+- `src/ui/` 화면: dom(h·toast·시트)·signup·picker·card·names_panel·board·together(사람 수·홍보)·share·recipe_panel·admin_panel
+- `src/app/` App 의 부분(visit: 놀러가기, interact: 교감·캡쳐)을 `src/main.js`가 App 에 붙인다. 시험용 `window.__*` 노출도 main.js 끝 한곳.
+- 화면 함수는 App 인스턴스를 인자로 받는다(전역 `app`은 main.js 만). 파일 하나 400줄·25KB 넘으면 나눈다.
 - 빌드 도구 없이 ES 모듈 + CDN import map을 쓴다 (D-13). 의존성 추가는 CDN 버전 고정으로만, 먼저 확인받는다.
 - 기획·행동 설계 원문은 claude.ai 문서 링크(docs/PLAN.md 참고 문서)다. 이 링크는 Claude Code에서 열리지 않을 수 있으니, 필요한 내용은 사용자에게 붙여 달라고 요청한다.
 - 이관 전 원본 문서는 docs/archive/legacy/에 있다. 평소에는 읽지 않는다.
