@@ -35,7 +35,7 @@
 |---|---|---|---|
 | `npm run test:syntax` | check_syntax.js | 모든 모듈 문법(`node --check`: index.html 로더·src/**), import map·data JSON 파싱 | 실패 0 (브라우저·서버 불필요) |
 | `npm run test:imports` | check_imports.js | import 그래프(로더의 동적 import 포함) 순환, 층 규칙(아래), export 안 된 이름, import 없이 쓴 다른 모듈 이름, core 규칙(three·DOM 금지) | 문제 0, 순환 0 (브라우저·서버 불필요) |
-| `npm run test:unit` | unit/*.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json), 표기·레시피 행동·시/도 지도, 의견 규칙(feedback.test.mjs: 악의 입력 20종+·링크·길이·쿨다운) | fail 0 (브라우저·서버 불필요) |
+| `npm run test:unit` | unit/*.test.mjs | core 모듈 node 단위 시험: 결정성·경계값·기준값(core_ref.json, state.json), 표기·레시피 행동·시/도 지도, 의견 규칙(feedback.test.mjs: 악의 입력 20종+·링크·길이·쿨다운), 명소(landmarks.test.mjs: 주차 경계·순환·상속·폴백·예비 제외·자료 스키마) | fail 0 (브라우저·서버 불필요) |
 | `npm run test:reg` | reg.js | 어드민 행동 버튼 전수 클릭(약 60초) | 멈춤 0, 오류 0 |
 | `npm run test:pose` | pose_check.js | 자세 x 체형 바닥 뚫림 | 뚫린 칸 0, 기준값 동일 |
 | `npm run test:polarity` | b2_polarity.js | 교감 반응 극성(D-30) 14만 건 모의 | 불일치 0 |
@@ -44,13 +44,14 @@
 | `npm run compare` | snapshot.js + compare.js | 상태 기준값 비교 | `tests/baseline/state.json`과 동일 |
 | `npm run compare:core` | core_ref.js | 페이지의 시험용 노출로 core 계산(unit/ref_cases.js) 기준값 비교 | `tests/baseline/core_ref.json`과 동일 |
 | `npm run test:feedback` | feedback_ui.js | R-16 의견 보내기 실제 화면 경로: 팝업 열고 닫기·포커스·전송·쿨다운·500자·빈 값·허니팟·링크·XSS·실패 유지·어드민 의견함, 390x800 겹침 확인. 그림은 `tests/out/fb_*.png` | 전부 ok, 오류 0 (약 50초) |
+| `npm run test:backdrop` | backdrop.js | R-17 명소 배경: 16곳 모두 생성·이름 표시, 후보 2~3곳 모두 생성, 구성 시간(최대 50ms), 지역 전환 10회 뒤 지오메트리·텍스처·셰이더 수 그대로(누수 0), 시각 변화 때 메시 재생성 없음·밤 창불빛, landmarks.json 404 때 기본 테마로 정상 | 전부 PASS, 오류 0 (약 30초) |
 | `npm run shots` | shots.js | 일반·어드민·지역 시트 x 390x800·1100x800 스크린샷 | 화면별 오류 0. 그림은 눈으로 본다 |
 | `npm run test:loadfail` | load_fail.js | src 모듈(core·main·ui) 404, 지역 자료 404일 때 로딩 화면에 role=alert 안내 + 정상 열기 | 경우 4개 + 정상 PASS |
-| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·compare·core, shots 제외) | 전부 PASS |
+| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·backdrop·compare·core, shots 제외) | 전부 PASS |
 
 모든 시험은 마지막 줄에 `RESULT PASS|FAIL`을 찍고, 종료 코드도 0/1로 돌려준다.
 오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style.css`, `data/*.json`) 요청 실패가 들어간다.
-시험은 `?admin`일 때만 열리는 `window.__app`, `__inter`, `__recipe`, `__pose`, `__trips` 등에 기댄다. 이 노출을 지우면 시험이 깨진다.
+시험은 `?admin`일 때만 열리는 `window.__app`, `__inter`, `__recipe`, `__pose`, `__trips`, `__lm`(명소) 등에 기댄다. 이 노출을 지우면 시험이 깨진다.
 
 ## 기준값 (tests/baseline/)
 

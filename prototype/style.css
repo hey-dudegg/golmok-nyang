@@ -241,6 +241,8 @@ svg.i { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
 .census { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .viewers { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 999px; background: rgba(12, 16, 24, 0.55); color: #f4f6f8; font-size: 12.5px; text-shadow: none; font-variant-numeric: tabular-nums; }
 .viewers svg.i { width: 14px; height: 14px; }
+.lmname { font-size: 11.5px; opacity: 0.88; order: 3; flex-basis: 100%; } /* 명소 배경 이름 (R-17) */
+.lmname[hidden] { display: none; }
 .viewers.bump { animation: bump 0.45s ease-out; }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
 #share, #promo { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); border-radius: 50%; background: var(--panel-solid); box-shadow: var(--shadow); display: grid; place-items: center; }

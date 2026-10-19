@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { ACTIONS, BOUNDS, REACTIONS, STEP } from './core/behavior.js';
 import { dongPopulation, makeGenome, makePersonality } from './core/genome.js';
+import { landmarkFor, landmarkLabel } from './core/landmarks.js';
 import { NAME_RULE } from './core/name_rules.js';
 import { RECIPE_SAMPLES, RLIM, RV, parseRecipeText, recipePrompt, validateRecipe } from './core/recipe_rules.js';
 import { THEME_LABEL, sggShort, themeFor } from './core/regions.js';
@@ -9,6 +10,7 @@ import { sunPosition } from './core/time.js';
 import { EMO_POL, REACT_META, THOUGHTS, TOUCH_TYPES, petPolarityWeights, resolveRule, ruleReaction, touchType } from './core/touch_rules.js';
 import { clamp, damp, makeRng, smooth } from './core/util.js';
 import { initCaps } from './adapters/caps.js';
+import { LandmarkData } from './adapters/landmarks_data.js';
 import { RecipeStore } from './adapters/recipe_store.js';
 import { REGIONS } from './adapters/regions_data.js';
 import { store } from './adapters/store.js';
@@ -79,6 +81,7 @@ class App {
     const hashCode = (location.hash || '').replace('#', ''), qCode = new URLSearchParams(location.search).get('r') || ''; // 공유 링크 ?r=시도코드 (R-11)
     const linked = REGIONS.unitOf(hashCode) || REGIONS.unitOf(qCode); // 링크로 연 세션은 그 지역만 보여 주고, 저장된 기본 지역은 사용자가 직접 바꿀 때만 바꾼다
     const first = linked || REGIONS.unitOf(store.get('region', '') || store.get('dong', '')) || REGIONS.unitOf('11') || REGIONS.units[0];
+    LandmarkData.load().then(() => this.refreshBackdrop(true)); // 명소 자료 (R-17): 늦게 와도 배경만 다시 그린다
     this.goDong(first, undefined, { nosave: !!linked });
     this.renderMember();
     this.last = performance.now();
@@ -128,7 +131,8 @@ class App {
     $('#pDong').textContent = d.level === 'sido' ? d.sido : d.n; $('#pCode').textContent = ({ sido: '시/도 ', sgg: '시/군/구 ' }[d.level] || '행정동 ') + d.c;
     this.theme = themeFor(d);
     this.resetVisit();
-    this.s.build(this.theme, d, 'scene:' + d.c);
+    this.lmSel = this.landmarkSel(d);
+    this.s.build(this.theme, d, 'scene:' + d.c, this.lmSel); this.showLandmark();
     this.updateClock();
     for (const v of this.views) { this.s.scene.remove(v.root); v.dispose(); }
     this.views = []; this.agents.length = 0; this.bubbles.forEach((b) => b.el.remove()); this.bubbles = [];
@@ -155,13 +159,23 @@ class App {
     if (this.boardOpen) renderBoard(this);
   }
   clockMs() { return Date.now(); }
+  // ── 명소 배경 (R-17): 이번 주 후보(D-27). lmPreview 는 어드민 미리보기(주차 오프셋·후보 강제) ──
+  landmarkSel(d) { return landmarkFor(d.c, this.previewTime || this.clockMs(), { data: LandmarkData.get(), ...(this.lmPreview || {}) }); }
+  refreshBackdrop(force) {
+    if (!this.dong) return;
+    const sel = this.landmarkSel(this.dong), id = (x) => (x && x.place ? x.place.id : '') + ':' + (x && x.source);
+    if (!force && id(sel) === id(this.lmSel)) return;
+    this.lmSel = sel; this.s.setBackdrop(sel); this.showLandmark();
+  }
+  showLandmark() { const el = $('#lmName'); if (el) { const t = landmarkLabel(this.lmSel); el.textContent = t; el.hidden = !t; } if (AdminPanel.lmShow) AdminPanel.lmShow(); }
   visit(code, catId) {
     const d = REGIONS.unitOf(code); if (!d) return toast('그 지역을 찾지 못했어요');
     this.boardOpen = false; renderBoard(this);
     this.goDong(d, catId);
   }
   updateClock() {
-    const now = TEST.hour != null ? new Date(Date.UTC(2026, 9, 10, +TEST.hour - 9, 0)) : new Date();
+    const now = this.previewTime ? new Date(this.previewTime) : TEST.hour != null ? new Date(Date.UTC(2026, 9, 10, +TEST.hour - 9, 0)) : new Date();
+    this.refreshBackdrop(); // 주가 바뀌면(월요일 00:00 KST) 다음 후보로
     this.s.setTime(now, this.dong.lat, this.dong.lng);
     this.world.night = this.s.isNight ? 1 : 0; this.world.day = this.s.dayAmt;
     const kst = new Date(now.getTime() + 9 * 3600000);
@@ -307,6 +321,6 @@ class App {
 for (const Part of [AppVisit, AppInteract]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
 Recipes.notify = (msg) => toast(msg);
 const app = new App();
-window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; } // 시험용 노출은 ?admin일 때만
+window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel }; } // 시험용 노출은 ?admin일 때만
 window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); };
 app.start();

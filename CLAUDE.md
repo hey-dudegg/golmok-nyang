@@ -80,6 +80,7 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
 - 되돌리기 어려운 작업(배포, 저장소 공개 설정, 데이터 삭제, 외부 계정 변경)은 사용자 확인 후에 한다.
 - 계정(GitHub, Cloudflare, Supabase, 카카오 디벨로퍼스)은 모두 사용자 명의다. Claude가 만들거나 설정을 바꾸지 않는다.
 - 코드에는 Supabase 공개용 anon 키만 넣는다. service_role 등 관리자 키는 저장소 어디에도 쓰지 않는다 (D-11).
+- 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 JSON은 `prototype/data/regions.json`(약 1.3MB, **한 줄**)이다. 모듈이 최상위 await `fetch`로 읽는다.
   **이 파일을 통째로 읽거나 출력하지 않는다.** 크기·키만 확인하거나 `node`로 필요한 부분만 뽑는다. 스타일은 `prototype/style.css`.
 - 로컬 확인: 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
@@ -91,11 +92,11 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
 import 방향은 한쪽만: core ← adapters ← state ← render·sim ← ui ← app·main (순환 금지, `npm run test:imports`가 검사).
 - `src/core/` 순수 계산(three·DOM 없음, node 단위 시험): util·time·color·genome·regions·behavior(행동표·BOUNDS)·clock·trips·
   touch_rules(교감 규칙)·recipe_rules(레시피 검증)·recipe_action(레시피→행동)·name_rules·format(표기)·sido_map(시/도 지도)·
-  feedback_rules(의견 글자 정리·링크 차단·쿨다운, R-16)
-- `src/adapters/` 바깥 세상: store(localStorage·Local)·caps(Caps·initCaps)·local_mock(모의 room·lock)·regions_data(경계 fetch)·recipe_store·feedback(의견 전송 모의/Web3Forms 자리·쿨다운 기록, R-16)
+  feedback_rules(의견 글자 정리·링크 차단·쿨다운, R-16)·landmarks(명소 고르기·주차 순환·상속·자료 검증·시즌/시간대/날씨 변주, R-17)
+- `src/adapters/` 바깥 세상: store(localStorage·Local)·caps(Caps·initCaps)·local_mock(모의 room·lock)·regions_data(경계 fetch)·recipe_store·feedback(의견 전송 모의/Web3Forms 자리·쿨다운 기록, R-16)·landmarks_data(명소 자료 fetch·캐시·실패 시 null, R-17)
 - `src/state/` 상태: members(Member·Bonds)·gate(GATE·Admin·SHARE_ENABLED·PROMO)·board·names·recipes·clock(세계 시계 인스턴스)
-- `src/render/` three.js: shaders·cat_model(CatView)·poses·scene(Scene3D)  / `src/sim/` agent(CatAgent)·encounter·trips·ask_cat
-- `src/ui/` 화면: dom(h·toast·시트)·signup·picker·card·names_panel·board·together(사람 수·홍보)·share·feedback(의견 팝업)·feedback_admin(어드민 의견함)·recipe_panel·admin_panel
+- `src/render/` three.js: shaders·cat_model(CatView)·poses·scene(Scene3D)·scene_themes(골목·시장·공원 빌더, 담 뒤 높이 상수)·backdrop(명소 원경 병합·재질, R-17)·backdrop_parts(자연 부품)·backdrop_built(구조물 부품)·backdrop_shapes(공통 모양)  / `src/sim/` agent(CatAgent)·encounter·trips·ask_cat
+- `src/ui/` 화면: dom(h·toast·시트)·signup·picker·card·names_panel·board·together(사람 수·홍보)·share·feedback(의견 팝업)·feedback_admin(어드민 의견함)·landmark_admin(어드민 명소 미리보기, R-17)·recipe_panel·admin_panel
 - `src/config.js` 배포 설정 자리(의견 전송 접근 키·live 스위치, 비밀·이메일 금지, 기본은 모의). 층 규칙에서는 adapters 만 import 한다.
 - `src/app/` App 의 부분(visit: 놀러가기, interact: 교감·캡쳐)을 `src/main.js`가 App 에 붙인다. 시험용 `window.__*` 노출도 main.js 끝 한곳.
 - 화면 함수는 App 인스턴스를 인자로 받는다(전역 `app`은 main.js 만). 파일 하나 400줄·25KB 넘으면 나눈다.

@@ -22,3 +22,4 @@ C-15 | 2026-10-18 | 구현 | 리팩토링 단계 2: 순수 로직을 prototype/s
 C-16 | 2026-10-18 | 구현 | 리팩토링 단계 3: 나머지 코드를 src/ 아래 47개 모듈(core 14·adapters·state·render·sim·ui·app·main)로 분리(index.html 237KB -> 6KB), 층 규칙 검사, 모듈 불러오기 실패 안내 | D-33 | developer, tester
 C-17 | 2026-10-19 | 구현 | R-16 의견 보내기 화면·모의 어댑터·어드민 의견함(core/feedback_rules, adapters/feedback, config.js, ui/feedback*), GATE에 feedback 추가 | D-24, D-25 | developer
 C-18 | 2026-10-19 | 결정 | 의견 보내기 결함 수정 승인, 명소 1단계 후보표 확정 -> D-36 | 사용자 | developer, architect, tester
+C-19 | 2026-10-19 | 구현 | R-17 명소 배경 1단계: data/landmarks.json, core/landmarks.js, render/backdrop*.js(부품 15종), adapters/landmarks_data.js, ui/landmark_admin.js, tests/backdrop.js | D-26~29, D-36 | developer, tester

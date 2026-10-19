@@ -14,6 +14,7 @@ const ALL = [
   ['promo', 'm02c.js'],
   ['loadfail', 'load_fail.js'],
   ['feedback', 'feedback_ui.js'],
+  ['backdrop', 'backdrop.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];

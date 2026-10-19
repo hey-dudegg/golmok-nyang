@@ -16,6 +16,7 @@ import { Trips, unitName } from '../sim/trips.js';
 import { renderCard } from './card.js';
 import { h, toast } from './dom.js';
 import { buildFeedbackSection } from './feedback_admin.js';
+import { buildLandmarkSection } from './landmark_admin.js';
 import { renderRanking } from './names_panel.js';
 import { buildRecipeSection } from './recipe_panel.js';
 import { Live, Promo } from './together.js';
@@ -172,7 +173,8 @@ export const AdminPanel = {
     const s8 = sec('교감 극성 표', false, act('고른 고양이 손길 유형 보기', showTouch), touchInfo);
     const s9 = sec('행동 레시피 (숏츠에서 가져오기)', false, buildRecipeSection(this));
     const s10 = sec('의견함 (의견 보내기 시험)', false, buildFeedbackSection(this));
-    body.append(s1, s2, s3, s6, s4, s5, s7, s8, s9, s10, this.info);
+    const s11 = sec('명소 미리보기 (R-17)', false, buildLandmarkSection(this));
+    body.append(s1, s2, s3, s6, s4, s5, s7, s8, s9, s10, s11, this.info);
     document.body.append(el); this.el = el;
     this.refresh();
     this.timer = setInterval(() => this.refresh(), 1000);
