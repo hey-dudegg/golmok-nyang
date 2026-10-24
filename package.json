@@ -13,6 +13,7 @@
     "test:loadfail": "node tests/load_fail.js",
     "test:feedback": "node tests/feedback_ui.js",
     "test:backdrop": "node tests/backdrop.js",
+    "test:view": "node tests/backdrop_view.js",
     "snapshot": "node tests/snapshot.js",
     "baseline": "node tests/snapshot.js --baseline && node tests/pose_check.js after --baseline && node tests/core_ref.js --baseline",
     "compare": "node tests/compare.js",

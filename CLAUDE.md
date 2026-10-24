@@ -30,10 +30,12 @@ INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한�
 ## 읽기 규칙 (토큰 절약)
 - 평소에는 INDEX만 읽는다. 상세는 INDEX가 가리키는 항목만 원본에서 연다.
 - LOG, CHANGELOG, archive는 통째로 읽지 않는다. 필요하면 grep으로 해당 ID만 찾는다.
+- 추가만 하는 파일(LOG·CHANGELOG)은 Read에 offset을 줘 끝 5줄만 읽고 붙인다. D·R 수정은 grep으로 줄 번호를 찾아 그 부분만 연다.
+- 시험은 `npm test 2>&1 | tail -n 16`으로 통과표만 본다. 공통 토큰 수칙은 docs/design/토큰_최적화_설계.md 5장.
 
 ## 위임
 - 직접 코딩·상세설계를 하지 않는다. 역할에 맞는 서브에이전트에 위임한다.
-- 위임할 때 넘기는 것: 작업 번호, 목표, 완료 조건, 관련 ID, 마지막 반영 D 이후 변경분. 대화 전체는 넘기지 않는다.
+- 위임할 때 넘기는 것: 작업 번호, 목표, 완료 조건, 관련 ID, 마지막 반영 D 이후 변경 D의 한 줄 요약, 읽을 설계 문서의 장(줄 범위). 대화 전체는 넘기지 않는다.
 - 위임할 때와 결과를 받을 때 사용자에게 한 줄씩 보여준다.
   `→ architect | M1-2 로그인 설계 시작`
   `← architect | M1-2 완료, P-04 등록`
@@ -64,14 +66,9 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
 존댓말로 간결하게 말한다. 변경분만 보고한다. 불확실하면 추측하지 말고 질문한다.
 
 ## 이 프로젝트: 골목냥 (golmok-nyang)
-### 시작 지점 (2026-10-18 로컬 이전)
-- 설계는 확정(D-15~20, docs/design/골목냥_수정설계_2026-10-18.md)이고 **구현은 시작 전**이다. 아티팩트도 아직 고치지 않았다.
-- 다음 할 일: M0(수정 4단계)의 1단계부터 `prototype/index.html`에서 진행. 계획을 보여주고 승인받은 뒤 착수한다. M0가 끝나면 M1.
-- 원본 아티팩트: https://claude.ai/artifact/S2WQEgUYBgfJfc99d9RhoL . 이웃 데이터(회원·게시판·이름 투표)는 그 아티팩트 db에만 있고 저장소에는 없다 (P-15).
-- 로컬엔 `window.claude`가 없어 로그인·db·room이 빠진다. 2단계(사람 수·홍보) 전에 P-14를 먼저 정한다.
-- 확정 요점: 시/도 16곳만 활성(시군구·동은 비활성, REGION_LEVEL), 회원 전용은 홍보하기·츄르(+게시판), 어드민은 가입 없이 전부 가능,
-  홍보는 확성기·사이트 전체·10초 1명, 공유는 오른쪽 아래 묶음(카톡·인스타 비활성), 1.2K 표기, 놀러가기 1시간 1번·싸움 70%·서로 바라보기.
-- 숏츠 행동 넣는 법(사용자용): docs/design/숏츠_행동_가져오기_안내.md
+### 현재 위치
+- 진행 상태·마일스톤·작업은 docs/INDEX.md가 기준이다. 이 파일에는 상태를 적지 않는다.
+- 원본 아티팩트·이웃 데이터는 INDEX "현재"와 P-15를 본다. 확정 요점은 D-15~20.
 
 ### 고유 규칙
 목표·범위·결정은 docs/PLAN.md, docs/INDEX.md에 있다. 아래는 매 턴 지켜야 하는 고유 규칙만 둔다.
@@ -87,19 +84,6 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 회귀 시험·기준값: `tests/README.md` (`npm install` 뒤 `npm test`, 기준값 비교 `npm run compare`).
 
-### 소스 구조 (D-33, 리팩토링 단계 3) — 어디에 무엇이 있나
-`prototype/index.html`은 HTML 뼈대·import map·로더(모듈 못 받으면 안내)만. 코드는 `prototype/src/` ES 모듈, 시작은 `src/main.js`.
-import 방향은 한쪽만: core ← adapters ← state ← render·sim ← ui ← app·main (순환 금지, `npm run test:imports`가 검사).
-- `src/core/` 순수 계산(three·DOM 없음, node 단위 시험): util·time·color·genome·regions·behavior(행동표·BOUNDS)·clock·trips·
-  touch_rules(교감 규칙)·recipe_rules(레시피 검증)·recipe_action(레시피→행동)·name_rules·format(표기)·sido_map(시/도 지도)·
-  feedback_rules(의견 글자 정리·링크 차단·쿨다운, R-16)·landmarks(명소 고르기·주차 순환·상속·자료 검증·시즌/시간대/날씨 변주, R-17)
-- `src/adapters/` 바깥 세상: store(localStorage·Local)·caps(Caps·initCaps)·local_mock(모의 room·lock)·regions_data(경계 fetch)·recipe_store·feedback(의견 전송 모의/Web3Forms 자리·쿨다운 기록, R-16)·landmarks_data(명소 자료 fetch·캐시·실패 시 null, R-17)
-- `src/state/` 상태: members(Member·Bonds)·gate(GATE·Admin·SHARE_ENABLED·PROMO)·board·names·recipes·clock(세계 시계 인스턴스)
-- `src/render/` three.js: shaders·cat_model(CatView)·poses·scene(Scene3D)·scene_themes(골목·시장·공원 빌더, 담 뒤 높이 상수)·backdrop(명소 원경 병합·재질, R-17)·backdrop_parts(자연 부품)·backdrop_built(구조물 부품)·backdrop_shapes(공통 모양)  / `src/sim/` agent(CatAgent)·encounter·trips·ask_cat
-- `src/ui/` 화면: dom(h·toast·시트)·signup·picker·card·names_panel·board·together(사람 수·홍보)·share·feedback(의견 팝업)·feedback_admin(어드민 의견함)·landmark_admin(어드민 명소 미리보기, R-17)·recipe_panel·admin_panel
-- `src/config.js` 배포 설정 자리(의견 전송 접근 키·live 스위치, 비밀·이메일 금지, 기본은 모의). 층 규칙에서는 adapters 만 import 한다.
-- `src/app/` App 의 부분(visit: 놀러가기, interact: 교감·캡쳐)을 `src/main.js`가 App 에 붙인다. 시험용 `window.__*` 노출도 main.js 끝 한곳.
-- 화면 함수는 App 인스턴스를 인자로 받는다(전역 `app`은 main.js 만). 파일 하나 400줄·25KB 넘으면 나눈다.
-- 빌드 도구 없이 ES 모듈 + CDN import map을 쓴다 (D-13). 의존성 추가는 CDN 버전 고정으로만, 먼저 확인받는다.
-- 기획·행동 설계 원문은 claude.ai 문서 링크(docs/PLAN.md 참고 문서)다. 이 링크는 Claude Code에서 열리지 않을 수 있으니, 필요한 내용은 사용자에게 붙여 달라고 요청한다.
-- 이관 전 원본 문서는 docs/archive/legacy/에 있다. 평소에는 읽지 않는다.
+### 소스 구조
+- 모듈 지도·층 규칙(core ← adapters ← state ← render·sim ← ui ← app·main)은 prototype/src/README.md. 코드 작업 전에만 읽는다.
+- 파일 하나 400줄·25KB 넘으면 나눈다. 빌드 없음·CDN import map(D-13), 의존성 추가는 먼저 확인.

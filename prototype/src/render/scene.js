@@ -5,7 +5,7 @@ import { sunPosition } from '../core/time.js';
 import { TAU, clamp, lerp, makeRng, smooth } from '../core/util.js';
 import { LIGHT } from './shaders.js';
 import { attachBackdrop } from './backdrop.js';
-import { BACKDROP_TILT, buildAlley, buildMarket, buildPark, canvasTex, speckle } from './scene_themes.js';
+import { VIEW_MODES, buildAlley, buildMarket, buildPark, canvasTex, speckle } from './scene_themes.js';
 
 // ───────────────────────── 골목 장면 ─────────────────────────
 
@@ -22,7 +22,7 @@ export class Scene3D {
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.target.set(0, 0.28, -0.25);
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.08;
-    this.controls.minDistance = 0.55; this.controls.maxDistance = 7.5;
+    this.controls.minDistance = 0.55; this.controls.maxDistance = 10.5; // D-42: 원경과 전경을 함께 보게 늘림
     this.controls.maxPolarAngle = 1.5; this.controls.minPolarAngle = 0.35;
     this.controls.enablePan = false;
     this.controls.rotateSpeed = 0.6; this.controls.zoomSpeed = 0.8;
@@ -107,7 +107,7 @@ export class Scene3D {
     if (theme === 'alley') buildAlley(this, E, r, dong, std, box, cyl);
     else if (theme === 'market') buildMarket(this, E, r, dong, std, box, cyl);
     else buildPark(this, E, r, dong, std, box, cyl);
-    this.dongCode = dong.c; this.backdropTilt = BACKDROP_TILT[theme] || 0;
+    this.dongCode = dong.c; this.backdropTilt = (this.view || VIEW_MODES.B).tilt[theme] || 0;
     this.setBackdrop(landmark); // 명소 원경 (R-17): 테마(바닥·담) 위에 얹는다. 설계 17장 자리
   }
   // 명소 배경만 바꾼다(지역 장면은 그대로). sel: core/landmarks.js landmarkFor 결과, 없으면 배경 없음(기본 테마)

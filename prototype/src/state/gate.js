@@ -6,7 +6,7 @@ export const GATE = {
   promo: '회원', churu: '회원',
   board_write: '회원', board_comment: '회원', // 게시판은 관리 편의상 회원
   pet: '누구나', cat_words: '누구나', drop_item: '누구나',
-  name_suggest: '누구나', name_like: '누구나', name_report: '누구나', board_like: '누구나',
+  name_suggest: '회원', name_like: '회원', name_report: '회원', board_like: '누구나',
   capture: '누구나', share: '누구나', feedback: '누구나', // 의견 보내기는 비회원도 (R-16)
 };
 export const GATE_LABEL = { promo: '홍보하기', churu: '츄르 주기', board_write: '게시판 글쓰기', board_comment: '게시판 댓글', pet: '쓰다듬기', cat_words: '고양이 말', drop_item: '물건 놓기',

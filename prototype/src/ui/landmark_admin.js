@@ -25,6 +25,8 @@ export function buildLandmarkSection(panel) {
   const week = h('input', { type: 'number', min: '-52', max: '52', value: '0', 'aria-label': '주차 오프셋', id: 'adLmWeek', style: 'width:4.5em' });
   const season = h('select', { 'aria-label': '계절', id: 'adLmSeason' }, opt('', '계절: 지금'), opt('spring', '봄'), opt('summer', '여름'), opt('autumn', '가을'), opt('winter', '겨울'));
   const tod = h('select', { 'aria-label': '시간대', id: 'adLmTime' }, opt('', '시간: 지금'), opt('day', '낮'), opt('dusk', '해질녘'), opt('night', '밤'));
+  const view = h('select', { 'aria-label': '시야 방식', id: 'adLmView' }, opt('A', '시야 A 현재'), opt('B', '시야 B 담·건물 낮춤', true), opt('C', '시야 C 카메라 위로'));
+  view.addEventListener('change', () => { app.setViewMode(view.value); apply(); });
   const none = h('input', { type: 'checkbox', id: 'adLmNone' }), hide = h('input', { type: 'checkbox', id: 'adLmHide' });
   const info = h('pre', { class: 'note adinfo', id: 'adLmInfo', style: 'white-space:pre-wrap' });
   const tour = h('div', { class: 'note adinfo', id: 'adLmTour', style: 'white-space:pre-wrap' });
@@ -82,6 +84,7 @@ export function buildLandmarkSection(panel) {
     h('div', { class: 'note', text: '저장하지 않는 미리보기예요. 새로고침하면 이번 주 명소로 돌아와요.' }),
     h('div', { class: 'adrow2' }, region, cand),
     h('div', { class: 'adrow2' }, h('label', { text: '주차 ' }, week), season, tod),
+    h('div', { class: 'adrow2' }, view, h('small', { text: '비교용(저장 안 함, 일반 화면은 B)' })),
     h('div', { class: 'adrow2' }, h('label', {}, none, ' 폴백 강제(자료 없음)'), h('label', {}, hide, ' 가리는 건물 숨김')),
     info, h('div', { class: 'adrow2' }, tourBtn), tour);
 }

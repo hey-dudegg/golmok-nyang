@@ -4,9 +4,17 @@ import * as THREE from 'three';
 import { TAU, lerp } from '../core/util.js';
 
 // 담 뒤 높이 (원경이 보이도록 낮춤, R-17 후속). 골목 뒷집은 예전 3.2~4.6m 난수를 이 범위로 옮긴다(난수 순서는 그대로)
-export const SCENE_HEIGHTS = { houseMin: 2.45, houseMax: 2.95, marketUpper: 0.35, hedgeTop: 0.62 };
+export const SCENE_HEIGHTS = { houseMin: 2.45, houseMax: 2.95, marketUpper: 0.35, hedgeTop: 0.62, alleyWall: 2.1, marketWall: 2.6 };
 // 명소 원경을 테마별로 들어 올리는 각(tan). 골목·시장은 담·지붕 위로, 공원은 생울타리 위로 보이게
 export const BACKDROP_TILT = { alley: 0.11, market: 0.165, park: -0.045 };
+// 시야 방식 (어드민 '명소 미리보기'에서 비교용, 기본은 B, D-42). 높이·원경 기울기·카메라 프리셋을 이 표 한 곳에서 정한다
+//  A 현재 / B 담·건물 낮춤 / C 기본 카메라를 위·뒤로 (cam: 처음 위치, 고양이 고를 때 거리 배수·높이 더하기)
+export const VIEW_MODES = {
+  A: { label: 'A 현재', heights: SCENE_HEIGHTS, tilt: BACKDROP_TILT, cam: null },
+  B: { label: 'B 담·건물 낮춤', heights: { houseMin: 1.3, houseMax: 1.5, marketUpper: 0, hedgeTop: 0.5, alleyWall: 1.2, marketWall: 1.3 }, tilt: { alley: -0.01, market: 0, park: -0.05 }, cam: null },
+  C: { label: 'C 카메라 위로', heights: SCENE_HEIGHTS, tilt: { alley: 0.04, market: 0.05, park: -0.06 }, cam: { pos: [0, 2.9, 5.6], tgtY: 1.35, selK: 1.7, selUp: 0.5, selTgtUp: 0.3 } },
+};
+const HV = (S) => (S.view || VIEW_MODES.B).heights;
 
 export function canvasTex(w, hgt, draw, repeat) {
   const c = document.createElement('canvas'); c.width = w; c.height = hgt;
@@ -78,12 +86,13 @@ export function addressPlate(S, E, dong, x, y, z) {
   m.position.set(x, y, z); E.add(m);
 }
 export function buildAlley(S, E, r, dong, std, box, cyl) {
-  const wall = box(12, 2.1, 0.25, std({ map: wallTex(S, r, dong, 'alley') }), 0, 1.05, -2.0);
+  const W = HV(S).alleyWall, k = W / 2.1; // 담 높이(시야 방식 B에서 낮춤), 대문·주소판·가스관을 같은 비율로
+  const wall = box(12, W, 0.25, std({ map: wallTex(S, r, dong, 'alley') }), 0, W / 2, -2.0);
   S.obstacles.push({ x: 0, z: -2.0, wall: true });
   // 집 (담 뒤로 보이는 2층 다세대 느낌)
   const houseCols = ['#d7c3a8', '#c7b39b', '#cfc9bf', '#b9a58e'];
   for (let i = -2; i <= 2; i++) {
-    const hw = r.range(2.2, 2.8), H0 = SCENE_HEIGHTS, hh = H0.houseMin + (r.range(3.2, 4.6) - 3.2) / 1.4 * (H0.houseMax - H0.houseMin);
+    const hw = r.range(2.2, 2.8), H0 = HV(S), hh = H0.houseMin + (r.range(3.2, 4.6) - 3.2) / 1.4 * (H0.houseMax - H0.houseMin);
     const hc = r.pick(houseCols), hx = i * 2.6 + r.range(-0.3, 0.3);
     box(hw, hh, 2.5, std({ color: hc }), hx, hh / 2, -3.6);
     box(hw + 0.12, 0.08, 2.62, std({ color: '#8f8a82' }), hx, hh + 0.04, -3.6); // 옥상 난간 턱
@@ -99,17 +108,17 @@ export function buildAlley(S, E, r, dong, std, box, cyl) {
     x.fillStyle = '#c9a54a'; x.fillRect(w / 2 - 22, hh * 0.5, 8, 26);
     for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${120 + Math.random() * 60},${60 + Math.random() * 30},30,${0.12 + Math.random() * 0.2})`; x.fillRect(Math.random() * w, hh * (0.75 + Math.random() * 0.25), 2 + Math.random() * 4, 2 + Math.random() * 3); }
   });
-  box(1.15, 1.85, 0.06, std({ map: gateTex, roughness: 0.55, metalness: 0.25 }), gx, 0.93, -1.86);
-  box(1.32, 0.12, 0.2, std({ color: '#7a756e' }), gx, 1.92, -1.87);
-  box(0.08, 1.95, 0.18, std({ color: '#7a756e' }), gx - 0.62, 0.97, -1.87); box(0.08, 1.95, 0.18, std({ color: '#7a756e' }), gx + 0.62, 0.97, -1.87);
-  addressPlate(S, E, dong, gx - 1.05, 1.45, -1.865);
+  box(1.15, 1.85 * k, 0.06, std({ map: gateTex, roughness: 0.55, metalness: 0.25 }), gx, 0.93 * k, -1.86);
+  box(1.32, 0.12, 0.2, std({ color: '#7a756e' }), gx, 1.92 * k, -1.87);
+  box(0.08, 1.95 * k, 0.18, std({ color: '#7a756e' }), gx - 0.62, 0.97 * k, -1.87); box(0.08, 1.95 * k, 0.18, std({ color: '#7a756e' }), gx + 0.62, 0.97 * k, -1.87);
+  addressPlate(S, E, dong, gx - 1.05, 1.45 * k, -1.865);
   // 노란 가스관 + 계량기, 주차금지 표지
-  const gasY = 1.62, gasM = std({ color: '#e2b322', roughness: 0.5, metalness: 0.2 });
+  const gasY = 1.62 * k, gasM = std({ color: '#e2b322', roughness: 0.5, metalness: 0.2 });
   const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 7.5, 10), gasM); pipe.rotation.z = Math.PI / 2; pipe.position.set(-1.6, gasY, -1.84); pipe.castShadow = true; E.add(pipe);
   const drop = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.75, 10), gasM); drop.position.set(-0.3, gasY - 0.37, -1.84); E.add(drop);
   box(0.2, 0.26, 0.13, std({ color: '#d8d6d0', roughness: 0.6 }), -0.3, gasY - 0.85, -1.81);
   const signT = canvasTex(256, 192, (x, w, hh) => { x.fillStyle = '#f4f1ea'; x.fillRect(0, 0, w, hh); x.strokeStyle = '#c3302a'; x.lineWidth = 10; x.strokeRect(8, 8, w - 16, hh - 16); x.fillStyle = '#c3302a'; x.font = '700 64px "Noto Sans KR",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('주차금지', w / 2, hh * 0.42); x.font = '500 22px "Noto Sans KR",sans-serif'; x.fillStyle = '#333'; x.fillText('차고 앞 · 고양이 낮잠 구역', w / 2, hh * 0.76); });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.345), std({ map: signT, roughness: 0.7 })); sign.position.set(gx > 0 ? 0.55 : -0.2, 1.05, -1.865); E.add(sign);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.345), std({ map: signT, roughness: 0.7 })); sign.position.set(gx > 0 ? 0.55 : -0.2, 1.05 * Math.min(1, k * 1.1), -1.865); E.add(sign);
   // 스티로폼 화분들 (파·고추)
   const sx0 = gx > 0 ? -2.4 : 0.6;
   for (let i = 0; i < 4; i++) {
@@ -151,9 +160,10 @@ export function buildAlley(S, E, r, dong, std, box, cyl) {
   S.obstacles.push({ x: 2.75, z: -0.95, r: 0.38 });
 }
 export function buildMarket(S, E, r, dong, std, box, cyl) {
-  box(12, 2.6, 0.25, std({ map: wallTex(S, r, dong, 'market') }), 0, 1.3, -2.0);
+  const MW = HV(S).marketWall, mk = MW / 2.6, MU = HV(S).marketUpper;
+  box(12, MW, 0.25, std({ map: wallTex(S, r, dong, 'market') }), 0, MW / 2, -2.0);
   S.obstacles.push({ x: 0, z: -2.0, wall: true });
-  box(12, SCENE_HEIGHTS.marketUpper, 2.5, std({ color: '#cbbfae' }), 0, 2.6 + SCENE_HEIGHTS.marketUpper / 2, -3.2); // 위층(낮춤: 원경이 보이게)
+  if (MU > 0) box(12, MU, 2.5, std({ color: '#cbbfae' }), 0, MW + MU / 2, -3.2); // 위층(낮춤: 원경이 보이게)
   // 줄무늬 차양 + 간판
   const stripes = (c1, c2) => canvasTex(256, 64, (x, w, hh) => { for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? c1 : c2; x.fillRect(i * w / 8, 0, w / 8, hh); } });
   const names = ['상회', '수산', '청과', '방앗간', '떡집', '건어물'];
@@ -161,10 +171,10 @@ export function buildMarket(S, E, r, dong, std, box, cyl) {
     const sx = -4.8 + i * 2.4;
     const [c1, c2] = r.pick([['#d23c34', '#f2ede4'], ['#2f6db3', '#f2ede4'], ['#2f8a55', '#f2ede4'], ['#e0a12a', '#f2ede4']]);
     const aw = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.9), std({ map: stripes(c1, c2) }));
-    aw.position.set(sx, 2.15, -1.5); aw.rotation.x = 0.28; aw.castShadow = true; E.add(aw);
+    aw.position.set(sx, 2.15 * mk, -1.5); aw.rotation.x = 0.28; aw.castShadow = true; E.add(aw);
     const sign = canvasTex(512, 96, (x, w, hh) => { x.fillStyle = '#f4efe2'; x.fillRect(0, 0, w, hh); x.fillStyle = c1; x.font = '700 58px "Noto Sans KR",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(dong.n.replace(/[0-9]+.*$/, '').slice(0, 3) + ' ' + names[i % names.length], w / 2, hh / 2 + 2); });
     const sg = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.38), std({ map: sign }));
-    sg.position.set(sx, 2.45, -1.86); E.add(sg);
+    sg.position.set(sx, 2.45 * mk, -1.86); E.add(sg);
     // 좌판 + 바구니
     if (i % 2 === 0) {
       box(1.4, 0.5, 0.6, std({ color: '#7a5a3a' }), sx, 0.25, -1.45);
@@ -178,7 +188,7 @@ export function buildMarket(S, E, r, dong, std, box, cyl) {
       for (let k = 0; k < 3; k++) { const st = cyl(0.15, 0.15, 0.42, std({ color: r.pick(['#d23c34', '#2f6db3', '#e0a12a']), roughness: 0.5 }), sx - 0.4 + k * 0.4, 0.21, -1.3 + r.range(-0.1, 0.1), 16); S.obstacles.push({ x: sx - 0.4 + k * 0.4, z: -1.3, r: 0.22 }); }
     }
   }
-  addressPlate(S, E, dong, 3.6, 1.0, -1.86);
+  addressPlate(S, E, dong, 3.6, 1.0 * mk, -1.86);
   const px = -3.3;
   cyl(0.07, 0.08, 3.2, std({ color: '#55534f', metalness: 0.4 }), px, 1.6, -1.2);
   box(0.3, 0.08, 0.2, std({ color: '#3d3c3a' }), px, 3.2, -1.05);
@@ -189,7 +199,7 @@ export function buildMarket(S, E, r, dong, std, box, cyl) {
 }
 export function buildPark(S, E, r, dong, std, box, cyl) {
   // 생울타리 + 나무
-  for (let i = -6; i <= 6; i++) { const hm = new THREE.Mesh(new THREE.SphereGeometry(0.6, 14, 10), std({ color: r.pick(['#3f5a2e', '#4a6634', '#36502a']) })); const sy = SCENE_HEIGHTS.hedgeTop / 1.16; hm.scale.set(1.2, sy, 0.8); hm.position.set(i * 0.95, SCENE_HEIGHTS.hedgeTop - 0.6 * sy, -2.1); hm.castShadow = hm.receiveShadow = true; E.add(hm); }
+  for (let i = -6; i <= 6; i++) { const hm = new THREE.Mesh(new THREE.SphereGeometry(0.6, 14, 10), std({ color: r.pick(['#3f5a2e', '#4a6634', '#36502a']) })); const ht = HV(S).hedgeTop, sy = ht / 1.16; hm.scale.set(1.2, sy, 0.8); hm.position.set(i * 0.95, ht - 0.6 * sy, -2.1); hm.castShadow = hm.receiveShadow = true; E.add(hm); }
   S.obstacles.push({ x: 0, z: -2.0, wall: true });
   for (let i = 0; i < 6; i++) {
     const tx = -5 + i * 2 + r.range(-0.4, 0.4), tz = -3.2 + r.range(-0.5, 0.5);

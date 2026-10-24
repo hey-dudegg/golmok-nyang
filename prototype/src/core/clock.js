@@ -6,7 +6,7 @@ import { DAY, sunPosition } from './time.js';
 import { ACTIONS } from './behavior.js';
 // ───────────────────────── 세계 시계 (D-19) ─────────────────────────
 // 서버 없이 시각만으로 고양이의 하루를 계산한다. 같은 (고양이 id, 시각)이면 누가 언제 들어와도 같은 행동·같은 자리 근처가 나온다.
-//  · 시간을 30초 칸으로 나누고, 칸마다 (고양이 id, 칸 번호) 시드로 "무슨 행동을, 몇 칸(60~120초) 동안, 어디서" 할지 정한다.
+//  · 시간을 30초 칸으로 나누고, 칸마다 (고양이 id, 칸 번호) 시드로 "무슨 행동을, 몇 칸(30~120초, D-40) 동안, 어디서" 할지 정한다.
 //  · 10분(20칸)마다 일정을 새로 이어 붙이는 기준점을 두어, 접속 순간 최근 10~30분만 계산하면 된다.
 //  · 욕구·감정은 시각의 함수. 교감으로 생기는 변화(츄르 먹은 시각 등)는 일정에 쓰지 않고 표시용 상태에만 반영한다.
 export const CLOCK = { SLOT: 30000, BLOCK_SLOTS: 20, DEPTH: 3 };
@@ -95,7 +95,7 @@ export function createClock(store) {
     let t = t0;
     while (t < end) {
       const slot = Math.round(t / CLOCK.SLOT), rs = makeRng('clock:' + cat.id + ':' + slot);
-      const n = rs.pick([2, 3, 3, 4]); // 60~120초
+      const n = rs.pick([1, 2, 3, 4]); // 30~120초 (D-40)
       const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
       const st = this.state(cat, t, recent, false);
       const cand = this.weights(cat, t, st, recent).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);

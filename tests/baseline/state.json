@@ -58,7 +58,7 @@
     "genomeHash": 900598442
    },
    "clockAtFixed": {
-    "entry": "loaf",
+    "entry": "nap",
     "state": {
      "needs": {
       "sleep": 0.6759,
@@ -79,9 +79,9 @@
     }
    },
    "schedule6h": {
-    "entries": 250,
-    "hash": 2232747656,
-    "head": "11-m:wander:1792281600000;11-m:nap:1792281690000;11-m:wander:1792281750000;11-m:sit:1792281840000;11"
+    "entries": 295,
+    "hash": 2501318050,
+    "head": "11-m:sideNap:1792281600000;11-m:wander:1792281690000;11-m:groom:1792281720000;11-m:nap:1792281840000"
    },
    "trips3h": {
     "n": 34,
@@ -170,7 +170,7 @@
     "genomeHash": 914849196
    },
    "clockAtFixed": {
-    "entry": "wander",
+    "entry": "loaf",
     "state": {
      "needs": {
       "sleep": 0.5751,
@@ -191,9 +191,9 @@
     }
    },
    "schedule6h": {
-    "entries": 264,
-    "hash": 4178718266,
-    "head": "26-m:wander:1792281600000;26-m:sit:1792281660000;26-m:groom:1792281720000;26-m:loaf:1792281810000;26"
+    "entries": 297,
+    "hash": 1773061318,
+    "head": "26-m:groom:1792281600000;26-m:wander:1792281630000;26-m:sit:1792281690000;26-m:wander:1792281780000;"
    },
    "trips3h": {
     "n": 34,
@@ -275,7 +275,7 @@
     "genomeHash": 3388918020
    },
    "clockAtFixed": {
-    "entry": "sit",
+    "entry": "groom",
     "state": {
      "needs": {
       "sleep": 0.543,
@@ -296,9 +296,9 @@
     }
    },
    "schedule6h": {
-    "entries": 256,
-    "hash": 3888536066,
-    "head": "41-m:nap:1792281600000;41-m:wander:1792281660000;41-m:nap:1792281750000;41-m:sit:1792281870000;41-m:"
+    "entries": 319,
+    "hash": 106981459,
+    "head": "41-m:loaf:1792281600000;41-m:groom:1792281630000;41-m:nap:1792281690000;41-m:loaf:1792281720000;41-m"
    },
    "trips3h": {
     "n": 34,

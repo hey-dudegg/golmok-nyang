@@ -23,6 +23,7 @@ import { Recipes } from './state/recipes.js';
 import { CatView, GROUND_SINK, applyPose, buildRig, catDims } from './render/cat_model.js';
 import { POSES, poseTarget } from './render/poses.js';
 import { Scene3D } from './render/scene.js';
+import { VIEW_MODES } from './render/scene_themes.js';
 import { CatAgent } from './sim/agent.js';
 import { TRIP, Trips } from './sim/trips.js';
 import { AdminPanel } from './ui/admin_panel.js';
@@ -49,7 +50,7 @@ class App {
     this.selected = null; this.busy = false; this.thought = null;
     this.shells = TEST.shells || (IS_TOUCH || Math.min(innerWidth, innerHeight) < 700 ? 16 : 28);
     this.ft = []; this.bubbles = [];
-    this.camAnim = null;
+    this.camAnim = null; this.viewMode = 'B'; // 기본 시야 B (D-42)
     const app = this;
     this.world = {
       agents: this.agents, night: 0, day: 1, camPos: new THREE.Vector3(),
@@ -152,7 +153,8 @@ class App {
     this.updateCensus();
     renderRoster(this); renderCard(this);
     Names.watch(d.c);
-    this.s.camera.position.set(0.0, 0.95, 3.4); this.s.controls.target.set(this.mascot.x * 0.5, 0.24, this.mascot.z * 0.5 - 0.2);
+    const cp = this.camPreset; // 시야 방식 C(어드민 비교용). 없으면 원래 값
+    this.s.camera.position.set(...(cp ? cp.pos : [0.0, 0.95, 3.4])); this.s.controls.target.set(this.mascot.x * 0.5, cp ? cp.tgtY : 0.24, this.mascot.z * 0.5 - 0.2);
     this.tripTick(nowMs, true); // 놀러가기 (M0-3): 지금 시각에 자리를 비웠거나 손님이 와 있으면 그 지점부터 이어 보여 준다
     const narrow = innerWidth <= 720;
     if (focusCatId || !narrow) setTimeout(() => { if (this.mascot && !this.mascot.hidden && this.dong === d) this.select(this.mascot, true); }, focusCatId ? 300 : 1400);
@@ -167,6 +169,8 @@ class App {
     if (!force && id(sel) === id(this.lmSel)) return;
     this.lmSel = sel; this.s.setBackdrop(sel); this.showLandmark();
   }
+  // 시야 방식(A 현재·B 담 낮춤·C 카메라 위로) 비교용. 어드민에서만 바꾼다. 장면을 다시 짓는다
+  setViewMode(m) { const v = VIEW_MODES[m] || VIEW_MODES.B; this.viewMode = VIEW_MODES[m] ? m : 'B'; this.s.view = v; this.camPreset = v.cam; if (this.dong) this.goDong(this.dong, undefined, { nosave: true }); }
   showLandmark() { const el = $('#lmName'); if (el) { const t = landmarkLabel(this.lmSel); el.textContent = t; el.hidden = !t; } if (AdminPanel.lmShow) AdminPanel.lmShow(); }
   visit(code, catId) {
     const d = REGIONS.unitOf(code); if (!d) return toast('그 지역을 찾지 못했어요');
@@ -250,8 +254,8 @@ class App {
       const cam = this.s.camera.position, c = new THREE.Vector3(a.x, 0, a.z);
       const dir = new THREE.Vector3(cam.x - c.x, 0, cam.z - c.z); if (dir.length() < 0.01) dir.set(0, 0, 1); dir.normalize();
       if (dir.z < 0.2) { dir.z = 0.6; dir.normalize(); }
-      const dist = 1.05 + a.scale * 0.55;
-      this.camAnim = { from: cam.clone(), to: c.clone().addScaledVector(dir, dist).setY(0.38 + 0.28 * a.scale), t: 0 };
+      const cp = this.camPreset, dist = (1.05 + a.scale * 0.55) * (cp ? cp.selK : 1);
+      this.camAnim = { from: cam.clone(), to: c.clone().addScaledVector(dir, dist).setY(0.38 + 0.28 * a.scale + (cp ? cp.selUp : 0)), t: 0 };
     }
   }
   openBoard() { this.boardOpen = true; renderBoard(this); }
@@ -274,7 +278,7 @@ class App {
     }
     if (this.selected) {
       const a = this.selected, T = this.s.controls.target;
-      T.x = damp(T.x, a.x, 3, dt); T.z = damp(T.z, a.z, 3, dt); T.y = damp(T.y, 0.16 * a.scale + 0.04, 3, dt);
+      T.x = damp(T.x, a.x, 3, dt); T.z = damp(T.z, a.z, 3, dt); T.y = damp(T.y, 0.16 * a.scale + 0.04 + (this.camPreset ? this.camPreset.selTgtUp : 0), 3, dt);
     } else if (this.away && this.mascot.hidden && this.sign) {
       const T = this.s.controls.target, s = this.sign.position;
       T.x = damp(T.x, s.x, 3, dt); T.z = damp(T.z, s.z - 0.1, 3, dt); T.y = damp(T.y, 0.26, 3, dt);
@@ -321,6 +325,6 @@ class App {
 for (const Part of [AppVisit, AppInteract]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
 Recipes.notify = (msg) => toast(msg);
 const app = new App();
-window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel }; } // 시험용 노출은 ?admin일 때만
+window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel, VIEW_MODES }; } // 시험용 노출은 ?admin일 때만
 window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); };
 app.start();

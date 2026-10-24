@@ -23,3 +23,9 @@ C-16 | 2026-10-18 | 구현 | 리팩토링 단계 3: 나머지 코드를 src/ 아
 C-17 | 2026-10-19 | 구현 | R-16 의견 보내기 화면·모의 어댑터·어드민 의견함(core/feedback_rules, adapters/feedback, config.js, ui/feedback*), GATE에 feedback 추가 | D-24, D-25 | developer
 C-18 | 2026-10-19 | 결정 | 의견 보내기 결함 수정 승인, 명소 1단계 후보표 확정 -> D-36 | 사용자 | developer, architect, tester
 C-19 | 2026-10-19 | 구현 | R-17 명소 배경 1단계: data/landmarks.json, core/landmarks.js, render/backdrop*.js(부품 15종), adapters/landmarks_data.js, ui/landmark_admin.js, tests/backdrop.js | D-26~29, D-36 | developer, tester
+C-20 | 2026-10-24 | 결정 | P-01~05 해결: 카카오+Google, 보안 검토 후 전체 공개, 상자 이웃 공유, 행동 간격 30~120초, 30일·100명 -> D-37~41 | 사용자 | 전원
+C-21 | 2026-10-24 | 결정 | R-17 시야 B 방식 + 줌아웃 거리 확대 -> D-42. R-18 토큰 최적화 에이전트·설계 추가 | 사용자 | developer, 전원
+C-22 | 2026-10-24 | 결정 | 토큰 수칙 문서 참조·CLAUDE.md 정리·소스 구조를 prototype/src/README.md로 -> D-43 | 사용자 | 전원
+C-23 | 2026-10-24 | 결정 | R-19 보안 설계(P-22~27), R-20 로그 설계·저장 위치 -> D-44, P-28 | 팀장 | developer, security, devops
+C-24 | 2026-10-24 | 결정 | P-22~24·26·27 해결 -> D-45~49, 이름짓기 회원 전용으로 D-16 범위 확대 | 사용자 | developer, security, tester
+C-25 | 2026-10-24 | 결정 | P-28·P-15·P-25 해결 -> D-50~52(로그 30일·내보내기 없음, 이웃 데이터 이전, 만 14세 이상 확인) | 사용자 | developer, security

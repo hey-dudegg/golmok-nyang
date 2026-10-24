@@ -45,6 +45,7 @@
 | `npm run compare:core` | core_ref.js | 페이지의 시험용 노출로 core 계산(unit/ref_cases.js) 기준값 비교 | `tests/baseline/core_ref.json`과 동일 |
 | `npm run test:feedback` | feedback_ui.js | R-16 의견 보내기 실제 화면 경로: 팝업 열고 닫기·포커스·전송·쿨다운·500자·빈 값·허니팟·링크·XSS·실패 유지·어드민 의견함, 390x800 겹침 확인. 그림은 `tests/out/fb_*.png` | 전부 ok, 오류 0 (약 50초) |
 | `npm run test:backdrop` | backdrop.js | R-17 명소 배경: 16곳 모두 생성·이름 표시, 후보 2~3곳 모두 생성, 구성 시간(최대 50ms), 지역 전환 10회 뒤 지오메트리·텍스처·셰이더 수 그대로(누수 0), 시각 변화 때 메시 재생성 없음·밤 창불빛, landmarks.json 404 때 기본 테마로 정상 | 전부 PASS, 오류 0 (약 30초) |
+| `npm run test:view -- --size 390x800 --shots` | backdrop_view.js | R-17 시야 방식(A 현재·B 담 낮춤·C 카메라 위로) x 16곳 가시성: 기본·근접 시야 카메라를 한 evaluate 안에서 고정해 배경 메시 켬/끔 픽셀 차이 비율(%). 앱의 선택 타이머·camAnim 이 끼어들 틈이 없다. 결과 tests/out/view/visibility_<크기>.json, --shots 면 대표 6곳 그림 | 오류 0 (판단 자료, 합격선 없음. 약 80~90초라 TEST_SLOW=2 권장, run_all 제외) |
 | `npm run shots` | shots.js | 일반·어드민·지역 시트 x 390x800·1100x800 스크린샷 | 화면별 오류 0. 그림은 눈으로 본다 |
 | `npm run test:loadfail` | load_fail.js | src 모듈(core·main·ui) 404, 지역 자료 404일 때 로딩 화면에 role=alert 안내 + 정상 열기 | 경우 4개 + 정상 PASS |
 | `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·backdrop·compare·core, shots 제외) | 전부 PASS |
