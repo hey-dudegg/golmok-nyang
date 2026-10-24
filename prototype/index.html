@@ -1,8 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="stylesheet" href="style.css"></head><body>
 <title>골목냥</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
 
 <div id="stage"><canvas id="c3d" tabindex="0" aria-label="골목 3D 장면. 고양이를 눌러 자세히 보세요."></canvas></div>
 <div id="bubbles"></div>
@@ -36,7 +34,7 @@
 <script>// file://로 열면 브라우저가 src/ 모듈 import 자체를 막아 아래 로더의 모듈이 돌지 않는다(D-33). 지역 자료 fetch 실패 안내와 같은 문구를 여기서 먼저 띄운다 (D-35)
 if (location.protocol === 'file:') { const l = document.getElementById('loading'); if (l) { const box = document.createElement('div'), small = document.createElement('small'); box.style.cssText = 'text-align:center;padding:0 16px;max-width:36em'; small.textContent = '파일을 직접 열면(file://) 브라우저가 자료 읽기를 막아요. 저장소 루트에서 "python -m http.server 8000"(macOS·Linux는 python3)을 실행한 뒤 http://localhost:8000/prototype/ 으로 열어 주세요.'; box.append('지역 자료(data/regions.json)를 불러오지 못했어요', small); l.setAttribute('role', 'alert'); l.replaceChildren(box); } }
 </script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three-0.160.0/build/three.module.js","three/addons/":"./vendor/three-0.160.0/examples/jsm/"}}</script>
 <!-- 코드는 src/ 아래 ES 모듈이고 시작은 src/main.js 다 (D-33 단계 3). 폴더 구조는 CLAUDE.md, 시험은 tests/README.md -->
 <script type="module">
 // 진입 로더: 모듈 하나라도 받지 못하거나(404·망 오류) 불러오는 중 오류가 나면 로딩 화면에서 멈추지 않고 안내를 띄운다.

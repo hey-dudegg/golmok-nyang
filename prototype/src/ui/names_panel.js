@@ -46,9 +46,9 @@ export function renderRanking(app) {
   ol.replaceChildren(...items.map((n, i) => {
     const up = !!(n.up && n.up[me]), down = !!(n.down && n.down[me]), reported = !!(n.rep && n.rep[me]);
     const ub = h('button', { class: 'btn ghost like', type: 'button', 'aria-pressed': up ? 'true' : 'false', 'aria-label': `${n.name} 좋아요 ${n.score}`, onclick: () => vote(n, 'up') });
-    ub.innerHTML = ICON.thumbUp + `<span class="num">${n.score}</span>`;
+    ub.innerHTML = ICON.thumbUp + `<span class="num">${Number(n.score)}</span>`;
     const db = h('button', { class: 'btn ghost dislike', type: 'button', 'aria-pressed': down ? 'true' : 'false', 'aria-label': `${n.name} 싫어요 ${n.dislikes}`, onclick: () => vote(n, 'down') });
-    db.innerHTML = ICON.thumbDown + `<span class="num">${n.dislikes}</span>`;
+    db.innerHTML = ICON.thumbDown + `<span class="num">${Number(n.dislikes)}</span>`;
     const rb = h('button', { class: 'btn ghost rep', type: 'button', 'aria-label': '신고', title: '신고', 'aria-pressed': reported ? 'true' : 'false', onclick: () => {
       if (reported) return toast('이미 신고한 이름이에요');
       confirmReport(n, () => requireGate(app, 'name_report', '신고는 이웃만 할 수 있어요', () => Names.report(n).then((r) => toast(r.already ? '이미 신고한 이름이에요' : '신고했어요. 알려 주셔서 고마워요')).catch(() => toast('신고하지 못했어요'))));

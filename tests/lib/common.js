@@ -2,7 +2,7 @@
 //   BASE_URL     시험할 페이지 주소 (기본 http://localhost:8000/prototype/)
 //   CHROME_PATH  Chrome/Chromium 실행 파일 (없으면 흔한 설치 위치를 찾아 본다)
 //   TEST_SLOW    느린 환경 배수 (기본 1). 대기 시간과 시험 제한 시간에 곱한다
-//   TEST_TIMEOUT 시험 하나의 제한 시간(ms, 기본 90000 x TEST_SLOW)
+//   TEST_TIMEOUT 시험 하나의 제한 시간(ms, 기본 200000 x TEST_SLOW)
 //   HEADLESS     0이면 창을 띄운다
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +14,7 @@ try { puppeteer = require('puppeteer-core'); } catch (e) {
 
 const SLOW = Math.max(0.2, +process.env.TEST_SLOW || 1);
 const BASE_URL = (process.env.BASE_URL || 'http://localhost:8000/prototype/').replace(/[?#].*$/, '');
-const TIMEOUT = +process.env.TEST_TIMEOUT || 90000 * SLOW;
+const TIMEOUT = +process.env.TEST_TIMEOUT || 200000 * SLOW;
 const OUT = path.join(__dirname, '..', 'out');
 const BASELINE = path.join(__dirname, '..', 'baseline');
 
@@ -60,9 +60,33 @@ async function open(browser, rest, { width = 1100, height = 800, errs, settle = 
   const p = await browser.newPage();
   await p.setViewport({ width, height });
   if (errs) collectErrors(p, errs);
+  await p.evaluateOnNewDocument(() => { try { localStorage.setItem('golmok_nobanner', '1'); } catch (e) {} }); // 첫 방문 알림줄이 화면을 가리지 않게(M1-4)
   if (before) await before(p);
-  await p.goto(url(rest), { waitUntil: 'load', timeout: 60000 * SLOW });
-  await p.waitForFunction(() => window.__app && window.__app.mascot, { timeout: 60000 * SLOW });
+  // 첫 화면은 CDN(three.js)·경계 자료를 받느라 가끔 60초 넘게 걸리거나 멈춘다. 한 번만 다시 열어 본다(합격 기준과 무관한 로딩 대기).
+  const pending = new Set(); // 응답이 안 온 요청(원인 파악용: 재시도 때 알려 준다)
+  p.on('request', (r) => pending.add(r.url()));
+  p.on('requestfinished', (r) => pending.delete(r.url()));
+  p.on('requestfailed', (r) => pending.delete(r.url()));
+  const msgs = [];
+  p.on('response', (r) => { if (r.status() >= 400) msgs.push(r.status() + ' ' + r.url().slice(-60)); });
+  p.on('requestfailed', (r) => msgs.push('FAILED ' + r.url().slice(-60)));
+  p.on('console', (m) => msgs.push(m.type() + ': ' + m.text().slice(0, 150)));
+  p.on('pageerror', (e) => msgs.push('PE ' + String(e).slice(0, 150)));
+  for (let tryN = 0; ; tryN++) {
+    try {
+      await p.goto(url(rest), { waitUntil: 'load', timeout: 60000 * SLOW });
+      // 앱이 뜨거나, 로더가 "불러오지 못했어요" 안내(role=alert)를 띄우면 바로 끝낸다(안내면 아래서 재시도)
+      await p.waitForFunction(() => (window.__app && window.__app.mascot) || document.querySelector('#loading[role=alert]'), { timeout: 60000 * SLOW });
+      if (await p.evaluate(() => !(window.__app && window.__app.mascot))) throw new Error('LOADER_ALERT');
+      break;
+    } catch (e) {
+      if (tryN >= 3 || !/Timeout|net::ERR|LOADER_ALERT/i.test(String(e))) throw e;
+      const st = await p.evaluate(() => { const l = document.getElementById('loading'); return { loading: l ? l.textContent.slice(0, 40) : null, app: !!window.__app }; }).catch(() => null);
+      console.log(`open: 첫 화면 못 받음(${String(e).slice(0, 70)}), 다시 연다 ${tryN + 1}/3 상태 ${JSON.stringify(st)} 응답 없는 요청 ${[...pending].map((u) => u.slice(-50)).join(',') || '없음'} 콘솔 ${JSON.stringify(msgs.slice(-3))}`);
+      pending.clear(); msgs.length = 0;
+      await new Promise((r) => setTimeout(r, 2000 * SLOW));
+    }
+  }
   if (settle) await wait(settle);
   return p;
 }

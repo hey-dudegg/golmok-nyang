@@ -67,3 +67,5 @@ tests/out/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+# 자체 호스팅 three.js(D-47)는 build/ 규칙의 예외
+!prototype/vendor/three-0.160.0/build/

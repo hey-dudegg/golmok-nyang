@@ -1,0 +1,30 @@
+# Cloudflare Pages 헤더 (1차 정적 공개, 시험 기간). 설계: docs/design/보안_점검_설계.md 2-1
+# 같은 경로에 여러 규칙이 맞으면 헤더가 합쳐지므로, 캐시를 바꾸는 경로에는 먼저 "! Cache-Control"로 위 규칙 값을 지운다.
+
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  # 시험 기간(D-45): 검색 비노출. 정식 공개 때 이 줄만 지운다.
+  X-Robots-Tag: noindex
+  # CSP는 Report-Only: 위반을 차단하지 않고 콘솔에만 남긴다. 강제는 로더를 외부 파일로 뺀 뒤(보안 설계 B-6).
+  # 인라인 스크립트 3개(파일 경로 안내, importmap, 로더)는 해시로 허용했다. index.html의 해당 스크립트를 고치면 해시를 다시 계산해야 한다.
+  # style-src 'unsafe-inline'은 코드가 style 속성을 쓰기 때문(당분간 허용). img-src data: blob:은 사진 캡쳐용. 외부 서버 연결은 1차에 없다(connect-src 'self').
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-IleJc2GJx4gs/Xtu0R06Pm5XNz2c8lTyt1KUyO8s6pg=' 'sha256-RV39MPXH2tRPvZw3rWSETEjDqVKXC/06djZ0QEhpIEc=' 'sha256-5mRbBshjxkxWHrdnPoY5qoQif4SXv1EHDx2KqxY//YA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# three.js(폴더에 버전이 들어 있음)와 글꼴은 내용이 바뀌지 않으므로 길게 캐시한다. 업그레이드하면 새 폴더 이름을 쓴다.
+/vendor/three-0.160.0/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# 글꼴 파일 이름은 내용 해시이지만 fonts.css 이름은 고정이므로 일주일만 캐시한다.
+/vendor/fonts/*
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+
+# 경계·명소 자료는 거의 안 바뀌고 크다(regions.json 약 1.3MB). 이름에 해시가 없어 바꾸면 최대 1시간 늦게 반영된다.
+/data/*
+  ! Cache-Control
+  Cache-Control: public, max-age=3600

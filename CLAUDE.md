@@ -10,6 +10,7 @@
 - docs/design/ : architect가 쓰는 기능별 설계 문서
 - docs/history/LOG.md : 시간순 활동 기록 (추가만 한다)
 - docs/history/CHANGELOG.md : 변경 이력 C-xx (추가만 한다)
+- docs/history/TOKEN_USAGE.md : 에이전트 토큰 사용 내역 (추가만 한다, token-optimizer 분석 입력)
 - docs/archive/ : 끝난 항목 보관. 평소에 읽지 않는다.
 INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한다.
 
@@ -40,6 +41,9 @@ INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한�
   `→ architect | M1-2 로그인 설계 시작`
   `← architect | M1-2 완료, P-04 등록`
 - 결과를 검토하고 INDEX의 작업 상태와 역할별 "마지막 반영 D"를 갱신한다. 문제가 있으면 재지시한다.
+- 시험이 있는 위임에는 "시작 전 포트 확인·자기 포트·한 번에 하나·끝나면 서버 종료 확인"과 "도구 20회 이상이면 보고에 토큰 내역 3줄"을 넣는다.
+- 디버깅 중간 보고(도구 30회 상한)를 받으면 LOG에 [이슈]로 남기고 이어갈지·방향을 정해 재지시한다.
+- 결과 알림의 사용량이 60k 토큰 이상이거나 보고에 "토큰 내역"이 있으면 TOKEN_USAGE에 한 줄 남긴다. 5건이 쌓이거나 /gate 때 token-optimizer에게 분석을 맡긴다.
 
 ## 진행 방식 (속도 관리)
 - 마일스톤은 /milestone으로 시작하고 /gate로 끝낸다. 한 번에 하나만 진행한다.
@@ -82,8 +86,8 @@ INDEX 80줄 / R 항목 5줄 / D 항목 3줄 / P 항목 3줄 / INDEX 한 줄 60�
   **이 파일을 통째로 읽거나 출력하지 않는다.** 크기·키만 확인하거나 `node`로 필요한 부분만 뽑는다. 스타일은 `prototype/style.css`.
 - 로컬 확인: 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
-- 회귀 시험·기준값: `tests/README.md` (`npm install` 뒤 `npm test`, 기준값 비교 `npm run compare`).
+- 회귀 시험·기준값: `tests/README.md` (`npm install` 뒤 `npm test`는 서버 없이 됨, 빈 포트에 자체 서버. 개별 `npm run test:<이름>`·`compare`는 서버 필요).
 
 ### 소스 구조
 - 모듈 지도·층 규칙(core ← adapters ← state ← render·sim ← ui ← app·main)은 prototype/src/README.md. 코드 작업 전에만 읽는다.
-- 파일 하나 400줄·25KB 넘으면 나눈다. 빌드 없음·CDN import map(D-13), 의존성 추가는 먼저 확인.
+- 파일 하나 400줄·25KB 넘으면 나눈다. 빌드 없음·import map, 라이브러리·글꼴은 vendor/에 직접 둠(D-13·47·53). 의존성 추가는 먼저 확인.

@@ -33,6 +33,8 @@ run('load_fail (모듈 불러오기 실패 안내)', async () => {
   // 정상: 안내 없이 열리고 로딩 화면이 사라진다
   const errs = [];
   const p = await open(b, '?pr=0.3&shells=2#11', { errs, settle: 2500 });
+  // 로딩 화면은 첫 그림 뒤 페이드(약 0.9초)로 사라진다. 고정 대기 대신 사라질 때까지 기다린다(없어지지 않으면 실패).
+  await p.waitForFunction(() => !document.getElementById('loading'), { timeout: 15000 * SLOW }).catch(() => {});
   const st = await p.evaluate(() => ({ loading: !!document.getElementById('loading'), alert: !!document.querySelector('[role=alert]') }));
   const good = !st.loading && !st.alert && !errs.length;
   console.log('정상'.padEnd(12), good ? 'PASS' : 'FAIL', JSON.stringify(st), 'ERR', JSON.stringify(errs));

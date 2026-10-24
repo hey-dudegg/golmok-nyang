@@ -216,3 +216,40 @@
 ## D-52 회원 가입은 만 14세 이상 확인 (2026-10-24, 결정자: 사용자, P-25 해결)
 - 내용: 구경은 누구나. 가입 화면에서 "만 14세 이상입니다" 확인을 받음. 보호자 동의 절차는 만들지 않음
 - 영향 역할: developer, security
+
+## D-53 한글 글꼴은 조각 전부 자체 호스팅 (2026-10-24, 결정자: 사용자, P-29 해결)
+- 내용: Gowun Batang 400·700, Gowun Dodum 400의 unicode-range 조각을 모두 prototype/vendor/fonts/에 둠(약 4.4MB)
+- 영향 역할: developer
+
+## D-54 1차부터 의견 실제 전송(Web3Forms) (2026-10-24, 결정자: 사용자, P-30 해결)
+- 내용: config.js live 켬. 사용자가 Web3Forms 가입·공개용 접근 키 발급(계정은 사용자 명의, D-14). 수신 메일 주소는 저장소에 쓰지 않음
+- 영향 역할: developer, security, devops
+
+## D-55 Cloudflare Web Analytics 사용 (2026-10-24, 결정자: 사용자, P-32 해결)
+- 내용: 쿠키 없는 방문 통계를 켜고 개인정보 안내에 표기. 설정은 사용자가 Cloudflare에서 함
+- 영향 역할: developer, devops, security
+
+## D-56 기기 기록 지우기 버튼 없음 (2026-10-24, 결정자: 사용자, P-31 폐기)
+- 내용: 버튼은 만들지 않고, 개인정보 안내에 브라우저 설정으로 사이트 데이터를 지우는 법만 적음
+- 영향 역할: architect, developer
+
+## D-57 2차 개인정보 표기 (2026-10-24, 결정자: 사용자, P-33 해결, 팀장 권장안)
+- 내용: Supabase·Cloudflare·Web3Forms는 처리 위탁, 카카오·Google은 로그인 제공자로 표기. Supabase는 서울 지역, Cloudflare·Web3Forms 국외 이전 고지
+- 삭제 요청은 10일 이내 처리, 만 14세 미만 확인 시 지체 없이 삭제. 법률 검토 전 문안임
+- 영향 역할: architect, security, developer
+
+## D-58 토큰 수칙 예외 (2026-10-24, 결정자: 사용자)
+- 내용: 수칙 11번 추가(시험 실패·기준값·개인정보·보안·공개 직전·Supabase 정책·모호한 위임은 아끼지 않음, 9장 표). 낯선 영역은 핵심 파일 1개 통째(25KB 이하)
+- 영향 역할: 전원
+
+## D-59 architect 부분 수정 도구·문서 정리 (2026-10-24, 결정자: 사용자)
+- 내용: architect에 Edit 도구 추가(통째 재작성 방지). CLAUDE.md 의존성 문구를 vendor 자체 호스팅으로. 300줄 초과 설계 문서는 /gate 때 분할
+- 영향 역할: architect, 팀장
+
+## D-60 디버깅 도구 30회 상한 (2026-10-24, 결정자: 사용자)
+- 내용: 원인 미상 문제로 도구 30회 초과 또는 같은 시험 3연속 실패 시 멈추고 중간 보고. 팀장은 LOG [이슈]로 남기고 재지시
+- 영향 역할: developer, prop-developer, debugger, tester
+
+## D-61 시험 서버 교체 (2026-10-24, 결정자: 사용자)
+- 내용: 시험은 python http.server 대신 node 내장 http 정적 서버를 run_all이 빈 포트에 직접 띄우고 끝나면 종료. 새 의존성 없음
+- 영향 역할: developer, tester, devops

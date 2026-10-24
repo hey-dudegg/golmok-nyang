@@ -1,5 +1,6 @@
 // 의견 보내기 팝업 (R-16, D-24·D-25). 고양이 앞발 모양 시트. 입력은 textContent·value 로만 다룬다(innerHTML 금지)
 import { cpLen, FB_LIMIT, FB_TEXT, validateFeedback } from '../core/feedback_rules.js';
+import { PRIVACY_FEEDBACK, PRIVACY_NOTICE } from '../core/privacy_text.js';
 import { Feedback } from '../adapters/feedback.js';
 import { h, ICON, openScrim } from './dom.js';
 
@@ -37,7 +38,9 @@ export function openFeedback(app, opts = {}) {
     honey, msg,
     h('div', { class: 'foot fb-foot' }, send),
     h('p', { class: 'fb-privacy', text: '보내는 이는 안 적어도 돼요. 적으면 답장하거나 의견을 확인할 때만 쓰고, 다른 곳에 공개하지 않아요. 연락처·주민번호 같은 개인 정보는 적지 말아 주세요. 의견은 확인 후 일정 기간 뒤 지워요.' }),
-    h('p', { class: 'fb-keep', text: '받은 의견은 90일 동안만 보관해요.' }));
+    h('p', { class: 'fb-keep', text: '받은 의견은 90일 동안만 보관해요.' }),
+    h('p', { class: 'fb-keep', text: Feedback.isLive() ? PRIVACY_FEEDBACK.live : PRIVACY_FEEDBACK.mock }),
+    h('p', { class: 'fb-keep fb-pvline' }, PRIVACY_NOTICE.short + ' · ', h('button', { type: 'button', class: 'pv-link', text: PRIVACY_NOTICE.link, onclick: (e) => app.openPrivacy({ opener: e.currentTarget }) })));
   const paws = h('div', { class: 'fb-paws', 'aria-hidden': 'true' }, ...[0, 1, 2].map(() => { const s = h('span'); s.innerHTML = ICON.paw; return s; }));
   const sheet = h('div', { class: 'sheet fbsheet', tabindex: '-1' },
     h('div', { class: 'fbscroll' },

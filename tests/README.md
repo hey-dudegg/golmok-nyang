@@ -10,7 +10,7 @@
    ```
    npm install
    ```
-3. 다른 터미널에서 저장소 루트를 정적 서버로 연다 (`file://`로 열면 모듈·데이터 fetch가 막힌다)
+3. `npm test`는 서버를 따로 켤 필요 없다. `run_all`이 node 내장 정적 서버(`tests/lib/static_server.js`, D-61)를 빈 포트에 띄우고 끝나면 닫는다. `BASE_URL`을 주면 그 외부 서버를 쓴다. 개별 `npm run test:<이름>`은 아래 서버가 필요하다. 화면을 직접 볼 때도 저장소 루트를 정적 서버로 연다 (`file://`로 열면 모듈·데이터 fetch가 막힌다)
    ```
    python -m http.server 8000      (macOS·Linux는 python3)
    ```
@@ -22,12 +22,16 @@
 |---|---|---|
 | `BASE_URL` | `http://localhost:8000/prototype/` | 시험할 페이지 주소. 포트를 바꿨으면 여기에 |
 | `CHROME_PATH` | 흔한 설치 위치를 찾아 봄 | Chrome 실행 파일. 못 찾으면 직접 지정 |
-| `TEST_SLOW` | `1` | 느린 환경 배수. 대기 시간과 시험 제한 시간(90초)에 곱한다. 예: `2` |
-| `TEST_TIMEOUT` | `90000 x TEST_SLOW` | 시험 하나의 제한 시간(ms) |
+| `TEST_SLOW` | `1` | 느린 환경 배수. 대기 시간과 시험 제한 시간(200초)에 곱한다. 예: `2` |
+| `TEST_TIMEOUT` | `200000 x TEST_SLOW` | 시험 하나의 제한 시간(ms) |
+| `TEST_VERBOSE` | (끔) | `1`이면 `npm test`가 시험 출력을 전부 낸다(`--verbose`와 같음) |
 | `HEADLESS` | (headless) | `0`이면 창을 띄워 본다 |
 
 예 (PowerShell): `$env:BASE_URL='http://localhost:8765/prototype/'; npm test`
 예 (bash): `BASE_URL=http://localhost:8765/prototype/ TEST_SLOW=2 npm test`
+
+**출력 모양 (`npm test`, run_all.js)**: 기본은 요약이다. 통과한 시험은 통과표 한 줄(약 1KB), 실패한 시험은 그 시험 출력의 끝 30줄만 낸다. 전체 출력은 `npm test -- --verbose` 또는 `TEST_VERBOSE=1`. 일부만: `node tests/run_all.js reg pose`. check_imports의 모듈 그래프는 문제가 있을 때만 나오고, 늘 보려면 `node tests/check_imports.js --graph`.
+첫 화면 열기(`open`)는 60초 안에 안 뜨거나 서버가 연결을 거부하면 최대 3번 다시 연다(자료 받기 지연·연결 거부 대비, 합격 기준과 무관). load_fail의 정상 열기는 로딩 화면이 사라질 때까지 기다린다.
 
 ## 시험 목록 (하나씩 단독으로 돌린다. 동시에 돌리지 않는다)
 

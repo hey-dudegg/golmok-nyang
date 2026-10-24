@@ -1,5 +1,5 @@
 // 의견 보내기 어댑터 (R-16, D-24·D-25): Caps.feedback.send({title, from, body}) 한 함수 뒤에 전송 방법을 숨긴다 (D-10 방식)
-// 지금은 모의(D-21): 메일을 보내지 않고 브라우저 저장에 쌓는다. Web3Forms 호출 자리는 config 의 accessKey·live 가 모두 갖춰질 때만 열린다(M4).
+// 지금은 모의(D-21): 메일을 보내지 않고 브라우저 저장에 쌓는다. Web3Forms 호출 자리는 config 의 accessKey 가 있을 때만 열린다(D-54).
 // 받는 이메일은 어디에도 쓰지 않는다(서비스 대시보드에만). 쿨다운 기록·받은 의견 상자도 이 모듈이 맡는다.
 import { FEEDBACK_CONFIG } from '../config.js';
 import { checkCooldown, feedbackKey, FB_COOL, pruneBox, pruneSent, mailPreview } from '../core/feedback_rules.js';
@@ -14,7 +14,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const Feedback = {
   mode: 'ok', // 모의 시험용: 'ok' | 'fail' | 'slow' (어드민 의견함이 바꾼다)
-  isLive() { return !!(FEEDBACK_CONFIG.live && FEEDBACK_CONFIG.accessKey); },
+  isLive() { return !!FEEDBACK_CONFIG.accessKey; }, // D-54: 키가 있으면 실제 전송, 비면 모의
   // 쌓인 의견 (최신이 앞). 보관 기간이 지난 것은 읽을 때 버린다
   box() {
     const all = listOf('feedback_box');
@@ -47,7 +47,7 @@ export const Feedback = {
     store.set('feedback_box', [{ id, at: now, title: clean.title, from: clean.from, body: clean.body }, ...this.box()].slice(0, 200));
     return { ok: true, id };
   },
-  // 배포용 자리(M4). live 와 accessKey 가 모두 있을 때만 호출된다. 아직 실전 확인 전이라 기본 설정에서는 닿지 않는다
+  // 배포용 자리(M4). accessKey 가 있을 때만 호출된다. 키가 비어 있는 기본 설정에서는 닿지 않는다
   async sendWeb3Forms(clean) {
     const m = mailPreview(clean);
     const r = await fetch(FEEDBACK_CONFIG.endpoint, {

@@ -113,7 +113,7 @@ for (const [k, M] of mods) {
 const coreN = [...mods.keys()].filter((k) => k.startsWith(CORE)).length;
 const edgesN = [...graph.values()].reduce((s, e) => s + e.length, 0);
 console.log(`모듈 ${mods.size}개(core ${coreN}), import 간선 ${edgesN}개, 순환 ${cycles.length}건`);
-for (const [k, e] of graph) console.log('  ' + rel(k).padEnd(40) + ' -> ' + (e.map((t) => path.relative(path.join(PROTO, 'src'), t).split(path.sep).join('/')).join(', ') || '(없음)'));
+if (problems.length || process.argv.includes('--graph')) for (const [k, e] of graph) console.log('  ' + rel(k).padEnd(40) + ' -> ' + (e.map((t) => path.relative(path.join(PROTO, 'src'), t).split(path.sep).join('/')).join(', ') || '(없음)'));
 if (problems.length) console.log('문제 ' + problems.length + '건\n' + problems.slice(0, 60).join('\n'));
 console.log(problems.length ? 'RESULT FAIL check_imports' : 'RESULT PASS check_imports');
 process.exit(problems.length ? 1 : 0);

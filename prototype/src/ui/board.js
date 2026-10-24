@@ -88,10 +88,10 @@ export function renderBoard(app) {
     const likes = Object.values(p.likes || {}).filter(Boolean).length, liked = !!(p.likes && p.likes[me]);
     const cms = Object.values(p.comments || {}).sort((a, b) => a.at - b.at);
     const likeBtn = h('button', { class: 'btn ghost', type: 'button', 'aria-pressed': liked ? 'true' : 'false', onclick: () => requireGate(app, 'board_like', '좋아요는 이웃만 누를 수 있어요', () => Board.like(p, !liked).catch(() => toast('반영하지 못했어요'))) });
-    likeBtn.innerHTML = (liked ? ICON.heartF : ICON.heart) + likes;
-    const cmBtn = h('button', { class: 'btn ghost', type: 'button', onclick: () => { app.openComments = app.openComments === p.id ? null : p.id; renderBoard(app); } }); cmBtn.innerHTML = ICON.chat + cms.length;
+    likeBtn.innerHTML = (liked ? ICON.heartF : ICON.heart) + Number(likes);
+    const cmBtn = h('button', { class: 'btn ghost', type: 'button', onclick: () => { app.openComments = app.openComments === p.id ? null : p.id; renderBoard(app); } }); cmBtn.innerHTML = ICON.chat + Number(cms.length);
     const goBtn = p.cat ? h('button', { class: 'btn', type: 'button', onclick: () => app.visit(p.dong.c, p.cat.id) }) : p.dong ? h('button', { class: 'btn', type: 'button', onclick: () => app.visit(p.dong.c) }) : null;
-    if (goBtn) goBtn.innerHTML = ICON.pin + (p.cat ? `${p.cat.name} 보러 가기` : `${postWhere(p.dong)} 가 보기`);
+    if (goBtn) { goBtn.innerHTML = ICON.pin; goBtn.append(p.cat ? `${p.cat.name} 보러 가기` : `${postWhere(p.dong)} 가 보기`); }
     const delBtn = p.uid === me ? h('button', { class: 'btn ghost', type: 'button', text: '삭제', onclick: () => { if (delBtn.dataset.sure) Board.remove(p).catch(() => toast('삭제하지 못했어요')); else { delBtn.dataset.sure = '1'; delBtn.textContent = '정말 삭제'; } } }) : null;
     const post = h('article', { class: 'post' },
       h('div', { class: 'by' }, h('b', { text: p.nick || '이웃' }), h('span', { text: p.dong ? postWhere(p.dong) : '' }), h('span', { text: '· ' + timeAgo(p.createdAt) })),
