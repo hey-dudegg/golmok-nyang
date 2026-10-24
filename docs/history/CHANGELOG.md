@@ -36,3 +36,4 @@ C-29 | 2026-10-24 | 결정 | P-31 폐기(D-56 지우기 버튼 없음), P-33 해
 C-30 | 2026-10-24 | 결정 | 토큰 수칙 예외(9장)와 11번 수칙 적용 -> D-58 | 사용자 | 전원
 C-31 | 2026-10-24 | 변경 | architect Edit 도구 추가, CLAUDE.md 의존성 문구 정정, 문서 분할은 /gate -> D-59 | 사용자 | architect
 C-32 | 2026-10-24 | 결정 | 디버깅 30회 상한·중간 보고(D-60), 시험 서버를 node 내장 서버로 교체(D-61, M1-1b 추가) | 사용자 | developer, tester
+C-33 | 2026-10-24 | 결정 | P-34 Pages Functions 중계(D-62), P-35 pages.dev 유지(D-63), troubleshooter 에이전트 추가 | 사용자 | developer, devops, security

@@ -253,3 +253,11 @@
 ## D-61 시험 서버 교체 (2026-10-24, 결정자: 사용자)
 - 내용: 시험은 python http.server 대신 node 내장 http 정적 서버를 run_all이 빈 포트에 직접 띄우고 끝나면 종료. 새 의존성 없음
 - 영향 역할: developer, tester, devops
+
+## D-62 Web3Forms 키는 Pages Functions 중계 (2026-10-24, 결정자: 사용자, P-34 해결)
+- 내용: 키는 .env(로컬)와 Cloudflare Pages 환경 변수에만. 의견은 Pages Function이 받아 Web3Forms로 전달, 브라우저·저장소에 키 없음
+- 영향 역할: developer, devops, security
+
+## D-63 도메인 없이 pages.dev 유지 (2026-10-24, 결정자: 사용자, P-35 해결)
+- 내용: 시험 기간은 pages.dev. AI 봇 차단은 robots.txt뿐(강제력 없음)을 감수
+- 영향 역할: devops, security

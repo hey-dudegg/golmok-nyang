@@ -69,3 +69,8 @@ tests/out/
 Thumbs.db
 # 자체 호스팅 three.js(D-47)는 build/ 규칙의 예외
 !prototype/vendor/three-0.160.0/build/
+# 키·비밀 텍스트 파일 (Web3Forms 접근 키 등)
+*.key.txt
+*.key
+# 사용자 개인 작업 폴더(키·스크린샷)
+DJ/
