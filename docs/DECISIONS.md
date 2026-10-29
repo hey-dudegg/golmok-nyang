@@ -289,3 +289,7 @@
 ## D-70 털 셰이더 롤백 (2026-10-29, 결정자: 사용자, D-66·69 롤백)
 - 내용: 폰에서 얼굴·몸 색이 다르고 털이 화상 같아 de4eafa 셰이더로 복원. 지지직 재시도는 폰 실기 확인을 거쳐야 함(P-36)
 - 영향 역할: developer, troubleshooter, tester
+
+## D-71 터치 기기 털 가닥 밀도 0.8배 (2026-10-29, 결정자: 사용자 지시·팀장, P-36)
+- 내용: (pointer: coarse)에서 density 0.8배(지지직 -13~16%, 외형 동일). a2c는 쓰지 않음. ?fur=old·low 비교 후 확정·삭제
+- 영향 역할: troubleshooter, developer, tester

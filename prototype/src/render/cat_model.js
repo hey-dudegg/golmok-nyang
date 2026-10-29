@@ -3,6 +3,15 @@ import * as THREE from 'three';
 import { TAU, clamp, damp, lerp, smooth } from '../core/util.js';
 import { makeEyeMaterial, makeFurMaterial, makeSkinMaterial } from './shaders.js';
 
+// M1-14: 터치 기기(폰)는 털 격자 밀도를 0.8배로 낮춰 가닥이 화소보다 작아져 생기는 지지직을 줄인다(근접 -13%, 중간 -16%, 외형 거의 같음).
+// ?fur=old 면 전 기기 구 밀도(비교용), ?fur=low 면 PC도 낮은 밀도. 실기 비교 결정 후 스위치 삭제.
+const FUR_DENSITY_K = (() => {
+  const q = globalThis.location ? location.search : '';
+  if (/[?&]fur=old/.test(q)) return 1;
+  if (/[?&]fur=low/.test(q)) return 0.8;
+  return globalThis.matchMedia && matchMedia('(pointer: coarse)').matches ? 0.8 : 1;
+})();
+
 // ───────────────────────── cat model (rig + merged fur geometry) ─────────────────────────
 const PART = { hips: 0, chest: 1, neck: 2, head: 3, earL: 4, earR: 5, shL: 6, elL: 7, shR: 8, elR: 9, hipL: 10, knL: 11, hipR: 12, knR: 13, t0: 14 };
 const TAIL_SEGS = 8;
@@ -240,7 +249,7 @@ export class CatView {
     u.patchAmt.value = genome.patchAmt; u.patchScale.value = genome.patchScale; u.mottle.value = genome.mottle;
     u.whiteAmt.value = genome.whiteAmt; u.whiteNoise.value = genome.whiteNoise; u.seed.value = genome.seedF;
     u.furLen.value = 0.026; u.tipLight.value = genome.tipLight;
-    u.density.value = 620 / Math.sqrt(this.dim.scale);
+    u.density.value = 620 * FUR_DENSITY_K / Math.sqrt(this.dim.scale);
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.frustumCulled = false;
     this.setShells(shells);
