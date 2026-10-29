@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sunPosition } from '../core/time.js';
 import { TAU, clamp, lerp, makeRng, smooth } from '../core/util.js';
-import { LIGHT, FUR_AA } from './shaders.js';
+import { LIGHT } from './shaders.js';
 import { attachBackdrop } from './backdrop.js';
 import { VIEW_MODES, buildAlley, buildMarket, buildPark, canvasTex, speckle } from './scene_themes.js';
 
@@ -14,7 +14,6 @@ const AZ_LIMIT = 75 * Math.PI / 180; // D-64: 좌우 회전 제한(담 뒤·바�
 export class Scene3D {
   constructor(canvas) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    { const gl = this.renderer.getContext(); FUR_AA.value = (gl.getParameter(gl.SAMPLES) > 1 ? 1 : 0); } // D-66: MSAA 없으면 고정 임계
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

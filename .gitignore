@@ -76,3 +76,5 @@ Thumbs.db
 DJ/
 # 프로그램 비정상 종료 기록
 *.stackdump
+# 사용자 스크린샷 폴더
+user/
