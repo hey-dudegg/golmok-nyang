@@ -1,6 +1,7 @@
 // 이름표의 "이름 짓기 · 랭킹" 탭 (D-31)
 import { NAME_RULE } from '../core/name_rules.js';
 import { Names } from '../state/names.js';
+import { Caps } from '../adapters/caps.js';
 import { $, ICON, h, openScrim, toast } from './dom.js';
 import { requireGate } from './signup.js';
 
@@ -26,6 +27,8 @@ export function namesPanel(app, a) {
   } }, input, btn);
   return h('div', { class: 'names' },
     h('p', { class: 'nhelp', text: `좋아요를 가장 많이 받은 이름이 이 고양이의 이름이 돼요. 싫어요가 좋아요보다 많아지면 이름이 내려가요. 투표 전에는 이 지역에서 부르던 '${a.cat.defaultName || a.cat.name}'(으)로 불려요.` }),
+    // D-65: M2(2차) 연결 후 삭제 (공유 저장소가 없을 때만 보이는 안내)
+    ...(Caps.db && Caps.shared ? [] : [h('p', { class: 'note', id: 'namesLocalNote', text: '아직은 지은 이름과 랭킹이 이 기기에만 저장돼요. 이웃과 함께 보는 기능은 준비 중이에요.' })]),
     h('ol', { class: 'rank', id: 'rankList', 'aria-label': '이름 랭킹 상위 10' }),
     form, err);
 }

@@ -3,16 +3,18 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sunPosition } from '../core/time.js';
 import { TAU, clamp, lerp, makeRng, smooth } from '../core/util.js';
-import { LIGHT } from './shaders.js';
+import { LIGHT, FUR_AA } from './shaders.js';
 import { attachBackdrop } from './backdrop.js';
 import { VIEW_MODES, buildAlley, buildMarket, buildPark, canvasTex, speckle } from './scene_themes.js';
 
 // ───────────────────────── 골목 장면 ─────────────────────────
+const AZ_LIMIT = 75 * Math.PI / 180; // D-64: 좌우 회전 제한(담 뒤·바닥판 끝 가림)
 
 
 export class Scene3D {
   constructor(canvas) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    { const gl = this.renderer.getContext(); FUR_AA.value = (gl.getParameter(gl.SAMPLES) > 1 ? 1 : 0); } // D-66: MSAA 없으면 고정 임계
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -24,6 +26,7 @@ export class Scene3D {
     this.controls.enableDamping = true; this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 0.55; this.controls.maxDistance = 10.5; // D-42: 원경과 전경을 함께 보게 늘림
     this.controls.maxPolarAngle = 1.5; this.controls.minPolarAngle = 0.35;
+    this.controls.minAzimuthAngle = -AZ_LIMIT; this.controls.maxAzimuthAngle = AZ_LIMIT; // D-64: 기본 시점(방위각 0) 기준 좌우 제한
     this.controls.enablePan = false;
     this.controls.rotateSpeed = 0.6; this.controls.zoomSpeed = 0.8;
     this.sun = new THREE.DirectionalLight(0xffffff, 1.5);

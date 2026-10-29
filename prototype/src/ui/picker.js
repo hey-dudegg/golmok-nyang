@@ -76,5 +76,6 @@ export function openPicker(app) {
     for (const u of units) { setHot(u.c.slice(0, 2)); mh = Math.max(mh, soonList.scrollHeight); hh = Math.max(hh, soonHead.offsetHeight); }
     soonList.style.height = mh + 'px'; soonHead.style.minHeight = hh + 'px'; setHot(keep);
   };
-  reserve();
+  // 모바일(1열)은 시트가 위아래로 스크롤되고 목록이 바뀌어도 마우스 되먹임이 없어 reserve 를 건너뛴다(빈 공간 방지)
+  if (!matchMedia('(max-width: 720px)').matches) reserve();
 }

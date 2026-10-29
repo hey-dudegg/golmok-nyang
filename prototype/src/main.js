@@ -35,6 +35,7 @@ import { openPicker } from './ui/picker.js';
 import { openFeedback } from './ui/feedback.js';
 import { openPrivacy, showPrivacyBanner } from './ui/privacy.js';
 import { openShare } from './ui/share.js';
+import { initFindCat } from './ui/find_cat.js';
 import { openSignup, requireGate } from './ui/signup.js';
 import { Live, Promo } from './ui/together.js';
 import { AppInteract } from './app/interact.js';
@@ -67,7 +68,7 @@ class App {
   async start() {
     const resize = () => { const pr = TEST.pr || Math.min(devicePixelRatio || 1, 1.75); this.s.resize(innerWidth, innerHeight, pr); };
     addEventListener('resize', resize); resize();
-    this.bindInput();
+    this.bindInput(); initFindCat(this);
     $('#btnMove').addEventListener('click', () => openPicker(this));
     $('#btnBoard').addEventListener('click', () => this.openBoard());
     $('#btnMember').addEventListener('click', () => { if (isMemberNow() && Member.me) toast(`${Member.me.nick}님은 이미 골목 이웃이에요`); else if (adminPowers()) toast('어드민은 가입 없이 모든 기능을 쓸 수 있어요'); else if (isMemberNow()) toast('회원 화면을 시험 중이에요'); else openSignup(this, '골목 이웃이 되어 주세요'); });
@@ -288,6 +289,7 @@ class App {
       const E = this.enc, T = this.s.controls.target;
       T.x = damp(T.x, (E.host.x + E.guest.x) / 2, 2, dt); T.z = damp(T.z, (E.host.z + E.guest.z) / 2 - 0.1, 2, dt); T.y = damp(T.y, 0.2, 2, dt);
     }
+    if (this.stepFindCat) this.stepFindCat(dt);
     this.s.controls.update();
     // 이름표가 열리면 장면을 옆(데스크톱)이나 위(휴대폰)로 살짝 밀어 고양이가 가려지지 않게
     const narrow = innerWidth <= 720;
@@ -299,6 +301,7 @@ class App {
     if (Math.abs(this.vox) > 0.5 || Math.abs(this.voy) > 0.5) cam.setViewOffset(innerWidth, innerHeight, this.vox, this.voy, innerWidth, innerHeight);
     else if (cam.view && cam.view.enabled) cam.clearViewOffset();
     this.s.renderer.render(this.s.scene, cam);
+    if (this.updateFindCat) this.updateFindCat();
     // 말풍선
     const v = new THREE.Vector3();
     for (let i = this.bubbles.length - 1; i >= 0; i--) {

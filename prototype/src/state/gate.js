@@ -3,7 +3,7 @@ import { Member } from './members.js';
 
 // 회원 범위 설정표 (D-16). 버튼마다 흩어진 확인을 이 표 하나로 모은다. '회원' | '누구나'. 어드민은 이 표를 무시한다.
 export const GATE = {
-  promo: '회원', churu: '회원',
+  promo: '누구나', churu: '누구나',
   board_write: '회원', board_comment: '회원', // 게시판은 관리 편의상 회원
   pet: '누구나', cat_words: '누구나', drop_item: '누구나',
   name_suggest: '회원', name_like: '회원', name_report: '회원', board_like: '누구나',

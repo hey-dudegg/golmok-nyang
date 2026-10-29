@@ -95,7 +95,7 @@ const FUR_FRAG = /* glsl */`
 uniform vec3 colBase; uniform vec3 colStripe; uniform vec3 colPatch; uniform vec3 colWhite; uniform vec3 colSkin;
 uniform float stripeAmt; uniform float stripeFreq; uniform float patchAmt; uniform float patchScale;
 uniform float mottle; uniform float whiteAmt; uniform float whiteNoise; uniform float seed;
-uniform float density; uniform float tipLight; uniform float highlight; uniform float shellCount;
+uniform float density; uniform float tipLight; uniform float highlight; uniform float shellCount; uniform float a2c; uniform float furOld; // D-66 실기 비교용, 결정 후 삭제
 varying vec3 vRest; varying vec3 vRestN; varying vec3 vN; varying vec3 vWP; varying vec3 vComb;
 varying float vH; varying float vFur; varying float vW; varying vec2 vT;
 ${NOISE_GLSL}
@@ -134,19 +134,28 @@ void main(){
     float len = mix(0.72, 1.0, r);
     float t = hgt / len;
     float rad = 0.95 * pow(max(1.0 - t, 0.0), 0.75);
-    float fw = max(fwidth(d), 0.02);
-    float a1 = (t >= 1.0) ? 0.0 : clamp((rad - d) / fw + 0.5, 0.0, 1.0) * (1.0 - 0.55 * smoothstep(0.35, 1.0, t));
+    float fw = max(fwidth(d) * 2.0, 0.05); // D-69: 가장자리 폭을 넓혀 움직일 때 지지직 줄임
+    float a1 = (t >= 1.0) ? 0.0 : clamp((rad - d) / fw + 0.5, 0.0, 1.0) * (1.0 - mix(0.25, 0.55, furOld) * smoothstep(mix(0.5, 0.35, furOld), 1.0, t));
     // 솜털(언더코트): 더 촘촘한 격자, 아래쪽만
     vec3 sp2 = vRest * density * 1.6;
     vec3 f2 = fract(sp2) - 0.5; vec3 fp2 = f2 - dot(f2, n0) * n0;
     float d2 = length(fp2) * 2.0;
     float t2 = hgt / 0.38;
     float rad2 = 0.92 * (1.0 - t2);
-    float fw2 = max(fwidth(d2), 0.02);
+    float fw2 = max(fwidth(d2) * 2.0, 0.05);
     float a2 = (t2 >= 1.0) ? 0.0 : clamp((rad2 - d2) / fw2 + 0.5, 0.0, 1.0);
+    // 거리 LOD (D-66): 가닥이 화소보다 작아지면(fwidth 큼) 가닥 무늬 대신 평균 덮임으로 바꿔 지글거림을 없앤다
+    float k = furOld > 0.5 ? 0.0 : smoothstep(0.35, 0.85, fwidth(d));
+    float tm = hgt / 0.86; float rm = 0.95 * pow(max(1.0 - tm, 0.0), 0.75);
+    float m1 = (tm >= 1.0) ? 0.0 : min(0.7854 * rm * rm, 1.0) * (1.0 - 0.25 * smoothstep(0.5, 1.0, tm));
+    float m2 = (t2 >= 1.0) ? 0.0 : min(0.7854 * rad2 * rad2, 1.0);
+    a1 = mix(a1, m1, k); a2 = mix(a2, m2, k);
     alpha = max(a1, a2);
-    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + vec2(hgt * 97.0, hgt * 31.0), vec2(0.06711056, 0.00583715))));
-    if (alpha < max(ign, 0.02)) discard;
+    // MSAA 있으면 alphaToCoverage(알파 출력), 없으면 고정 임계 0.5 (D-66)
+    if (furOld > 0.5) { // D-66 실기 비교용, 결정 후 삭제: 구 방식(화면 좌표 디더)
+      float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy + vec2(hgt * 97.0, hgt * 31.0), vec2(0.06711056, 0.00583715))));
+      if (alpha < max(ign, 0.02)) discard;
+    } else if (a2c < 0.5 ? alpha < 0.5 : alpha < 0.004) discard;
   }
   // ── color ──
   vec3 col = pattern(vRest);
@@ -175,10 +184,15 @@ void main(){
   vec3 c = col * light * occ + sunCol * spec * 0.18 + (sunCol * 0.2 + amb * 0.1) * rim * col * 1.2;
   c *= exposure;
   c = applyFog(c, vWP);
-  gl_FragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(c, (hgt > 0.0 && furOld < 0.5) ? alpha : 1.0);
   #include <colorspace_fragment>
 }
 `;
+
+// MSAA 사용 여부(scene 이 렌더러 정보로 설정). 1=alphaToCoverage, 0=고정 임계 폴백
+export const FUR_AA = { value: 1 };
+// D-66 실기 비교용, 결정 후 삭제: 주소에 ?fur=old 면 구 셰이더 경로
+const FUR_OLD = { value: /[?&]fur=old/.test(globalThis.location ? location.search : '') ? 1 : 0 };
 
 export function makeFurMaterial(genomeColors, shellCount) {
   const u = {
@@ -200,12 +214,14 @@ export function makeFurMaterial(genomeColors, shellCount) {
     patchAmt: { value: 0 }, patchScale: { value: 8 },
     mottle: { value: 0 }, whiteAmt: { value: 0 }, whiteNoise: { value: 0.15 },
     seed: { value: 0 },
+    a2c: FUR_AA, furOld: FUR_OLD,
   };
   const m = new THREE.ShaderMaterial({
     uniforms: u,
     vertexShader: FUR_VERT,
     fragmentShader: FUR_FRAG,
     side: THREE.FrontSide,
+    alphaToCoverage: true,
   });
   m.extensions = { derivatives: true };
   return m;

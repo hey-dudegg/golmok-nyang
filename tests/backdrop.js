@@ -52,10 +52,12 @@ run('backdrop', async () => {
     for (let i = 0; i < 10; i++) a.visit(codes[(i + 1) % codes.length]);
     a.visit('11'); const after = snap();
     // 시각 변화(해질녘·밤)는 색조만: 지오메트리 수가 그대로인지
+    // 시각은 오늘(KST) 날짜로: 고정 날짜면 주가 바뀌어 다른 후보(D-27 주차 순환)로 다시 지어진다
+    const k = new Date(Date.now() + 9 * 3600000), at = (hh) => Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate(), hh - 9, 0);
     S.renderer.render(S.scene, S.camera); const mesh = S.backdrop && S.backdrop.mesh, g0 = R.info.memory.geometries;
-    for (const hh of [12, 18, 23]) { a.previewTime = Date.UTC(2026, 9, 19, hh - 9, 0); a.updateClock(); S.renderer.render(S.scene, S.camera); }
+    for (const hh of [12, 18, 23]) { a.previewTime = at(hh); a.updateClock(); S.renderer.render(S.scene, S.camera); }
     a.previewTime = null; a.updateClock();
-    return { before, after, timeSame: !!(S.backdrop && S.backdrop.mesh === mesh), geoDelta: R.info.memory.geometries - g0, glowNight: (() => { a.previewTime = Date.UTC(2026, 9, 19, 23 - 9, 0); a.updateClock(); const v = S.backdrop.mesh.material.uniforms.uGlow.value; a.previewTime = null; a.updateClock(); return v; })() };
+    return { before, after, timeSame: !!(S.backdrop && S.backdrop.mesh === mesh), geoDelta: R.info.memory.geometries - g0, glowNight: (() => { a.previewTime = at(23); a.updateClock(); const v = S.backdrop.mesh.material.uniforms.uGlow.value; a.previewTime = null; a.updateClock(); return v; })() };
   });
   console.log(`메모리 전 ${JSON.stringify(mem.before)} 뒤 ${JSON.stringify(mem.after)} · 시각 변화 시 배경 메시 그대로 ${mem.timeSame}(지오메트리 증감 ${mem.geoDelta}) · 밤 창불빛 ${mem.glowNight.toFixed(2)}`);
   if (mem.after.geo > mem.before.geo || mem.after.tex > mem.before.tex || mem.after.prog > mem.before.prog) fail('지역 전환 10회 뒤 지오메트리/텍스처/프로그램 증가');
