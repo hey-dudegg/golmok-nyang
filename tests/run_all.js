@@ -47,7 +47,7 @@ async function main() {
   try {
 for (const [name, file, ...args] of list) {
   const t0 = Date.now();
-  const argv = file === '--test' ? ['--test', path.join(__dirname, 'unit')] : [path.join(__dirname, file), ...args];
+  const argv = file === '--test' ? [path.join(__dirname, 'run_unit.js')] : [path.join(__dirname, file), ...args];
   const r = await run(argv, env);
   const out = (r.stdout || '') + (r.stderr || '');
   const tap = file === '--test' ? `node --test ${(out.match(/# pass \d+/) || ['?'])[0]} ${(out.match(/# fail \d+/) || ['?'])[0]}` : null; // node --test 는 RESULT 줄 대신 요약을 쓴다
