@@ -9,6 +9,13 @@ import { $, ICON, h, openScrim, toast } from './dom.js';
 import { requireGate } from './signup.js';
 
 // ── 캡쳐 ──
+// data: 주소를 fetch 하면 CSP connect-src 'self' 에 막히므로 직접 Blob 으로 만든다 (보안 J-3)
+function dataUrlToBlob(u) {
+  const i = u.indexOf(','), bin = atob(u.slice(i + 1)), bytes = new Uint8Array(bin.length);
+  for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+  return new Blob([bytes], { type: u.slice(5, u.indexOf(';')) || 'image/png' });
+}
+
 export function openCapture(app, dataUrl, meta) {
   const img = h('img', { class: 'shot', src: dataUrl, alt: `${meta.catName || '골목'} 캡쳐 사진` });
   const saveBtn = h('button', { class: 'btn', type: 'button', text: '내 기기에 저장' });
@@ -17,7 +24,7 @@ export function openCapture(app, dataUrl, meta) {
   saveBtn.addEventListener('click', async () => {
     const fname = `골목냥_${meta.dongName}_${meta.catName || '골목'}.png`.replace(/\s+/g, '');
     if (Caps.downloads) {
-      try { const blob = await (await fetch(dataUrl)).blob(); await Caps.downloads.save({ filename: fname, data: blob }); toast('저장했어요'); }
+      try { const blob = dataUrlToBlob(dataUrl); await Caps.downloads.save({ filename: fname, data: blob }); toast('저장했어요'); }
       catch (e) { if (e && e.code !== 'declined') { hint.hidden = false; hint.textContent = '여기서는 바로 저장할 수 없어요. 사진을 길게 누르거나 우클릭해서 저장해 주세요.'; } }
     } else { hint.hidden = false; hint.textContent = '사진을 길게 누르거나 우클릭해서 저장해 주세요.'; }
   });

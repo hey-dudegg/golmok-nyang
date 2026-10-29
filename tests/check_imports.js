@@ -14,7 +14,7 @@ const rel = (f) => path.relative(ROOT, f).split(path.sep).join('/');
 const problems = [];
 const bad = (m) => problems.push(m);
 
-// 층마다 import 해도 되는 층 (src/ 아래 첫 폴더 이름, src/main.js 는 main, index.html 로더는 html)
+// 층마다 import 해도 되는 층 (src/ 아래 첫 폴더 이름, src/main.js 는 main, src/boot.js 로더는 html)
 const LAYERS = {
   core: ['core'],
   adapters: ['core', 'adapters', 'config'], // config: src/config.js 배포 설정 자리(아무것도 import 하지 않는다)
@@ -34,13 +34,13 @@ const html = path.join(PROTO, 'index.html');
 const hs = fs.readFileSync(html, 'utf8');
 const HTML_KEY = html + '#module';
 const inline = [...hs.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
-if (!inline) { console.log('RESULT FAIL check_imports: 인라인 모듈(로더) 없음'); process.exit(1); }
+if (inline) { console.log('RESULT FAIL check_imports: 인라인 모듈 금지(로더는 src/boot.js, 보안 J-3)'); process.exit(1); }
 const srcOf = new Map([[HTML_KEY, inline]]);
 mods.set(HTML_KEY, analyze(HTML_KEY, inline));
 const walk = (d) => { if (!fs.existsSync(d)) return; for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else if (/\.m?js$/.test(e.name)) { const s = fs.readFileSync(f, 'utf8'); srcOf.set(f, s); mods.set(f, analyze(f, s)); } } };
 walk(path.join(PROTO, 'src'));
 const SRC = path.join(PROTO, 'src') + path.sep;
-const layerOf = (k) => (k === HTML_KEY ? 'html' : k === path.join(PROTO, 'src', 'main.js') ? 'main' : k === path.join(PROTO, 'src', 'config.js') ? 'config' : k.slice(SRC.length).split(path.sep)[0]);
+const layerOf = (k) => (k === HTML_KEY ? 'html' : k === path.join(PROTO, 'src', 'main.js') ? 'main' : k === path.join(PROTO, 'src', 'config.js') ? 'config' : k === path.join(PROTO, 'src', 'boot.js') ? 'html' : k.slice(SRC.length).split(path.sep)[0]);
 
 // ── 1·2) import 해석, 이름 확인, 그래프 ──
 const graph = new Map();

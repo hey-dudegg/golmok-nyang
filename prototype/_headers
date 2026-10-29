@@ -9,13 +9,15 @@
   X-Frame-Options: DENY
   # 시험 기간(D-45): 검색 비노출. 정식 공개 때 이 줄만 지운다.
   X-Robots-Tag: noindex
-  # CSP는 Report-Only: 위반을 차단하지 않고 콘솔에만 남긴다. 강제는 로더를 외부 파일로 뺀 뒤(보안 설계 B-6).
-  # 인라인 스크립트 3개(파일 경로 안내, importmap, 로더)는 해시로 허용했다. index.html의 해당 스크립트를 고치면 해시를 다시 계산해야 한다.
+  # CSP 강제(보안 J-3): 진입 안내·로더를 src/boot.js 로 빼서 인라인 script 는 importmap 하나만 남았다. 그 해시만 허용한다.
+  # index.html 의 importmap 을 고치면 해시를 다시 계산해 아래 줄을 갱신한다(안 하면 앱이 시작되지 않으니 배포 전 확인).
   # style-src 'unsafe-inline'은 코드가 style 속성을 쓰기 때문(당분간 허용). img-src data: blob:은 사진 캡쳐용. 외부 서버 연결은 1차에 없다(connect-src 'self').
   # [M2-5a 자리] Supabase 연결 때(실제 주소를 받은 뒤) 아래 CSP 한 줄의 두 곳에 프로젝트 주소(스테이징·운영 각각)를 더한다:
   #   img-src 'self' data: blob: https://<프로젝트>.supabase.co   connect-src 'self' https://<프로젝트>.supabase.co wss://<프로젝트>.supabase.co
   # (wss 는 Realtime, M2-9부터). 로그인 이동은 같은 창 이동이라 form-action·frame 변경은 필요 없다 [미확인: 카카오 로그인 때 재확인].
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-IleJc2GJx4gs/Xtu0R06Pm5XNz2c8lTyt1KUyO8s6pg=' 'sha256-42scdVH2nMs4IvBT6R9Kse6ghFygmQ2Ph+G2XWwRU+M=' 'sha256-5mRbBshjxkxWHrdnPoY5qoQif4SXv1EHDx2KqxY//YA='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  # [Web Analytics 자리] 켜면 Cloudflare 가 스크립트를 자동 주입한다. 켠 뒤 콘솔에 위반이 보이면 script-src 에 https://static.cloudflareinsights.com, connect-src 에 https://cloudflareinsights.com 을 더한다(D-55).
+  # [의견 보내기 자리] 중계(/api/..., D-62)는 같은 주소라 connect-src 'self' 로 충분. Web3Forms 로 직접 보내게 바꾸면 connect-src 에 https://api.web3forms.com 이 필요하다.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-42scdVH2nMs4IvBT6R9Kse6ghFygmQ2Ph+G2XWwRU+M='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # three.js(폴더에 버전이 들어 있음)와 글꼴은 내용이 바뀌지 않으므로 길게 캐시한다. 업그레이드하면 새 폴더 이름을 쓴다.
 /vendor/three-0.160.0/*

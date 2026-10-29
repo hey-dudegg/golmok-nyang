@@ -24,3 +24,4 @@
 2026-10-29 | architect | M2-4 2차 연결 설계 | 72k | 17 | 배포_계획 170줄+122줄(약 32KB) 열람, 설계 290줄 작성
 2026-10-29 | architect | M2-9 실시간 설계 | 58k | 30 | 30회 상한 도달, 설계 93줄 추가·목차 재정렬
 2026-10-29 | developer | M2-5a supabase-js·initCaps(+라이선스 후속) | 53k | 26 | 임시 폴더 npm pack·esbuild 묶음, 전체 npm test 1회
+2026-10-29 | developer | M2-7 J-3·J-6 | 51k | 37 | puppeteer로 실제 CSP 헤더 흉내, networkidle2 60초 초과 3회, 30회 상한 초과

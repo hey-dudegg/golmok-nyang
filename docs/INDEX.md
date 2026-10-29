@@ -11,7 +11,7 @@
 | M2-4 | 2차 설계 확정(2차_연결_설계.md) | architect | D-74~77 | 완료 |
 | M2-5 | a: supabase-js·config·CSP / b: 회원·로그인·탈퇴 | developer | D-10,37,77,78 | a 완료 |
 | M2-6 | a: 게시판·이름·캡쳐 저장 / b: 필터·신고·숨김 | developer | D-67,74~76 | M2-5 뒤 |
-| M2-7 | 보안 J-3(CSP 강제)·J-6(__app 제거, fur_probe의 __pose 의존 확인) | developer·security | D-38 | 대기 |
+| M2-7 | 보안 J-3(CSP 강제)·J-6(__app 제거, fur_probe의 __pose 의존 확인) | developer·security | D-38 | 완료(배포 후 콘솔 확인) |
 | M2-8 | 2차 보안 점검·배포 판정 | security | D-38 R-19 | 마지막 |
 | M2-9 | 사람 수·홍보 잠금 Realtime 연결 | architect·developer | D-79,80 R-08,12 | 설계 완료(8장) |
 - M1 완료(2026-10-29, archive/INDEX-M1.md). M0: archive/INDEX-M0.md
@@ -19,7 +19,7 @@
 | 역할 | 상태 | 진행 중 | 마지막 반영 D |
 |---|---|---|---|
 | tester | 대기 | M2-3 완료 | D-73 |
-| developer | 진행 | M2-5a | D-79 |
+| developer | 대기 | M2-7 완료 | D-80 |
 | security·token-optimizer | 대기 | 정기 분석 2차 완료(11장) | D-72 |
 | troubleshooter | 대기 | M1-14 폰 확인 대기 | D-71 |
 | architect·devops | 대기 | M2-9 설계 완료 / M2-2 헤더는 주소 대기 | D-80 |

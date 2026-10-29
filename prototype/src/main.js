@@ -1,5 +1,6 @@
 // 앱 조립 (App). 모듈을 불러 붙이고 시험용 window.__* 노출을 한곳에서 한다. 진입은 index.html 의 로더
 import * as THREE from 'three';
+import { isTestHost } from './core/test_host.js';
 import { ACTIONS, BOUNDS, REACTIONS, STEP } from './core/behavior.js';
 import { dongPopulation, makeGenome, makePersonality } from './core/genome.js';
 import { landmarkFor, landmarkLabel } from './core/landmarks.js';
@@ -330,6 +331,6 @@ class App {
 for (const Part of [AppVisit, AppInteract]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
 Recipes.notify = (msg) => toast(msg);
 const app = new App();
-window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel, VIEW_MODES }; } // 시험용 노출은 ?admin일 때만
-window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); };
+if (isTestHost(location.hostname)) { window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel, VIEW_MODES }; } // 시험용 노출은 ?admin일 때만
+window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); }; }
 app.start();
