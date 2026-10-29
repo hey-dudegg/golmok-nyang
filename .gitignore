@@ -78,3 +78,6 @@ DJ/
 *.stackdump
 # 사용자 스크린샷 폴더
 user/
+
+# Supabase 비공개 자료 (관리자 키·내려받은 설정 등. 공개 키는 src/config.js 에만)
+supabase/private/

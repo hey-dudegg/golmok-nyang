@@ -9,7 +9,7 @@ import { THEME_LABEL, sggShort, themeFor } from './core/regions.js';
 import { sunPosition } from './core/time.js';
 import { EMO_POL, REACT_META, THOUGHTS, TOUCH_TYPES, petPolarityWeights, resolveRule, ruleReaction, touchType } from './core/touch_rules.js';
 import { clamp, damp, makeRng, smooth } from './core/util.js';
-import { initCaps } from './adapters/caps.js';
+import { initCaps, Caps } from './adapters/caps.js';
 import { LandmarkData } from './adapters/landmarks_data.js';
 import { RecipeStore } from './adapters/recipe_store.js';
 import { REGIONS } from './adapters/regions_data.js';
@@ -90,7 +90,7 @@ class App {
     this.renderMember();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
-    initCaps().then(async () => { await Member.load(); await Bonds.load(); await Recipes.init(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
+    initCaps().then(async () => { if (Caps.notice) toast(Caps.notice); await Member.load(); await Bonds.load(); await Recipes.init(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
     setInterval(() => this.updateClock(), 30000);
     addEventListener('hashchange', () => { const d = REGIONS.unitOf(location.hash.replace('#', '')); if (d && d !== this.dong) this.goDong(d); });
   }

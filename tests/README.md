@@ -73,6 +73,15 @@
 
 `tests/out/`은 결과물 폴더라 저장소에 올리지 않는다(.gitignore).
 
+## 털 측정 도구 (fur_probe.js, 개별 실행 전용: 느려서 npm test에 없음)
+
+- 명령: `npm run test:fur`(flicker, 변형 roll·d0.8). 직접: `node tests/fur_probe.js --mode shots|flicker --tag 이름 --variants roll,d0.8,d0.85 [--aa 0] [--view 390x800x2] [--seed 문자열]`. 서버가 필요하고 느린 환경은 `TEST_SLOW=4`(약 3분).
+- 변형: `roll`=기준 밀도, `d<배율>`=기준 밀도 배율(d0.8 등). 밀도 uniform만 바꾸므로 앱의 `?fur` 스위치·기기별 배율에 의존하지 않는다. 다른 것(색·길이)을 비교하려면 `variants` 처리부(`mat.uniforms`)에 uniform 한 줄을 더한다.
+- 고양이는 고정 시드(`--seed`, 기본 `fur_probe`)로 직접 만들고 'sit' 자세로 안정시켜 같은 구도로 찍는다. 같은 PC·브라우저면 실행 간 비교도 되지만, 기준은 같은 실행 안의 변형끼리다.
+- 출력: `shots`는 `tests/out/fur_probe/<tag>_aa<0|1>_<변형>_<face|mid>.png`(얼굴 0.7m, 옆 2m). 이어 붙이기: `node tests/lib/montage.js 출력.png 입력1.png 입력2.png [--scale 0.5]`.
+- `flicker` 수치: 카메라를 0.5화소씩 돌린 인접 프레임에서 털 영역 화소 중 색이 바뀐 비율(%). `face`=근접, `mid`=중간 거리. 낮을수록 지지직이 적다. 해석은 변화율(변형/roll - 1)로 한다. 예: 밀도 0.8배는 근접 약 -12%, 중간 약 -17%.
+- 앱 쪽 전제: `?admin` 때 `window.__pose`(CatView·makeGenome·poseTarget 등)가 노출돼 있어야 한다.
+
 ## 느린 환경
 
 - 소프트웨어 렌더링(swiftshader)이라 GPU가 없어도 돌지만 느리다. 제한 시간에 걸리면 `TEST_SLOW=2`(또는 3)로 대기와 제한 시간을 늘린다.

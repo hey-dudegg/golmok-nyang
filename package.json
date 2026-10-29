@@ -12,6 +12,7 @@
     "test:promo": "node tests/m02c.js",
     "test:loadfail": "node tests/load_fail.js",
     "test:feedback": "node tests/feedback_ui.js",
+    "test:fur": "node tests/fur_probe.js --mode flicker --tag run --variants roll,d0.8",
     "test:findcat": "node tests/find_cat.js",
     "test:backdrop": "node tests/backdrop.js",
     "test:view": "node tests/backdrop_view.js",
