@@ -1,10 +1,10 @@
 // 배포 설정 자리 (공개 파일). 비밀값·이메일 주소는 여기에 쓰지 않는다.
 // 의견 보내기(R-16, D-24·D-62): 브라우저는 Pages Functions 중계(/api/...)만 부르고, Web3Forms 접근 키와 받는 이메일은
 // Cloudflare 환경 변수·Web3Forms 대시보드에만 둔다(이 파일에 쓰지 않는다). 중계가 없으면 모의 어댑터(브라우저 저장)로 동작한다.
-// accessKey 칸은 중계 도입 전 임시 자리이며 비워 둔다.
+// 브라우저에는 키가 없다. live: 'auto' 면 배포 주소(localhost·127.0.0.1·file 이 아닌 곳)에서만 중계로 보내고, 로컬 서버에는 Functions 가 없어 모의로 동작한다.
 export const FEEDBACK_CONFIG = {
-  accessKey: '',          // 공개용 접근 키(D-54). 있으면 실제 전송, 비워 두면 모의
-  endpoint: 'https://api.web3forms.com/submit',
+  live: 'auto',           // 'auto' | true | false (시험용으로 고정할 수 있다)
+  endpoint: '/api/feedback', // 같은 출처 중계(functions/api/feedback.js)
   retentionDays: 90,      // 의견 보관 기간 (D-25)
 };
 

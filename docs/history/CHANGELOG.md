@@ -52,3 +52,4 @@ C-45 | 2026-10-29 | 결정 | 시험 수칙 보강(CLAUDE.md), 측정 스크립�
 C-46 | 2026-10-29 | 결정 | 글 필터링 방식·게시판 그림은 앱 캡쳐만 -> D-74, D-75 | 사용자 | architect, developer, security
 C-47 | 2026-10-29 | 결정 | 신고 3회 숨김 통일·게시판 신고 회원 전용, P-07 A, supabase-js vendor, M2-9 실시간 추가 -> D-76~79 | 사용자·팀장 | architect, developer, security
 C-48 | 2026-10-29 | 결정 | 홍보 안내창 사진 제외, 지역 고양이 그림으로 -> D-80 | 사용자 | architect, developer
+C-49 | 2026-10-30 | 변경 | M2에 의견 중계(M2-10) 추가, Web Analytics 켜짐에 따라 CSP 허용 추가 | 사용자 | developer, security

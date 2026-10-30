@@ -13,13 +13,13 @@
 | M2-6 | a: 게시판·이름·캡쳐 저장 / b: 필터·신고·숨김 | developer | D-67,74~76 | M2-5 뒤 |
 | M2-7 | 보안 J-3(CSP 강제)·J-6(__app 제거, fur_probe의 __pose 의존 확인) | developer·security | D-38 | 완료(배포 후 콘솔 확인) |
 | M2-8 | 2차 보안 점검·배포 판정 | security | D-38 R-19 | 마지막 |
+| M2-10 | 의견 중계(Pages Function)·CSP에 Web Analytics 허용 | developer | D-54,55,62 | 구현 완료(배포 후 확인) |
 | M2-9 | 사람 수·홍보 잠금 Realtime 연결 | architect·developer | D-79,80 R-08,12 | 설계 완료(8장) |
-- M1 완료(2026-10-29, archive/INDEX-M1.md). M0: archive/INDEX-M0.md
 ## 역할별 현황
 | 역할 | 상태 | 진행 중 | 마지막 반영 D |
 |---|---|---|---|
 | tester | 대기 | M2-3 완료 | D-73 |
-| developer | 대기 | M2-7 완료 | D-80 |
+| developer | 대기 | M2-10 완료 | D-80 |
 | security·token-optimizer | 대기 | 정기 분석 2차 완료(11장) | D-72 |
 | troubleshooter | 대기 | M1-14 폰 확인 대기 | D-71 |
 | architect·devops | 대기 | M2-9 설계 완료 / M2-2 헤더는 주소 대기 | D-80 |
@@ -71,10 +71,9 @@
 ## 최근 변경 (C) - 최근 5건, 원본: history/CHANGELOG.md
 | ID | 날짜 | 한 줄 요약 |
 |---|---|---|
+| C-49 | 2026-10-30 | 의견 중계 M2 추가 -> M2-10 |
 | C-48 | 2026-10-29 | 홍보 사진 제외 -> D-80 |
-| C-47 | 2026-10-29 | 신고·키·라이브러리·실시간 -> D-76~79 |
-| C-46 | 2026-10-29 | 필터링·캡쳐만 -> D-74,75 |
 ## 설계 문서 (docs/design/)
 - 골목냥_수정설계_2026-10-18.md(R-08~15, 10장 구현 순서·12장 확정), 의견함_명소배경(R-16·17), 숏츠_행동(R-14)
 - 2차_연결_설계.md(M2-4: 키·표/RLS·필터·로그인·사용자 할 일), 배포_계획(1·2차), 토큰(11장)·보안·로그 설계(R-18~20), 개인정보_안내, 문제해결_털_지지직(D-70·71)
-- 보관됨: D-06,16,66,69 (archive/DECISIONS-M1.md), M1 작업표(archive/INDEX-M1.md), legacy/
+- 보관됨: D-06,16,66,69 (archive/DECISIONS-M1.md), 작업표 M0·M1(archive/INDEX-M0·M1.md), legacy/
