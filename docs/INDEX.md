@@ -9,7 +9,7 @@
 | M2-2 | Actions 통과·배포 보안 헤더 확인 | devops | D-45 | Actions 통과, 헤더는 주소 대기 |
 | M2-3 | 털 측정 도구 정리(fur_probe) | tester | D-73 | 완료 |
 | M2-4 | 2차 설계 확정·개정(C-51) | architect | D-74~77,81~85 | 개정 완료 |
-| M2-5 | a: supabase-js·config·CSP / b: 익명 세션(로그인 보류) | developer | D-77,78,82 | a·b 완료, SQL 실행 대기 |
+| M2-5 | a: supabase-js·config·CSP / b: 익명 세션(로그인 보류) | developer | D-77,78,82 | 완료(SQL 두 곳 실행) |
 | M2-6 | a: 게시판(읽기만)·이름(익명)·캡쳐 / b: 필터·신고 | developer | D-74~76,83,84 | 재설계 |
 | M2-7 | 보안 J-3(CSP 강제)·J-6(__app 제거, fur_probe의 __pose 의존 확인) | developer·security | D-38 | 완료(배포 후 콘솔 확인) |
 | M2-8 | 2차 보안 점검·배포 판정 | security | D-38 R-19 | 마지막 |

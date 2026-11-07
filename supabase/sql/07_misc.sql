@@ -17,7 +17,11 @@ create or replace function public.daily_cleanup() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare n_users int := 0; n_posts int := 0; n_names int := 0; n_reports int := 0;
 begin
-  if not (public.is_admin() or session_user in ('postgres', 'supabase_admin')) then
+  -- session_user 는 set role 뒤에도 바뀌지 않으므로(관리 세션이 authenticated 로 바꿔 불러도 통과), 바꾼 역할(role 설정)도 본다.
+  -- security definer 안에서 current_user 는 소유자라 쓸 수 없다. role 설정은 API(anon·authenticated)면 그 이름, 스케줄러면 'none'.
+  if not (public.is_admin()
+          or (session_user in ('postgres', 'supabase_admin')
+              and coalesce(current_setting('role', true), 'none') not in ('anon', 'authenticated'))) then
     raise exception 'forbidden' using errcode = 'P0001';
   end if;
   -- 가입 안 끝난 소셜 계정(회원 행 없음, 익명 아님) 7일 뒤 삭제. 익명 계정은 제외.
