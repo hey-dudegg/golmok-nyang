@@ -61,3 +61,5 @@
 2026-10-30 | developer | [구현] CSP에 Web Analytics 두 주소만 추가, 주소는 [미확인](공식 문서 열람 불가) (M2-10, D-55)
 2026-10-30 | developer | [테스트] Function 단위 10/10, npm test 14/14 PASS (M2-10)
 2026-10-30 | 팀장 | [결정] 변수 이름 WEB3FORMS_ACCESS_KEY 수용, 서버 minOpenMs 생략 수용. 실제 확인은 배포 후 (M2-10)
+2026-10-30 | 팀장 | [구현] secure-check 문제 없음, 5bbc4fa 커밋·푸시 (M2-10)
+2026-11-07 | 팀장 | [구현] secure-check 문제 없음, LOG 커밋 (M2)
