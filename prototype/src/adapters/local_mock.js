@@ -3,10 +3,15 @@
 // 로컬 모의 어댑터 (D-21): window.claude가 없는 로컬 시험 환경에서만. 사용자 흉내(어드민 판별) + room(사람 수·순간 메시지) + lock(먼저 잡은 한 명).
 // 탭끼리는 BroadcastChannel로 이야기한다. 잠금은 localStorage의 한 칸(탭 사이 거의 동시에 눌러도 한 명만 남게 쓴 뒤 다시 읽어 확인).
 // 게시판·이웃 데이터(db)는 지금처럼 브라우저 localStorage로 대신한다.
+import { FEATURES_DEFAULT } from '../config.js';
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', ''];
 export const LocalMock = {
   usable: () => LOCAL_HOSTS.includes(location.hostname),
-  user: () => ({ id: async () => null, isOwner: async () => true, can: async () => true }),
+  // can: 서버 규칙(2-1)과 같게 FEATURES_DEFAULT 로 판정(모의에는 회원이 없다: 글쓰기 준비 중, 이름 짓기 익명 허용). 로그인 시험은 재개 때(D-82)
+  user: () => ({
+    id: async () => null, isOwner: async () => true, isAnonymous: async () => true, onChange: () => () => {},
+    can: async (what) => (what === 'post' ? false : what === 'name' ? !!FEATURES_DEFAULT.names_anon : true),
+  }),
   // room: join(이름) 한 곳에 들어가 있고, count(이름)으로 그 곳 사람 수(나 포함), send/on으로 모든 탭에 순간 메시지
   room() {
     const id = 'p' + Math.random().toString(36).slice(2, 9), peers = new Map(), handlers = [], countFns = [];

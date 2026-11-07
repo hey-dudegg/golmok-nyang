@@ -53,3 +53,6 @@ C-46 | 2026-10-29 | 결정 | 글 필터링 방식·게시판 그림은 앱 캡�
 C-47 | 2026-10-29 | 결정 | 신고 3회 숨김 통일·게시판 신고 회원 전용, P-07 A, supabase-js vendor, M2-9 실시간 추가 -> D-76~79 | 사용자·팀장 | architect, developer, security
 C-48 | 2026-10-29 | 결정 | 홍보 안내창 사진 제외, 지역 고양이 그림으로 -> D-80 | 사용자 | architect, developer
 C-49 | 2026-10-30 | 변경 | M2에 의견 중계(M2-10) 추가, Web Analytics 켜짐에 따라 CSP 허용 추가 | 사용자 | developer, security
+C-50 | 2026-11-07 | 결정 | 사이트 이름 golmok-nyang 확정, Supabase 프로젝트 2개 생성 | 사용자 | devops, developer
+C-51 | 2026-11-07 | 변경 | 스테이징→테스트 주소, 소셜 로그인 보류·게시판 읽기만·이름 익명 허용 (D-81~84) | 사용자 | architect, developer, security
+C-52 | 2026-11-07 | 결정 | P-38 해결: 어드민 익명 uid 기기별 등록 (D-86) | 사용자 | developer, security

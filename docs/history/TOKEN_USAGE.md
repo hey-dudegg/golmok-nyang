@@ -25,3 +25,6 @@
 2026-10-29 | architect | M2-9 실시간 설계 | 58k | 30 | 30회 상한 도달, 설계 93줄 추가·목차 재정렬
 2026-10-29 | developer | M2-5a supabase-js·initCaps(+라이선스 후속) | 53k | 26 | 임시 폴더 npm pack·esbuild 묶음, 전체 npm test 1회
 2026-10-29 | developer | M2-7 J-3·J-6 | 51k | 37 | puppeteer로 실제 CSP 헤더 흉내, networkidle2 60초 초과 3회, 30회 상한 초과
+2026-11-07 | architect | M2-4 개정 로그인 보류 | 81k | 39 | 40KB 문서 전체 읽기 2회, 3·8장 분리로 내용 왕복 약 25KB
+2026-11-07 | architect | M2-4 개정 후속(2장 분리·리디렉트) | 24k | 9 | 재개 1회
+2026-11-07 | developer | M2-5b 익명 세션·SQL 01·02·07 | 81k | 34 | 읽기 약 70KB, heredoc 인용부호 실패 1회, npm test 6분 백그라운드 대기 여러 번
