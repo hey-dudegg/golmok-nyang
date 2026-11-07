@@ -7,6 +7,11 @@ import { Board } from '../state/board.js';
 import { nickOf } from '../state/gate.js';
 import { $, ICON, h, openScrim, toast } from './dom.js';
 import { requireGate } from './signup.js';
+import { errText } from './err_text.js';
+
+// 게시판 쓰기 잠금(D-83, 설계 2-3): 서버에 연결했거나 로컬 모의일 때 board_write 스위치가 꺼져 있으면 글·댓글·캡쳐 올리기는 '준비 중'. 보기·좋아요는 그대로
+export const boardLocked = () => (Caps.mode === 'supabase' || Caps.mode === 'mock') && !Caps.features.board_write;
+export const BOARD_LOCK_TEXT = '글쓰기는 지금 준비 중이에요. 글 보기와 좋아요는 그대로 할 수 있어요.';
 
 // ── 캡쳐 ──
 // data: 주소를 fetch 하면 CSP connect-src 'self' 에 막히므로 직접 Blob 으로 만든다 (보안 J-3)
@@ -28,6 +33,7 @@ export function openCapture(app, dataUrl, meta) {
       catch (e) { if (e && e.code !== 'declined') { hint.hidden = false; hint.textContent = '여기서는 바로 저장할 수 없어요. 사진을 길게 누르거나 우클릭해서 저장해 주세요.'; } }
     } else { hint.hidden = false; hint.textContent = '사진을 길게 누르거나 우클릭해서 저장해 주세요.'; }
   });
+  if (boardLocked()) { postBtn.disabled = true; postBtn.textContent = '게시판 글쓰기는 준비 중이에요'; }
   postBtn.addEventListener('click', () => { close(); requireGate(app, 'board_write', '게시판에 올리려면 이웃 등록이 필요해요', () => openCompose(app, dataUrl, meta)); });
   const sheet = h('div', { class: 'sheet' },
     h('h3', { text: meta.catName ? `${meta.catName}, 찰칵` : '골목 풍경, 찰칵' }),
@@ -56,7 +62,7 @@ function openCompose(app, dataUrl, meta) {
       close(); toast('게시판에 올렸어요'); app.openBoard();
     } catch (ex) {
       send.disabled = false; send.textContent = '올리기';
-      err.textContent = ex && ex.code === 'quota_exceeded' ? '게시판 저장 공간이 꽉 찼어요. 운영자가 정리할 때까지 기다려 주세요.' : ex && ex.code === 'invalid_argument' ? '이 링크에서는 글을 쓸 수 없어요 (보기 전용).' : '올리지 못했어요. 잠시 뒤 다시 눌러 주세요.';
+      err.textContent = errText(ex, '') || (ex && ex.code === 'quota_exceeded' ? '게시판 저장 공간이 꽉 찼어요. 운영자가 정리할 때까지 기다려 주세요.' : ex && ex.code === 'invalid_argument' ? '이 링크에서는 글을 쓸 수 없어요 (보기 전용).' : '올리지 못했어요. 잠시 뒤 다시 눌러 주세요.');
     }
   });
 }
@@ -88,7 +94,7 @@ export function renderBoard(app) {
   const feed = h('div', { class: 'feed' });
   if (!posts.length) {
     const e = h('div', { class: 'empty' }); e.innerHTML = ICON.cat;
-    e.append(h('div', { text: tab === 'dong' ? `${app.dong.n} 지역에서 올라온 사진이 아직 없어요.` : '아직 올라온 사진이 없어요.' }), h('div', { text: '오른쪽 아래 카메라 버튼으로 고양이를 캡쳐해서 첫 글을 남겨 보세요.' }));
+    e.append(h('div', { text: tab === 'dong' ? `${app.dong.n} 지역에서 올라온 사진이 아직 없어요.` : '아직 올라온 사진이 없어요.' }), h('div', { text: boardLocked() ? '게시판 글쓰기는 준비 중이에요.' : '오른쪽 아래 카메라 버튼으로 고양이를 캡쳐해서 첫 글을 남겨 보세요.' }));
     feed.append(e);
   }
   for (const p of posts) {
@@ -106,13 +112,14 @@ export function renderBoard(app) {
       p.text ? h('div', { class: 'txt', text: p.text }) : null,
       h('div', { class: 'row' }, likeBtn, cmBtn, goBtn, delBtn));
     if (app.openComments === p.id) {
-      const ci = h('input', { type: 'text', maxlength: '200', placeholder: '댓글 달기', 'aria-label': '댓글' });
-      const cf = h('form', { class: 'say', onsubmit: (e) => { e.preventDefault(); const v = ci.value.trim(); if (!v) return; requireGate(app, 'board_comment', '댓글은 이웃만 달 수 있어요', () => Board.comment(p, v).then(() => { ci.value = ''; }).catch(() => toast('댓글을 달지 못했어요'))); } }, ci, h('button', { class: 'btn', type: 'submit', text: '달기' }));
+      const locked = boardLocked();
+      const ci = h('input', { type: 'text', maxlength: '200', placeholder: locked ? '댓글은 준비 중이에요' : '댓글 달기', 'aria-label': '댓글', disabled: locked });
+      const cf = h('form', { class: 'say', onsubmit: (e) => { e.preventDefault(); const v = ci.value.trim(); if (!v || locked) return; requireGate(app, 'board_comment', '댓글은 이웃만 달 수 있어요', () => Board.comment(p, v).then(() => { ci.value = ''; }).catch((ex) => toast(errText(ex, '댓글을 달지 못했어요')))); } }, ci, h('button', { class: 'btn', type: 'submit', text: '달기', disabled: locked }));
       post.append(h('div', { class: 'cmts' }, ...(cms.length ? cms.map((c) => h('div', { class: 'c' }, h('b', { text: c.nick }), c.text)) : [h('div', { text: '첫 댓글을 남겨 보세요.' })]), cf));
     }
     feed.append(post);
   }
   const foot = h('div', { class: 'note', style: 'margin:0 16px 12px', text: Caps.shared ? '이 게시판은 이 페이지를 여는 모든 이웃이 함께 봅니다. 사진은 앱 안 캡쳐만 올릴 수 있어요.' : '공유 저장소가 없는 화면이라 이 브라우저에만 저장돼요. 사진은 앱 안 캡쳐만 올릴 수 있어요.' });
   const header = h('header', {}, h('h3', { text: '자유게시판' }), closeBtn);
-  el.replaceChildren(header, tabs, feed, foot);
+  el.replaceChildren(header, tabs, ...(boardLocked() ? [h('div', { class: 'note', id: 'boardLockNote', style: 'margin:0 16px 8px', text: BOARD_LOCK_TEXT })] : []), feed, foot);
 }

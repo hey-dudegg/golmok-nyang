@@ -1,7 +1,8 @@
 // Supabase 연결 어댑터의 입구 (D-10, D-77·78, 설계 2차_연결_설계.md 5장). 설정 고르기·client 만들기·익명 세션(M2-5a), user·features(M2-5b).
-// db(표 번역)는 M2-6a 에서 채운다. client 는 인자로 받아 시험에서 가짜를 넣는다. 로그인·가입·탈퇴는 보류(D-82).
+// db(표 번역)는 supabase_db.js(M2-6a). client 는 인자로 받아 시험에서 가짜를 넣는다. 로그인·가입·탈퇴는 보류(D-82).
 // 방문자에게 보이는 공개 키만 다룬다. 관리자 키는 쓰지 않는다(D-11).
 import { FEATURES_DEFAULT } from '../config.js';
+import { createDb } from './supabase_db.js';
 
 // 접속 주소에 맞는 항목을 고른다. url·key 가 둘 다 있어야 한다. 없으면 null(= 연결하지 않음).
 export function pickSupabaseConfig(cfg, hostname) {
@@ -61,9 +62,9 @@ export function createUser(client, features) {
   };
 }
 
-export function createSupabaseCaps(client, cfg, features = { ...FEATURES_DEFAULT }) {
-  // db 는 M2-6a. room·lock 은 M2-9 전까지 null(화면은 null 을 견딘다, D-79).
-  return { user: createUser(client, features), db: null, room: null, lock: null, features };
+export function createSupabaseCaps(client, cfg, features = { ...FEATURES_DEFAULT }, dbOpts = {}) {
+  // room·lock 은 M2-9 전까지 null(화면은 null 을 견딘다, D-79).
+  return { user: createUser(client, features), db: createDb(client, dbOpts), room: null, lock: null, features };
 }
 
 // 익명 세션 확보. 이미 세션이 있으면 그대로 쓰고, 없으면 익명 로그인. 실패하면 던진다.

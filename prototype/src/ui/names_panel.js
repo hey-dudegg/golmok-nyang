@@ -4,6 +4,23 @@ import { Names } from '../state/names.js';
 import { Caps } from '../adapters/caps.js';
 import { $, ICON, h, openScrim, toast } from './dom.js';
 import { requireGate } from './signup.js';
+import { errText } from './err_text.js';
+
+// 임시 익명 허용 안내(D-84, 설계 2-5-1). 문구는 여기 한 곳. 조건: 익명 허용·로그인 꺼짐·익명 방문자(로그인을 켜면 저절로 사라짐)
+export const NAMES_NOTICE = '지금은 로그인 없이 할 수 있어요. 나중엔 로그인이 필요한 기능이에요.';
+const NOTICE_KEY = 'gn_names_notice';
+const noticeSeen = () => { try { return localStorage.getItem(NOTICE_KEY) === '1'; } catch (e) { return false; } };
+const noticeMark = () => { try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) {} };
+const noticeOn = async () => {
+  const u = Caps.user;
+  if (!u || typeof u.isAnonymous !== 'function' || !Caps.features.names_anon || Caps.features.login) return false;
+  try { return !!(await u.isAnonymous()); } catch (e) { return false; }
+};
+function openNoticePopup() {
+  let close;
+  const ok = h('button', { class: 'btn primary', type: 'button', text: '확인', onclick: () => close() });
+  close = openScrim(h('div', { class: 'sheet' }, h('p', { id: 'namesNoticePop', text: NAMES_NOTICE }), h('div', { class: 'foot' }, ok)), { center: true });
+}
 
 export function namesPanel(app, a) {
   const input = h('input', { type: 'text', id: 'nameDraft', maxlength: '8', placeholder: `새 이름 제안 (1~8자, 최대 ${NAME_RULE.PER_SESSION}개)`, 'aria-label': '새 이름', value: app.nameDraft || '' });
@@ -21,16 +38,22 @@ export function namesPanel(app, a) {
         app.nameDraft = ''; const ip = $('#nameDraft'); if (ip) ip.value = '';
         toast(res.dup ? `이미 있는 이름이라 좋아요를 눌렀어요` : `"${res.item.name}" 이름을 제안했어요`);
         a.react('head_tilt');
-      } catch (ex) { const ee = $('#nameErr'); if (ee) ee.textContent = ex && ex.message && !ex.code ? ex.message : '제안하지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
+      } catch (ex) { const ee = $('#nameErr'); if (ee) ee.textContent = ex && ex.message && !ex.code ? ex.message : errText(ex, '제안하지 못했어요. 잠시 뒤 다시 눌러 주세요.'); }
       btn.disabled = false;
     });
   } }, input, btn);
+  const anonNote = h('p', { class: 'note', id: 'namesAnonNote', hidden: true, text: NAMES_NOTICE });
+  noticeOn().then((on) => { // 입력칸 아래 안내문은 늘, 팝업은 처음 열 때 한 번
+    if (!on) return;
+    anonNote.hidden = false;
+    if (!noticeSeen()) { noticeMark(); openNoticePopup(); }
+  });
   return h('div', { class: 'names' },
     h('p', { class: 'nhelp', text: `좋아요를 가장 많이 받은 이름이 이 고양이의 이름이 돼요. 싫어요가 좋아요보다 많아지면 이름이 내려가요. 투표 전에는 이 지역에서 부르던 '${a.cat.defaultName || a.cat.name}'(으)로 불려요.` }),
     // D-65: M2(2차) 연결 후 삭제 (공유 저장소가 없을 때만 보이는 안내)
     ...(Caps.db && Caps.shared ? [] : [h('p', { class: 'note', id: 'namesLocalNote', text: '아직은 지은 이름과 랭킹이 이 기기에만 저장돼요. 이웃과 함께 보는 기능은 준비 중이에요.' })]),
     h('ol', { class: 'rank', id: 'rankList', 'aria-label': '이름 랭킹 상위 10' }),
-    form, err);
+    form, anonNote, err);
 }
 
 function confirmReport(n, onYes) {

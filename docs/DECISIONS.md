@@ -341,3 +341,15 @@
 ## D-87 정리 작업은 Supabase 안 예약 작업으로 (2026-11-07, 결정자: 팀장, M2-5b)
 - 내용: daily_cleanup()은 pg_cron(무료, DB 안)으로 하루 1회. 관리자 키 불필요. Actions(D-09)는 하루 1회 요청만 유지. pg_cron 무료 제공은 [미확인]
 - 영향 역할: developer, devops
+
+## D-88 CSP에 Supabase 두 프로젝트 허용 (2026-11-07, 결정자: 팀장, M2-2)
+- 내용: _headers connect-src에 운영·테스트 Supabase의 https·wss 주소 추가(공개 주소, 두 사이트 공용). img-src는 Storage 쓸 때 추가
+- 영향 역할: devops, security
+
+## D-89 테스트 사이트는 사용자 본인만 접근 (2026-11-07, 결정자: 사용자, M2-2)
+- 내용: Pages 미리보기(test 포함)에 Cloudflare Access 정책, 허용은 사용자 이메일 1개(대시보드에만 입력). 운영은 공개
+- 영향 역할: devops, security
+
+## D-90 posts 지역·고양이 열 보류, check.sql 크기 예외 (2026-11-07, 결정자: 팀장, M2-6a)
+- 내용: posts의 dong·cat(meta) 열은 글쓰기를 열 때(로그인 재개 작업) 추가. check.sql은 한 번에 붙여 넣는 시험이라 40KB까지 허용, 넘으면 절별 분리
+- 영향 역할: architect, developer

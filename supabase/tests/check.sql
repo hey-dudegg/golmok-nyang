@@ -1,9 +1,10 @@
 -- check.sql (판 3: gn_test 스키마·DO 묶음) DB 규칙 시험 (설계 2차_연결_설계.md 5-4). 테스트 프로젝트 SQL Editor 에서 통째로 실행한다.
--- 전제: 01_base·02_members·07_misc 를 실행한 뒤. 바깥 do 블록 안에서 gn_test 스키마·가짜 계정을 만들고 시험한 뒤
+-- 전제: 01_base·02_members·03_board·04_names·06_storage·07_misc 를 실행한 뒤. 바깥 do 블록 안에서 gn_test 스키마·가짜 계정을 만들고 시험한 뒤
 --       일부러 오류를 내 안쪽 블록을 되돌리므로 아무것도 남지 않는다(temp 표·pg_temp 함수·begin/rollback 을 쓰지 않음).
 -- 결과: 마지막 표의 result 열이 전부 PASS 이면 통과. FAIL 이 있으면 그 줄(name)을 그대로 알려 준다.
 --       "중단:" 줄이 나오면 시험 도중 예상 밖 오류다(그 앞 결과는 되돌려져 보이지 않는다). 그 줄을 그대로 알려 준다.
--- 지금 들어 있는 절: [01] 스위치·권한 함수, [02] 회원·교감, [07] 탈퇴·정리. 03~06·08 절은 해당 SQL 이 추가될 때 이어서 더한다.
+-- 지금 들어 있는 절: [01] 스위치·권한 함수, [02] 회원·교감, [03] 게시판 잠금, [04] 익명 이름, [06] 캡쳐 저장소, [07] 탈퇴·정리.
+--       05·08 절은 해당 SQL 이 추가될 때 이어서 더한다. 전제 SQL 은 01·02·03·04·06·07.
 -- [미확인] auth.users 에 가짜 행을 넣을 때 필수 열이 더 있으면 아래 "가짜 계정" 부분만 고친다(실제 uid·주소는 쓰지 않는다).
 do $main$
 declare r text; c text;
@@ -37,6 +38,12 @@ begin
   begin
     begin execute p_sql; perform gn_test.rec(p_name, true);
     exception when others then perform gn_test.rec(p_name || ' (' || sqlerrm || ')', false); end;
+  end $$;
+  -- sql 을 실행해서 지정한 오류 메시지(raise exception 의 코드)가 나야 PASS
+  create function gn_test.raises(p_name text, p_sql text, p_msg text) returns void language plpgsql as $$
+  begin
+    begin execute p_sql; perform gn_test.rec(p_name, false);
+    exception when others then perform gn_test.rec(p_name || ' (' || sqlerrm || ')', sqlerrm = p_msg); end;
   end $$;
   -- 한 값을 돌려주는 sql 이 기대한 문자열과 같아야 PASS (예외도 FAIL)
   create function gn_test.eq(p_name text, p_sql text, p_want text) returns void language plpgsql as $$
@@ -111,6 +118,121 @@ begin
   perform gn_test.eq('02 어드민은 회원 행을 봄', 'select count(*)::text from public.members', '1');
   perform gn_test.back();
 
+  -- ===== [03] 게시판 잠금(board_write 꺼짐) =====
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.raises('03 잠금: 회원 글쓰기도 feature_off', format($$insert into public.posts (uid, body) values (%L, 'x')$$, gn_test.uid('mem1')), 'feature_off');
+  perform gn_test.raises('03 잠금: 댓글도 feature_off', format($$insert into public.post_comments (post_id, uid, body) values (gen_random_uuid(), %L, 'x')$$, gn_test.uid('mem1')), 'feature_off');
+  perform gn_test.back();
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.raises('03 잠금: 익명 글쓰기 feature_off', format($$insert into public.posts (uid, body) values (%L, 'x')$$, gn_test.uid('anon1')), 'feature_off');
+  perform gn_test.back();
+  -- 글이 있는 상태를 만들려고 같은 트랜잭션에서 잠깐 켠다
+  update public.app_config set value = '{"login":false,"board_write":true,"names_anon":true}' where key = 'features';
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.raises('03 켬: 익명은 회원이 아니라 need_member', format($$insert into public.posts (uid, body) values (%L, 'x')$$, gn_test.uid('anon1')), 'need_member');
+  perform gn_test.back();
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.allowed('03 켬: 회원 글쓰기 허용', format($$insert into public.posts (uid, body) values (%L, 'hello')$$, gn_test.uid('mem1')));
+  perform gn_test.eq('03 서버가 정한 열(nick·status·img)', $$select nick || '/' || status || '/' || coalesce(img, '-') from public.posts where uid = gn_test.uid('mem1')$$, 'new/ok/-');
+  perform gn_test.denied('03 남의 uid 로 글쓰기 거부', format($$insert into public.posts (uid, body) values (%L, 'x')$$, gn_test.uid('anon1')));
+  perform gn_test.denied('03 status 직접 지정 거부', format($$insert into public.posts (uid, body, status) values (%L, 'x', 'ok')$$, gn_test.uid('mem1')));
+  perform gn_test.denied('03 img 직접 지정 거부', format($$insert into public.posts (uid, body, img) values (%L, 'x', 'a/b.webp')$$, gn_test.uid('mem1')));
+  perform gn_test.denied('03 본문 501자 거부', format($$insert into public.posts (uid, body) values (%L, repeat('a', 501))$$, gn_test.uid('mem1')));
+  perform gn_test.allowed('03 켬: 회원 댓글 허용', format($$insert into public.post_comments (post_id, uid, body) select id, uid, 'c1' from public.posts where uid = %L limit 1$$, gn_test.uid('mem1')));
+  perform gn_test.eq('03 댓글 nick 은 서버가', $$select nick from public.post_comments limit 1$$, 'new');
+  perform gn_test.back();
+  update public.app_config set value = '{"login":false,"board_write":false,"names_anon":true}' where key = 'features';
+
+  -- 잠금 상태에서도 읽기·좋아요는 된다
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.eq('03 익명이 글 읽기', 'select count(*)::text from public.posts', '1');
+  perform gn_test.eq('03 익명이 댓글 읽기', 'select count(*)::text from public.post_comments', '1');
+  perform gn_test.allowed('03 익명 좋아요 허용(D-67)', format($$insert into public.post_likes (post_id, uid) select id, %L from public.posts limit 1$$, gn_test.uid('anon1')));
+  perform gn_test.denied('03 같은 글 좋아요 중복 거부', format($$insert into public.post_likes (post_id, uid) select id, %L from public.posts limit 1$$, gn_test.uid('anon1')));
+  perform gn_test.denied('03 남의 uid 로 좋아요 거부', format($$insert into public.post_likes (post_id, uid) select id, %L from public.posts limit 1$$, gn_test.uid('anon2')));
+  perform gn_test.denied('03 익명이 남의 글 삭제 거부', $q$do $d$ declare n int; begin
+    delete from public.posts where true; get diagnostics n = row_count;
+    if n > 0 then return; end if; raise exception 'no rows'; end $d$ $q$);
+  perform gn_test.denied('03 익명이 남의 댓글 삭제 거부', $q$do $d$ declare n int; begin
+    delete from public.post_comments where true; get diagnostics n = row_count;
+    if n > 0 then return; end if; raise exception 'no rows'; end $d$ $q$);
+  perform gn_test.denied('03 글 직접 수정 거부', $$update public.posts set body = 'hack' where true$$);
+  perform gn_test.allowed('03 좋아요 취소 허용', $$delete from public.post_likes where uid = gn_test.uid('anon1')$$);
+  perform gn_test.back();
+  -- 숨김 글은 작성자·어드민에게만 보인다
+  update public.posts set status = 'hidden';
+  perform gn_test.as_user('anon2', true);
+  perform gn_test.eq('03 숨김 글은 남에게 안 보임', 'select count(*)::text from public.posts', '0');
+  perform gn_test.eq('03 숨긴 글의 댓글도 안 보임', 'select count(*)::text from public.post_comments', '0');
+  perform gn_test.back();
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.eq('03 숨김 글은 작성자에게 보임', 'select count(*)::text from public.posts', '1');
+  perform gn_test.back();
+  perform gn_test.as_user('adm1', false);
+  perform gn_test.eq('03 숨김 글은 어드민에게 보임', 'select count(*)::text from public.posts', '1');
+  perform gn_test.back();
+  update public.posts set status = 'ok';
+
+  -- ===== [04] 익명 이름 짓기(names_anon 켜짐) =====
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.allowed('04 익명 이름 제안 허용', format($$insert into public.names2 (region, name, uid) values ('11', '골목', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.eq('04 서버가 정한 열(up/down/status/nick)', $$select up || '/' || down || '/' || status || '/' || coalesce(nick, '-') from public.names2 where name = '골목'$$, '1/0/ok/-');
+  perform gn_test.eq('04 제안자 좋아요 표 1행(본인 표만 보임)', 'select count(*)::text from public.name_votes', '1');
+  perform gn_test.denied('04 같은 이름 중복 거부(공백·대소문자 무시)', format($$insert into public.names2 (region, name, uid) values ('11', ' 골목 ', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.denied('04 남의 uid 로 제안 거부', format($$insert into public.names2 (region, name, uid) values ('11', '다른', %L)$$, gn_test.uid('anon2')));
+  perform gn_test.denied('04 이름 9자 거부', format($$insert into public.names2 (region, name, uid) values ('11', '123456789', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.denied('04 up 직접 지정 거부', format($$insert into public.names2 (region, name, uid, up) values ('11', '치즈', %L, 99)$$, gn_test.uid('anon1')));
+  perform gn_test.denied('04 이름 직접 수정 거부', $$update public.names2 set up = 99 where true$$);
+  perform gn_test.denied('04 표 직접 쓰기 거부', format($$insert into public.name_votes (name_id, uid, vote) select id, %L, 'down' from public.names2 limit 1$$, gn_test.uid('anon1')));
+  perform gn_test.allowed('04 같은 지역 2번째 제안', format($$insert into public.names2 (region, name, uid) values ('11', 'A1', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.allowed('04 같은 지역 3번째 제안', format($$insert into public.names2 (region, name, uid) values ('11', 'A2', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.allowed('04 같은 지역 4번째 제안', format($$insert into public.names2 (region, name, uid) values ('11', 'A3', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.allowed('04 같은 지역 5번째 제안', format($$insert into public.names2 (region, name, uid) values ('11', 'A4', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.raises('04 같은 지역 6번째 거부', format($$insert into public.names2 (region, name, uid) values ('11', 'A5', %L)$$, gn_test.uid('anon1')), 'name_limit');
+  perform gn_test.allowed('04 다른 지역은 따로 센다', format($$insert into public.names2 (region, name, uid) values ('26', 'A5', %L)$$, gn_test.uid('anon1')));
+  perform gn_test.back();
+
+  perform gn_test.as_user('anon2', true);
+  perform gn_test.eq('04 익명 투표: 좋아요 -> up 2', $$select (public.name_vote(id, 'up') ->> 'up') from public.names2 where name = '골목'$$, '2');
+  perform gn_test.eq('04 같은 표를 다시 누르면 취소 -> up 1', $$select (public.name_vote(id, 'up') ->> 'up') from public.names2 where name = '골목'$$, '1');
+  perform gn_test.eq('04 싫어요 1 = 좋아요 1 이면 유지', $$select (public.name_vote(id, 'down') ->> 'status') from public.names2 where name = '골목'$$, 'ok');
+  perform gn_test.raises('04 잘못된 표 거부', $$select public.name_vote(id, 'love') from public.names2 where name = '골목'$$, 'bad_vote');
+  perform gn_test.denied('04 남의 이름 삭제 거부', $$select public.name_remove(id) from public.names2 where name = '골목'$$);
+  perform gn_test.back();
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.eq('04 싫어요가 더 많아지면 내려감', $$select (public.name_vote(id, 'down') ->> 'status') from public.names2 where name = '골목'$$, 'removed');
+  perform gn_test.back();
+  perform gn_test.as_user('anon2', true);
+  perform gn_test.eq('04 내려간 이름은 남에게 안 보임', $$select count(*)::text from public.names2 where name = '골목'$$, '0');
+  perform gn_test.back();
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.eq('04 내려간 이름은 제안자에게 보임', $$select status from public.names2 where name = '골목'$$, 'removed');
+  perform gn_test.allowed('04 내가 지은 이름 지우기', $$select public.name_remove(id) from public.names2 where name = 'A1'$$);
+  perform gn_test.back();
+
+  -- ===== [06] 캡쳐 저장소 =====
+  perform gn_test.eq('06 버킷 captures: 공개·128KB', $$select b.public::text || '/' || b.file_size_limit::text from storage.buckets b where b.id = 'captures'$$, 'true/131072');
+  update public.app_config set value = '{"login":false,"board_write":true,"names_anon":true}' where key = 'features';
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.allowed('06 켬: 회원이 자기 글 그림 올리기', $$insert into storage.objects (bucket_id, name) select 'captures', uid::text || '/' || id::text || '.webp' from public.posts where uid = gn_test.uid('mem1') limit 1$$);
+  perform gn_test.denied('06 남의 폴더에 올리기 거부', format($$insert into storage.objects (bucket_id, name) select 'captures', %L || '/' || id::text || '.webp' from public.posts where uid = gn_test.uid('mem1') limit 1$$, gn_test.uid('anon1')));
+  perform gn_test.denied('06 글과 맞지 않는 파일 이름 거부', format($$insert into storage.objects (bucket_id, name) values ('captures', %L || '/' || gen_random_uuid()::text || '.webp')$$, gn_test.uid('mem1')));
+  perform gn_test.allowed('06 post_attach 로 img 채우기', $$select public.post_attach(id) from public.posts where uid = gn_test.uid('mem1') limit 1$$);
+  perform gn_test.eq('06 img 경로 모양', $$select (img = uid::text || '/' || id::text || '.webp')::text from public.posts where uid = gn_test.uid('mem1') limit 1$$, 'true');
+  perform gn_test.denied('06 그림이 붙은 글에 두 번째 올리기 거부', $$insert into storage.objects (bucket_id, name) select 'captures', uid::text || '/' || id::text || '.jpg' from public.posts where uid = gn_test.uid('mem1') limit 1$$);
+  perform gn_test.allowed('06 둘째 글(그림 없음)', format($$insert into public.posts (uid, body) values (%L, 'second')$$, gn_test.uid('mem1')));
+  perform gn_test.back();
+  perform gn_test.as_user('anon1', true);
+  perform gn_test.raises('06 익명 post_attach 거부', $$select public.post_attach(id) from public.posts limit 1$$, 'need_member');
+  perform gn_test.back();
+  update public.app_config set value = '{"login":false,"board_write":false,"names_anon":true}' where key = 'features';
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.denied('06 잠금: 업로드 거부', $$insert into storage.objects (bucket_id, name) select 'captures', uid::text || '/' || id::text || '.webp' from public.posts where uid = gn_test.uid('mem1') and img is null limit 1$$);
+  perform gn_test.raises('06 잠금: post_attach feature_off', $$select public.post_attach(id) from public.posts where uid = gn_test.uid('mem1') and img is null limit 1$$, 'feature_off');
+  perform gn_test.allowed('06 글 지우기(본인)', $$delete from public.posts where uid = gn_test.uid('mem1')$$);
+  perform gn_test.back();
+  perform gn_test.eq('06 글을 지우면 댓글·좋아요도 함께', 'select (select count(*) from public.post_comments)::text || (select count(*) from public.post_likes)::text', '00');
+
   -- ===== [01] 로그인 재개 값으로 바꾸면 (같은 트랜잭션) =====
   update public.app_config set value = '{"login":true,"board_write":true,"names_anon":false}' where key = 'features';
   perform gn_test.as_user('mem1', false);
@@ -120,6 +242,13 @@ begin
   perform gn_test.as_user('anon1', true);
   perform gn_test.eq('01 재개: 익명 can_post 거부', 'select public.can_post()::text', 'false');
   perform gn_test.eq('01 재개: 익명 can_name 거부(D-49 복귀)', 'select public.can_name()::text', 'false');
+  perform gn_test.raises('04 재개: 익명 이름 제안 거부', format($$insert into public.names2 (region, name, uid) values ('11', '재개', %L)$$, gn_test.uid('anon1')), 'need_member');
+  perform gn_test.raises('04 재개: 익명 투표 거부', $$select public.name_vote(id, 'up') from public.names2 where name = 'A2'$$, 'need_member');
+  perform gn_test.back();
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.allowed('04 재개: 회원 이름 제안 허용', format($$insert into public.names2 (region, name, uid) values ('11', '회원', %L)$$, gn_test.uid('mem1')));
+  perform gn_test.eq('04 재개: 회원 제안에는 nick 이 붙음', $$select nick from public.names2 where name = '회원'$$, 'new');
+  perform gn_test.allowed('03 재개: 회원 글쓰기 허용', format($$insert into public.posts (uid, body) values (%L, 'back')$$, gn_test.uid('mem1')));
   perform gn_test.back();
   update public.app_config set value = '{"login":false,"board_write":false,"names_anon":true}' where key = 'features';
 

@@ -1,5 +1,6 @@
 // 회원 범위 설정표(GATE, D-16)·어드민 상태(Admin)·공유 채널(D-17)·홍보 설정(D-15)
 import { Member } from './members.js';
+import { Caps } from '../adapters/caps.js';
 
 // 회원 범위 설정표 (D-16). 버튼마다 흩어진 확인을 이 표 하나로 모은다. '회원' | '누구나'. 어드민은 이 표를 무시한다.
 export const GATE = {
@@ -14,7 +15,10 @@ export const GATE_LABEL = { promo: '홍보하기', churu: '츄르 주기', board
 export const Admin = { active: false, wantsPage: new URLSearchParams(location.search).has('admin'), view: 'admin' }; // active는 소유자 확인 뒤 켜진다. view: 어드민 | 회원 | 비회원 화면 (설계 9장 이벤트 시험)
 export const adminPowers = () => Admin.active && Admin.view === 'admin'; // 어드민 화면에서만 설정표를 무시한다
 export const isMemberNow = () => (Admin.active && Admin.view === 'member') || (!(Admin.active && Admin.view === 'guest') && !!Member.me);
-export const gateNeedsMember = (key) => !adminPowers() && GATE[key] === '회원' && !isMemberNow();
+// 이름 짓기·투표·신고는 names_anon 이 켜져 있는 동안 익명도 된다(D-84, 설계 2-1 can_name). 아티팩트·정적 모드는 기존대로 회원
+const NAME_KEYS = ['name_suggest', 'name_like', 'name_report'];
+const anonNames = (key) => NAME_KEYS.includes(key) && (Caps.mode === 'supabase' || Caps.mode === 'mock') && !!Caps.features.names_anon;
+export const gateNeedsMember = (key) => !adminPowers() && GATE[key] === '회원' && !anonNames(key) && !isMemberNow();
 export const nickOf = () => (Member.me ? Member.me.nick : Admin.active ? '어드민' : '이웃');
 // 공유 채널 켜짐 설정 (D-17). 카카오톡·인스타는 만들어 두고 비활성. 어드민이 화면 확인용으로 켜 볼 수 있다
 export const SHARE_ENABLED = { link: true, x: true, threads: true, kakao: false, insta: false };
