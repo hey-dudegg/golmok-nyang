@@ -30,7 +30,7 @@ run(`fur_probe ${mode} ${tag} aa=${+AA}`, async () => {
     const put = (name, yaw) => { const [tg, off] = views[name], c = Math.cos(yaw), s = Math.sin(yaw); S.camera.position.set(tg.x + off.x * c + off.z * s, tg.y + off.y, tg.z - off.x * s + off.z * c); S.controls.target.copy(tg); S.camera.lookAt(tg); };
     const cv = document.createElement('canvas'), x2 = cv.getContext('2d', { willReadFrequently: true });
     const grab = () => { R.render(S.scene, S.camera); const c = R.domElement; cv.width = c.width; cv.height = c.height; x2.drawImage(c, 0, 0); return x2.getImageData(0, 0, cv.width, cv.height).data; };
-    // 변형 = 털 밀도 절대값. 앱의 기기별 배율(FUR_DENSITY_K)·?fur 스위치에 의존하지 않도록 기준(620/sqrt(scale))에 직접 곱한다.
+    // 변형 = 털 밀도 절대값. 앱의 기기별 배율(FUR_DENSITY_K)에 의존하지 않도록 기준(620/sqrt(scale))에 직접 곱한다.
     const base = 620 / Math.sqrt(v.dim.scale);
     const fovPx = 2 * Math.tan(S.camera.fov * Math.PI / 360) / R.domElement.clientHeight;
     for (const vr of variants) {

@@ -1,5 +1,6 @@
 // 이름 짓기·좋아요/싫어요 랭킹 상태(Names, D-31)
 import { NAME_BAD, NAME_RULE } from '../core/name_rules.js';
+import { checkText, FILTER_MSG } from '../core/text_filter.js';
 import { Caps } from '../adapters/caps.js';
 import { store } from '../adapters/store.js';
 import { Member } from './members.js';
@@ -49,6 +50,7 @@ export const Names = {
     const name = this.clean(raw);
     if (name.length < 1 || name.length > NAME_RULE.MAXLEN) return { err: `이름은 1~${NAME_RULE.MAXLEN}자로 지어 주세요.` };
     if (!/^[가-힣a-zA-Z0-9 ]+$/.test(name)) return { err: '한글, 영문, 숫자만 쓸 수 있어요.' };
+    const fc = checkText('name', name); if (fc) return { err: FILTER_MSG[fc], code: fc }; // 앱 쪽 빠른 안내. 금칙어는 서버만 안다(설계 필터 3-1)
     return { name };
   },
   norm: (s) => String(s || '').replace(/\s/g, '').toLowerCase(),

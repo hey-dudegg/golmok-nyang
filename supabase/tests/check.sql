@@ -3,8 +3,8 @@
 --       일부러 오류를 내 안쪽 블록을 되돌리므로 아무것도 남지 않는다(temp 표·pg_temp 함수·begin/rollback 을 쓰지 않음).
 -- 결과: 마지막 표의 result 열이 전부 PASS 이면 통과. FAIL 이 있으면 그 줄(name)을 그대로 알려 준다.
 --       "중단:" 줄이 나오면 시험 도중 예상 밖 오류다(그 앞 결과는 되돌려져 보이지 않는다). 그 줄을 그대로 알려 준다.
--- 지금 들어 있는 절: [01] 스위치·권한 함수, [02] 회원·교감, [03] 게시판 잠금, [04] 익명 이름, [06] 캡쳐 저장소, [07] 탈퇴·정리.
---       05·08 절은 해당 SQL 이 추가될 때 이어서 더한다. 전제 SQL 은 01·02·03·04·06·07.
+-- 지금 들어 있는 절: [01] 스위치·권한 함수, [02] 회원·교감, [03] 게시판 잠금, [04] 익명 이름, [06] 캡쳐 저장소, [07] 탈퇴·정리, [08] 홍보 잠금.
+--       [08] 실시간 홍보(08_realtime.sql 이 있을 때만). 05 절(필터·신고·어드민 복구)은 길어서 check_05.sql 로 따로 둔다(D-90). 전제 SQL 은 01·02·03·04·06·07(+08).
 -- [미확인] auth.users 에 가짜 행을 넣을 때 필수 열이 더 있으면 아래 "가짜 계정" 부분만 고친다(실제 uid·주소는 쓰지 않는다).
 do $main$
 declare r text; c text;
@@ -63,6 +63,8 @@ begin
 
   update public.app_config set value = '{"login":false,"board_write":false,"names_anon":true}' where key = 'features';
   update public.app_config set value = '"2026-10"' where key = 'terms_ver';
+  -- 도배 한도는 일부러 풀어 둔다(시험이 한 트랜잭션 안에서 연달아 쓰므로). 도배는 check_05.sql 이 기본값으로 따로 시험한다.
+  update public.app_config set value = '{"post":{"gap_s":0,"per10m":1000,"per1h":1000,"dup_h":0},"comment":{"gap_s":0,"per10m":1000,"per1h":1000,"dup_h":0},"name":{"gap_s":0,"per10m":1000,"per1h":1000},"nick":{"per1h":1000}}' where key = 'limits';
 
   -- ===== [01] 스위치·권한 함수 =====
   perform gn_test.as_user('anon1', true);
@@ -271,6 +273,42 @@ begin
   perform gn_test.back();
   perform gn_test.eq('07 탈퇴하면 계정 삭제', $$select count(*)::text from auth.users where id = gn_test.uid('mem1')$$, '0');
   perform gn_test.eq('07 탈퇴하면 회원 행·교감 기록 삭제', $$select (select count(*) from public.members)::text || '/' || (select count(*) from public.bonds)::text$$, '0/0');
+
+  -- ===== [08] 실시간 홍보 잠금 (08_realtime.sql 이 있을 때만: 없으면 이 절은 건너뜀) =====
+  if to_regprocedure('public.promo_claim(text,text)') is not null then
+    perform gn_test.as_user('adm1', false);
+    perform gn_test.allowed('08 어드민 promo_clear 허용', 'select public.promo_clear()');
+    perform gn_test.back();
+    perform gn_test.as_user('anon1', true);
+    perform gn_test.eq('08 첫 홍보(익명) ok', $$select public.promo_claim('11', '냥이')->>'ok'$$, 'true');
+    perform gn_test.back();
+    perform gn_test.eq('08 메시지 내보냄(realtime.send 동작)', $$select (select count(*) from public.promo_log where ok)::text || '/' || (select until > now() from public.promo_state where id = 1)::text$$, '1/true');
+    perform gn_test.as_user('anon2', true);
+    perform gn_test.eq('08 다른 uid 10초 안 busy', $$select public.promo_claim('11', '다른냥')->>'code'$$, 'busy');
+    perform gn_test.eq('08 이름 21자 bad_text', $$select public.promo_claim('11', repeat('가', 21))->>'code'$$, 'bad_text');
+    perform gn_test.eq('08 코드 모양 틀리면 bad_text', $$select public.promo_claim('11 ; x', '냥')->>'code'$$, 'bad_text');
+    perform gn_test.back();
+    perform gn_test.as_user('anon1', true);
+    perform gn_test.eq('08 같은 uid 60초 안 rate_limit', $$select public.promo_claim('11', '냥이')->>'code'$$, 'rate_limit');
+    perform gn_test.denied('08 표 직접 insert 거부(promo_log)', format($$insert into public.promo_log (uid, ok) values (%L, true)$$, gn_test.uid('anon1')));
+    perform gn_test.denied('08 표 직접 update 거부(promo_state)', $$update public.promo_state set until = 'epoch'$$);
+    perform gn_test.denied('08 표 직접 select 거부(promo_state)', $$select * from public.promo_state$$);
+    perform gn_test.denied('08 표 직접 insert 거부(promo_block)', format($$insert into public.promo_block (uid, until) values (%L, now())$$, gn_test.uid('anon1')));
+    perform gn_test.denied('08 일반 사용자 promo_clear 거부', 'select public.promo_clear()');
+    perform gn_test.back();
+    perform gn_test.as_user('anon2', true);
+    perform gn_test.allowed('08 anon2 시도 35번', $$select count(*) from (select public.promo_claim('11', '냥') from generate_series(1, 35)) t$$);
+    perform gn_test.eq('08 시도가 30회를 넘으면 blocked', $$select public.promo_claim('11', '냥')->>'code'$$, 'blocked');
+    perform gn_test.back();
+    perform gn_test.eq('08 anon 역할 promo_claim 실행 불가', $$select has_function_privilege('anon', 'public.promo_claim(text,text)', 'execute')::text$$, 'false');
+    perform gn_test.eq('08 authenticated 는 promo_claim 실행 가능', $$select has_function_privilege('authenticated', 'public.promo_claim(text,text)', 'execute')::text$$, 'true');
+    perform gn_test.eq('08 promo 표 정책 0개', $$select count(*)::text from pg_policies where schemaname = 'public' and tablename like 'promo\_%'$$, '0');
+    perform gn_test.eq('08 채널 정책은 읽기·Presence 2개(broadcast 송신 정책 없음)', $$select string_agg(cmd, ',' order by cmd) from pg_policies where schemaname = 'realtime' and tablename = 'messages' and policyname like 'gn\_site\_%'$$, 'INSERT,SELECT');
+    perform gn_test.as_user('adm1', false);
+    perform gn_test.allowed('08 어드민 promo_clear 허용(다시)', 'select public.promo_clear()');
+    perform gn_test.eq('08 어드민 홍보 ok', $$select public.promo_claim('11', '관리냥')->>'ok'$$, 'true');
+    perform gn_test.back();
+  end if;
 
   -- 결과를 변수로 옮긴 뒤 일부러 오류를 내 위의 모든 변경을 되돌린다
   select string_agg(name || chr(31) || result, chr(30) order by n)

@@ -3,6 +3,7 @@
 // 방문자에게 보이는 공개 키만 다룬다. 관리자 키는 쓰지 않는다(D-11).
 import { FEATURES_DEFAULT } from '../config.js';
 import { createDb } from './supabase_db.js';
+import { createRoom, createLock } from './supabase_room.js';
 
 // 접속 주소에 맞는 항목을 고른다. url·key 가 둘 다 있어야 한다. 없으면 null(= 연결하지 않음).
 export function pickSupabaseConfig(cfg, hostname) {
@@ -62,9 +63,9 @@ export function createUser(client, features) {
   };
 }
 
-export function createSupabaseCaps(client, cfg, features = { ...FEATURES_DEFAULT }, dbOpts = {}) {
-  // room·lock 은 M2-9 전까지 null(화면은 null 을 견딘다, D-79).
-  return { user: createUser(client, features), db: createDb(client, dbOpts), room: null, lock: null, features };
+export function createSupabaseCaps(client, cfg, features = { ...FEATURES_DEFAULT }, dbOpts = {}, roomOpts = {}) {
+  // room·lock: 실시간 사람 수·홍보(supabase_room.js, D-79). roomOpts 는 시험용
+  return { user: createUser(client, features), db: createDb(client, dbOpts), room: createRoom(client, roomOpts), lock: createLock(client), features };
 }
 
 // 익명 세션 확보. 이미 세션이 있으면 그대로 쓰고, 없으면 익명 로그인. 실패하면 던진다.

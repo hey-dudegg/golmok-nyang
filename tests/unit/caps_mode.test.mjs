@@ -37,7 +37,7 @@ test('1순위: window.claude 가 있으면 아티팩트 (Supabase 설정이 맞�
 });
 test('2순위: 주소·키가 맞으면 supabase (익명 로그인 id)', async () => {
   await initCaps({ win: {}, hostname: 'site.example', cfg: CFG, loadClient: async () => fakeClient() });
-  assert.equal(Caps.mode, 'supabase'); assert.equal(Caps.uid, 'u1'); assert.equal(Caps.ready, true); assert.equal(Caps.room, null); assert.equal(Caps.lock, null); assert.equal(Caps.notice, '');
+  assert.equal(Caps.mode, 'supabase'); assert.equal(Caps.uid, 'u1'); assert.equal(Caps.ready, true); assert.ok(Caps.room && Caps.lock); assert.equal(Caps.notice, '');
 });
 test('기존 세션이 있으면 익명 로그인을 다시 하지 않는다', async () => {
   let called = 0;

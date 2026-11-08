@@ -6,6 +6,7 @@ import { REGIONS } from '../adapters/regions_data.js';
 import { store } from '../adapters/store.js';
 import { PROMO, adminPowers } from '../state/gate.js';
 import { $, h, toast } from './dom.js';
+import { PROMO_TEXT } from './err_text.js';
 
 // ───────────────────────── 함께 보기 (M0-2): 보는 사람 수 · 홍보하기 · 공유하기 (R-12, R-08, R-11) ─────────────────────────
 // 사람 수와 홍보는 Caps.room / Caps.lock 위에서만 동작한다. 로컬에서는 모의 어댑터(D-21), 배포 후에는 Supabase Presence·Broadcast·RPC가 같은 자리에 들어온다.
@@ -21,6 +22,9 @@ export const Live = {
   value() { return this.fake != null ? this.fake : this.real(); },
   render() {
     const n = this.value(), el = $('#viewers'); if (!el) return;
+    const off = !!Caps.room && Caps.room.live === false; // 연결이 안 된 동안(8-6): 사람 수 칸 숨김, 홍보 버튼 잠깐 못 누름. 어드민 가짜 값은 그대로
+    el.hidden = off && this.fake == null;
+    const pb = $('#promo'); if (pb) { pb.disabled = off; if (off) pb.title = '지금은 홍보를 보낼 수 없어요'; else pb.removeAttribute('title'); }
     $('#viewersN').textContent = fmtCount(n);
     el.setAttribute('aria-label', `지금 보고 있는 사람 ${n.toLocaleString('ko-KR')}명`);
     el.title = `이 지역을 지금 보고 있는 사람 ${n.toLocaleString('ko-KR')}명`;
@@ -49,9 +53,12 @@ export const Promo = {
     if (!adminPowers() && this.left() > 0) return toast(`홍보는 1분에 한 번만 할 수 있어요 (${Math.ceil(this.left() / 1000)}초 뒤)`);
     if (!Caps.room || !Caps.lock) return toast('이 화면에서는 홍보를 내보낼 수 없어요');
     const m = app.selected && !app.selected.guest ? app.selected : app.mascot; if (!m) return;
-    const data = { code: app.dong.c, name: m.cat.name, where: app.dong.n, thumb: this.thumb(app), at: Date.now() };
-    const ok = await Caps.lock.acquire('promo', { holder: Caps.room.id, ttlMs: PROMO.lockMs });
-    if (!ok) return toast('지금은 다른 동네 홍보가 나가는 중이라 이번엔 묻혔어요', 3600);
+    // 서버(Supabase) 모드: 서버가 code·name 만 받아 보낸다. where 는 받는 쪽이 code 로 찾고 thumb 는 보내지 않는다(8-3)
+    const data = Caps.mode === 'supabase' ? { code: app.dong.c, name: m.cat.name } : { code: app.dong.c, name: m.cat.name, where: app.dong.n, thumb: this.thumb(app), at: Date.now() };
+    let ok = false;
+    try { ok = await Caps.lock.acquire('promo', { holder: Caps.room.id, ttlMs: PROMO.lockMs, data }); }
+    catch (e) { return toast(PROMO_TEXT[e && e.code] || PROMO_TEXT.network, 3600); }
+    if (!ok) return toast(PROMO_TEXT.busy, 3600);
     this.lastAt = Date.now(); store.set('promoAt', this.lastAt);
     Caps.room.send('promo', data);
     const b = $('#promo'); b.classList.add('blast'); setTimeout(() => b.classList.remove('blast'), 900);
@@ -60,8 +67,9 @@ export const Promo = {
   // 다른 사람의 홍보가 도착. 이미 그 지역을 보고 있으면 띄우지 않는다
   receive(d) {
     const app = Live.app;
-    if (!app || !d || typeof d.code !== 'string' || !REGIONS.unitOf(d.code) || d.code === app.dong.c) return;
-    this.show(d);
+    const u = d && typeof d.code === 'string' ? REGIONS.unitOf(d.code) : null;
+    if (!app || !u || d.code === app.dong.c) return;
+    this.show({ ...d, where: u.n }); // 지역 이름은 보낸 값이 아니라 내 지도에서 찾는다(위조 불가)
   },
   show(d) {
     const app = Live.app; if (!app) return;

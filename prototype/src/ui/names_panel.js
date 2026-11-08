@@ -77,7 +77,7 @@ export function renderRanking(app) {
     db.innerHTML = ICON.thumbDown + `<span class="num">${Number(n.dislikes)}</span>`;
     const rb = h('button', { class: 'btn ghost rep', type: 'button', 'aria-label': '신고', title: '신고', 'aria-pressed': reported ? 'true' : 'false', onclick: () => {
       if (reported) return toast('이미 신고한 이름이에요');
-      confirmReport(n, () => requireGate(app, 'name_report', '신고는 이웃만 할 수 있어요', () => Names.report(n).then((r) => toast(r.already ? '이미 신고한 이름이에요' : '신고했어요. 알려 주셔서 고마워요')).catch(() => toast('신고하지 못했어요'))));
+      confirmReport(n, () => requireGate(app, 'name_report', '신고는 이웃만 할 수 있어요', () => Names.report(n).then((r) => toast(r.already ? '이미 신고한 이름이에요' : '신고했어요. 알려 주셔서 고마워요')).catch((ex) => toast(errText(ex, '신고하지 못했어요')))));
     } });
     rb.innerHTML = ICON.flag;
     return h('li', { class: i === 0 && n.score > 0 ? 'top' : '' },

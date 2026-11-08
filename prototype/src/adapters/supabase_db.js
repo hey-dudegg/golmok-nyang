@@ -4,7 +4,7 @@
 import { packCapture } from './capture_pack.js';
 
 export const POLL_MS = 60000;
-const KNOWN = ['feature_off', 'need_member', 'need_admin', 'filter_word', 'filter_url', 'filter_contact', 'filter_chars', 'rate_limit', 'dup', 'name_limit', 'bad_vote', 'not_found'];
+const KNOWN = ['feature_off', 'need_member', 'need_admin', 'filter_word', 'filter_url', 'filter_contact', 'filter_chars', 'rate_limit', 'dup', 'name_limit', 'bad_vote', 'not_found', 'bad_kind'];
 const coded = (code, msg) => Object.assign(new Error(msg || code), { code, gn: true }); // gn: 우리가 만든 오류(서버 오류와 구분)
 
 // 서버·네트워크 오류를 Error(code)로 (3-6). 서버는 코드만 보낸다. RLS 위반(42501)은 need_member, unique 위반(23505)은 dup
@@ -87,6 +87,7 @@ export function createDb(client, opts = {}) {
       if (on) { const r = await client.from('post_likes').insert({ post_id: id, uid }); if (r && r.error && toError(r.error).code !== 'dup') throw toError(r.error); }
       else ok(await client.from('post_likes').delete().eq('post_id', id).eq('uid', uid));
     }
+    if (f.rep && f.rep[uid]) ok(await client.rpc('report', { p_kind: 'post', p_target: id })); // 게시판 신고는 회원 전용(서버가 거부). 화면 버튼은 로그인 재개 때(D-82)
     for (const c of Object.values(f.comments || {})) ok(await client.from('post_comments').insert({ post_id: id, uid, body: String(c.text || '') }));
     await refresh('posts');
   }
@@ -117,6 +118,17 @@ export function createDb(client, opts = {}) {
     await refresh('names2'); return mkDoc(row.id, null);
   }
 
+  // ── 어드민 숨김 검토 (설계 필터 3-5): mod_list·mod_restore·mod_remove. 어드민이 아니면 서버가 need_admin 으로 거부 ──
+  const mod = {
+    async list() { const r = ok(await client.rpc('mod_list')); return Array.isArray(r) ? r : []; },
+    async restore(kind, target) { ok(await client.rpc('mod_restore', { p_kind: kind, p_target: target })); await Promise.all([refresh('posts'), refresh('names2')]); },
+    async remove(kind, target) {
+      const img = ok(await client.rpc('mod_remove', { p_kind: kind, p_target: target }));
+      if (img) { try { await client.storage.from('captures').remove([img]); } catch (e) {} } // 글이면 그림 파일도(남는 파일은 어드민이 정리)
+      await Promise.all([refresh('posts'), refresh('names2')]);
+    },
+  };
+
   // ── Firestore 모양 입구: 경로 6개만 ──
   const none = () => { throw coded('unsupported', 'unsupported path'); }; // 컬렉션 경로용
   const nope = async () => { throw coded('unsupported', 'unsupported path'); }; // 문서 메서드용(Promise 로 거부)
@@ -146,5 +158,5 @@ export function createDb(client, opts = {}) {
       get: async () => ({ exists: false, data: () => null }), set: async () => { throw coded('feature_off'); }, update: nope, delete: nope };
     return { get: nope, set: nope, update: nope, delete: nope };
   }
-  return { collection, doc };
+  return { collection, doc, mod };
 }

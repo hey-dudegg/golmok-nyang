@@ -40,8 +40,26 @@ export function makeFake(init = {}) {
     };
     return b;
   }
+  // channel: on·subscribe·track·untrack·presenceState 흉내(M2-9). 시험이 channels[i].status(..)·presence({키:[meta]})·broadcast(이벤트, payload)로 서버 쪽 사건을 낸다
+  const channels = [];
+  function channel(topic, opts) {
+    const cfg = (opts && opts.config) || {}, key = cfg.presence && cfg.presence.key, ons = [];
+    let sub = null, state = {}, tracked = null;
+    const ch = {
+      topic, opts, removed: false, get tracked() { return tracked; },
+      on(type, filter, cb) { ons.push({ type, filter, cb }); return ch; },
+      subscribe(cb) { sub = cb; calls.push({ channel: topic, op: 'subscribe', opts }); return ch; },
+      track(meta) { tracked = meta; calls.push({ channel: topic, op: 'track', meta }); if (key) state = { ...state, [key]: [meta] }; return Promise.resolve('ok'); },
+      untrack() { tracked = null; calls.push({ channel: topic, op: 'untrack' }); if (key) { state = { ...state }; delete state[key]; } return Promise.resolve('ok'); },
+      presenceState: () => state,
+      status(s) { if (sub) sub(s); },
+      presence(others) { state = { ...others, ...(key && state[key] ? { [key]: state[key] } : {}) }; for (const o of ons) if (o.type === 'presence') o.cb(); },
+      broadcast(event, payload) { for (const o of ons) if (o.type === 'broadcast' && o.filter.event === event) o.cb({ event, payload }); },
+    };
+    channels.push(ch); return ch;
+  }
   const client = {
-    from,
+    from, channel, removeChannel: async (c) => { c.removed = true; calls.push({ removeChannel: c.topic }); },
     async rpc(name, args) {
       calls.push({ rpc: name, args });
       const f = init.rpc && init.rpc[name];
@@ -55,5 +73,5 @@ export function makeFake(init = {}) {
       async remove(paths) { calls.push({ remove: paths, bucket }); return { data: [], error: null }; },
     }) },
   };
-  return { client, calls, tables };
+  return { client, calls, tables, channels };
 }

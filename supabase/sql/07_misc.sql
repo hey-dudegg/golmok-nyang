@@ -15,7 +15,7 @@ grant execute on function public.member_leave() to authenticated;
 -- 하루 1회 정리(D-09). 호출 주체: 어드민 또는 데이터베이스 관리 역할(스케줄러). 일반 방문자는 거부.
 create or replace function public.daily_cleanup() returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare n_users int := 0; n_posts int := 0; n_names int := 0; n_reports int := 0;
+declare n_users int := 0; n_posts int := 0; n_names int := 0; n_reports int := 0; n_orphans int := 0;
 begin
   -- session_user 는 set role 뒤에도 바뀌지 않으므로(관리 세션이 authenticated 로 바꿔 불러도 통과), 바꾼 역할(role 설정)도 본다.
   -- security definer 안에서 current_user 는 소유자라 쓸 수 없다. role 설정은 API(anon·authenticated)면 그 이름, 스케줄러면 'none'.
@@ -42,6 +42,19 @@ begin
   if to_regclass('public.reports') is not null then
     execute $q$delete from public.reports where created_at < now() - interval '30 days'$q$;
     get diagnostics n_reports = row_count;
+    -- 대상(이름·글·댓글)이 이미 지워진 신고(고아)도 지운다. 대상 표가 없으면 그 종류는 건너뜀.
+    if to_regclass('public.names2') is not null then
+      execute $q$delete from public.reports r where r.kind = 'name' and not exists (select 1 from public.names2 n where n.id = r.target)$q$;
+      get diagnostics n_orphans = row_count; n_reports := n_reports + n_orphans;
+    end if;
+    if to_regclass('public.posts') is not null then
+      execute $q$delete from public.reports r where r.kind = 'post' and not exists (select 1 from public.posts p where p.id = r.target)$q$;
+      get diagnostics n_orphans = row_count; n_reports := n_reports + n_orphans;
+    end if;
+    if to_regclass('public.post_comments') is not null then
+      execute $q$delete from public.reports r where r.kind = 'comment' and not exists (select 1 from public.post_comments c where c.id = r.target)$q$;
+      get diagnostics n_orphans = row_count; n_reports := n_reports + n_orphans;
+    end if;
   end if;
   return jsonb_build_object('users', n_users, 'posts', n_posts, 'names', n_names, 'reports', n_reports);
 end $$;

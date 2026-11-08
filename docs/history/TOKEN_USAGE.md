@@ -29,3 +29,8 @@
 2026-11-07 | architect | M2-4 개정 후속(2장 분리·리디렉트) | 24k | 9 | 재개 1회
 2026-11-07 | developer | M2-5b 익명 세션·SQL 01·02·07 | 81k | 34 | 읽기 약 70KB, heredoc 인용부호 실패 1회, npm test 6분 백그라운드 대기 여러 번
 2026-11-07 | developer | M2-6a 게시판 읽기·익명 이름 | 199k | 71 | 설계·표 약 19KB, board/supabase/names 전체 읽기, spawnSync 200초 대기 1회 낭비
+2026-11-08 | developer | M2-9 Realtime room·lock·SQL 08 | 88k | 47 | 실시간 설계 9KB, npm test 전체 2회(부분 재실행 포함), 백그라운드 대기 여러 번
+2026-11-08 | developer | M2-6b 필터·신고·SQL 05 | 176k | 78 | check.sql 대부분·supabase_db 10KB·설계 3건, 반복 읽기 err_text·check.sql, 시험 두 벌 겹침
+2026-11-08 | architect | R-22 날씨 설계 | 63k | 29 | clock.js 7KB·README 3KB·_headers 3KB, regions.json은 grep -o로 일부만
+2026-11-08 | developer | M2-1 ?fur 스위치 삭제+npm test | 28k | 22 | 작은 수정, npm test 전체 1회
+2026-11-08 | architect | 날씨 설계 개정·이름 정리 | 62k | 44 | 날씨_설계 20KB 1회·수정설계 6KB, 작은 Edit 다수

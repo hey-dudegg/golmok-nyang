@@ -56,3 +56,9 @@ C-49 | 2026-10-30 | 변경 | M2에 의견 중계(M2-10) 추가, Web Analytics �
 C-50 | 2026-11-07 | 결정 | 사이트 이름 golmok-nyang 확정, Supabase 프로젝트 2개 생성 | 사용자 | devops, developer
 C-51 | 2026-11-07 | 변경 | 스테이징→테스트 주소, 소셜 로그인 보류·게시판 읽기만·이름 익명 허용 (D-81~84) | 사용자 | architect, developer, security
 C-52 | 2026-11-07 | 결정 | P-38 해결: 어드민 익명 uid 기기별 등록 (D-86) | 사용자 | developer, security
+C-53 | 2026-11-08 | 추가 | R-22 지역 날씨 요구 추가, 시기·범위·출처 확정 (D-91) | 사용자 | architect, developer, security
+C-54 | 2026-11-08 | 결정 | P-36 해결: 폰 털 밀도 0.8 확정, ?fur 스위치 삭제 예정 (D-92) | 사용자 | developer, troubleshooter
+C-55 | 2026-11-08 | 결정 | 날씨 설계(날씨_설계.md) 기본안 채택, D-19·D-07 보완 (D-95) | 팀장 | developer, security, tester, devops
+C-56 | 2026-11-08 | 결정 | P-39~41 해결: 비상업·인근 지역 대체·번쩍임 약하게 (D-96~98) | 사용자 | architect, developer
+C-57 | 2026-11-08 | 변경 | 날씨 설계 개정(빌려 쓰기 9장·번쩍임 3-3), 문서 개인 이름 정리 (D-97~99) | 팀장 | architect, developer
+C-58 | 2026-11-08 | 변경 | P-42·43 해결: 이름 기록 유지, developer.md·CLAUDE.md 시험 문구 (D-101, D-102) | 사용자 | developer, tester

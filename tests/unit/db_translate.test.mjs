@@ -159,7 +159,7 @@ test('캡쳐 규격: 긴 변 960, WebP 0.8 시작, 120KB 넘으면 품질을 낮
 test('createSupabaseCaps 는 db 를 만들고, 익명 이름 게이트는 names_anon 이 켜진 서버·모의 모드에서만 풀린다', async () => {
   const { client } = makeFake();
   const c = createSupabaseCaps(client, {}, { login: false, board_write: false, names_anon: true });
-  assert.equal(typeof c.db.collection, 'function'); assert.equal(typeof c.db.doc, 'function'); assert.equal(c.room, null);
+  assert.equal(typeof c.db.collection, 'function'); assert.equal(typeof c.db.doc, 'function'); assert.ok(c.room && c.lock);
   Object.assign(Caps, { mode: 'supabase', features: { login: false, board_write: false, names_anon: true } });
   assert.equal(gateNeedsMember('name_suggest'), false); assert.equal(gateNeedsMember('name_like'), false); assert.equal(gateNeedsMember('name_report'), false);
   assert.equal(gateNeedsMember('board_write'), true); // 글쓰기는 여전히 회원 전용(화면은 '준비 중')
