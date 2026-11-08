@@ -34,3 +34,4 @@
 2026-11-08 | architect | R-22 날씨 설계 | 63k | 29 | clock.js 7KB·README 3KB·_headers 3KB, regions.json은 grep -o로 일부만
 2026-11-08 | developer | M2-1 ?fur 스위치 삭제+npm test | 28k | 22 | 작은 수정, npm test 전체 1회
 2026-11-08 | architect | 날씨 설계 개정·이름 정리 | 62k | 44 | 날씨_설계 20KB 1회·수정설계 6KB, 작은 Edit 다수
+2026-11-08 | security | M2-8 2차 보안 점검 | 63k | 15 | 범위 grep 위주, 통독 없음

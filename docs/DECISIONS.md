@@ -401,3 +401,11 @@
 ## D-102 토큰 12장 문구 반영, check.sql은 한 파일 유지 (2026-11-08, 결정자: 사용자, P-43)
 - 내용: developer.md 큰 파일 부분 읽기·시험 한 벌, CLAUDE.md 시험 줄 반영. check.sql은 번호별 분할 안 함(커지면 그때 분할, D-90)
 - 영향 역할: developer, tester, token-optimizer
+
+## D-103 CSP img-src에 Supabase 추가, 연결 실패 원인 콘솔 기록 (2026-11-08, 결정자: 팀장, M2-8)
+- 내용: _headers img-src에 운영·테스트 Supabase https 추가(D-88 보완). caps.js 연결 실패 catch에서 console.warn으로 원인 남김. 해시 주소 일치는 안 함
+- 영향 역할: developer, security
+
+## D-104 익명 계정 90일 미접속 정리, 탈퇴 시 사진 먼저 삭제 (2026-11-08, 결정자: 팀장, M2-8)
+- 내용: daily_cleanup이 90일 미접속 익명 계정 정리(안내문에 고지). member_leave 전 클라이언트가 storage 본인 폴더 삭제(로그인 재개 때 구현)
+- 영향 역할: developer, security, documenter

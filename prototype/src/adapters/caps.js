@@ -25,6 +25,7 @@ export async function initCaps(opts = {}) {
         Object.assign(Caps, { user: c.user, db: c.db, room: c.room, lock: c.lock });
         Caps.features = c.features; Caps.shared = !!Caps.db;
       } catch (e) { // 못 받았거나 로그인·첫 읽기 실패: 이 브라우저 체험 모드로 (설계 5-2)
+        console.warn('[supabase] 연결 실패', e?.message || e); // 원인만 남김(키·uid 없음)
         Caps.mode = 'static'; Caps.uid = null; Caps.user = null; Caps.db = null; Caps.shared = false; Caps.features = { ...FEATURES_DEFAULT }; Caps.notice = SUPABASE_FAIL_NOTICE;
         if (LocalMock.usable()) { Caps.mock = true; Caps.mode = 'mock'; Caps.user = LocalMock.user(); Caps.room = LocalMock.room(); Caps.lock = LocalMock.lock(); }
       }

@@ -62,3 +62,4 @@ C-55 | 2026-11-08 | 결정 | 날씨 설계(날씨_설계.md) 기본안 채택, D
 C-56 | 2026-11-08 | 결정 | P-39~41 해결: 비상업·인근 지역 대체·번쩍임 약하게 (D-96~98) | 사용자 | architect, developer
 C-57 | 2026-11-08 | 변경 | 날씨 설계 개정(빌려 쓰기 9장·번쩍임 3-3), 문서 개인 이름 정리 (D-97~99) | 팀장 | architect, developer
 C-58 | 2026-11-08 | 변경 | P-42·43 해결: 이름 기록 유지, developer.md·CLAUDE.md 시험 문구 (D-101, D-102) | 사용자 | developer, tester
+C-59 | 2026-11-08 | 추가 | R-23 SQL 자동화 요구, M2-8 결과 D-103·104, P-44·45 | 사용자·팀장 | developer, devops, security, documenter
