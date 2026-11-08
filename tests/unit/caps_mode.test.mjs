@@ -111,3 +111,24 @@ test('LocalMock.user: 익명·이름 허용·글쓰기 잠김', async () => {
   const u = LocalMock.user();
   assert.equal(await u.isAnonymous(), true); assert.equal(await u.can('post'), false); assert.equal(await u.can('name'), true); assert.equal(typeof u.onChange(() => {}), 'function');
 });
+test('D-106 캡차: 사이트 키가 없으면 캡차 없이 로그인', async () => {
+  let arg = 'x', asked = 0;
+  const c = fakeClient({ signInAnonymously: async (a) => { arg = a; return { data: { session: { user: { id: 'u1' } } }, error: null }; } });
+  await initCaps({ win: {}, hostname: 'site.example', cfg: CFG, loadClient: async () => c, getCaptcha: async () => { asked++; return 'T'; } });
+  assert.equal(Caps.mode, 'supabase'); assert.equal(arg, undefined); assert.equal(asked, 0);
+});
+test('D-106 캡차: 사이트 키가 있으면 가짜 turnstile 토큰을 captchaToken 으로 전달', async () => {
+  const { getCaptchaToken } = await import('../../prototype/src/adapters/turnstile.js');
+  const doc = { createElement: () => ({ style: {}, remove() {} }), body: { appendChild() {} }, head: { appendChild() {} } };
+  const win = { turnstile: { render: (el, o) => { assert.equal(o.sitekey, 'SK'); setTimeout(() => o.callback('tok1'), 0); return 7; }, remove() {} } };
+  assert.equal(await getCaptchaToken('SK', { win, doc }), 'tok1');
+  assert.equal(await getCaptchaToken('', { win, doc }), undefined);
+  let arg = null;
+  const c = fakeClient({ signInAnonymously: async (a) => { arg = a; return { data: { session: { user: { id: 'u2' } } }, error: null }; } });
+  const cfg = { prod: { ...CFG.prod, turnstileSiteKey: 'SK' } };
+  await initCaps({ win: {}, hostname: 'site.example', cfg, loadClient: async () => c, getCaptcha: (k) => getCaptchaToken(k, { win, doc }) });
+  assert.equal(Caps.uid, 'u2'); assert.deepEqual(arg, { options: { captchaToken: 'tok1' } });
+  reset(); // 실패는 연결 실패 경로
+  await initCaps({ win: {}, hostname: 'site.example', cfg, loadClient: async () => c, getCaptcha: async () => { throw new Error('turnstile 오류'); } });
+  assert.notEqual(Caps.mode, 'supabase'); assert.equal(Caps.notice, SUPABASE_FAIL_NOTICE);
+});

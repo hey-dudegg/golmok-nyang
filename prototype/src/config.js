@@ -9,10 +9,11 @@ export const FEEDBACK_CONFIG = {
 };
 
 // Supabase 연결 (D-77·81): 접속 주소(hostname)로 운영/테스트를 고른다. 공개 키(publishable)만 쓴다. 공개 키는 방문자 브라우저에 어차피 내려가며 방어선은 RLS다.
+// turnstileSiteKey(D-106): Cloudflare Turnstile 사이트 키(공개값). 비우면 캡차 없이 익명 로그인. 비밀 키는 Supabase 대시보드 Captcha 에만 둔다.
 // 관리자 키(service_role·sb_secret_)는 어디에도 쓰지 않는다(D-11). url·key 중 하나라도 비면 연결하지 않고 지금과 똑같이 동작한다.
 export const SUPABASE_CONFIG = {
-  prod: { hosts: ['golmok-nyang.pages.dev'],      url: 'https://slgvsyhftdfravmxorse.supabase.co', key: 'sb_publishable_p_hKrv1IdpzjADiW25TJCg_X9o2jA3I' }, // 운영 프로젝트
-  test: { hosts: ['test.golmok-nyang.pages.dev'], url: 'https://tfaakrfrifduelifditf.supabase.co', key: 'sb_publishable_LGcYiuvE8vrTMCzmYra29g_QY6LGPON' }, // 테스트 프로젝트
+  prod: { hosts: ['golmok-nyang.pages.dev'],      url: 'https://slgvsyhftdfravmxorse.supabase.co', key: 'sb_publishable_p_hKrv1IdpzjADiW25TJCg_X9o2jA3I', turnstileSiteKey: '' }, // 운영 프로젝트
+  test: { hosts: ['test.golmok-nyang.pages.dev'], url: 'https://tfaakrfrifduelifditf.supabase.co', key: 'sb_publishable_LGcYiuvE8vrTMCzmYra29g_QY6LGPON', turnstileSiteKey: '' }, // 테스트 프로젝트
 };
 // 기능 스위치 기본값 (D-82~84, 설계 2-1): mock·static 모드, 그리고 서버에서 app_config.features 를 못 읽을 때 쓴다.
 export const FEATURES_DEFAULT = { login: false, board_write: false, names_anon: true };

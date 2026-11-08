@@ -9,7 +9,7 @@ import { createRoom, createLock } from './supabase_room.js';
 export function pickSupabaseConfig(cfg, hostname) {
   for (const k of Object.keys(cfg || {})) {
     const c = cfg[k];
-    if (c && Array.isArray(c.hosts) && c.hosts.includes(hostname) && c.url && c.key) return { name: k, url: c.url, key: c.key };
+    if (c && Array.isArray(c.hosts) && c.hosts.includes(hostname) && c.url && c.key) return { name: k, url: c.url, key: c.key, turnstileSiteKey: c.turnstileSiteKey || '' };
   }
   return null;
 }
@@ -69,11 +69,13 @@ export function createSupabaseCaps(client, cfg, features = { ...FEATURES_DEFAULT
 }
 
 // 익명 세션 확보. 이미 세션이 있으면 그대로 쓰고, 없으면 익명 로그인. 실패하면 던진다.
-export async function ensureSession(client) {
+// getToken: 캡차 토큰을 주는 함수(없거나 빈 값이면 캡차 없이, D-106). 세션이 없을 때만 부른다.
+export async function ensureSession(client, getToken) {
   const got = await client.auth.getSession();
   let session = got && got.data && got.data.session;
   if (!session) {
-    const r = await client.auth.signInAnonymously();
+    const token = getToken ? await getToken() : undefined;
+    const r = await client.auth.signInAnonymously(token ? { options: { captchaToken: token } } : undefined);
     if (r && r.error) throw r.error;
     session = r && r.data && r.data.session;
   }

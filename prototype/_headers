@@ -17,7 +17,8 @@
   # (wss 는 Realtime, M2-9부터). 로그인 이동은 같은 창 이동이라 form-action·frame 변경은 필요 없다 [미확인: 카카오 로그인 때 재확인].
   # [Web Analytics] 켜면 Cloudflare 가 스크립트를 자동 주입한다. 그 스크립트(static.cloudflareinsights.com)와 전송 주소(cloudflareinsights.com)만 허용했다(D-55) [미확인: 공식 문서 열람 불가, 켠 뒤 콘솔 위반 확인].
   # [의견 보내기] 중계(/api/feedback, D-62)는 같은 주소라 connect-src 'self' 로 충분(Web3Forms 는 서버끼리 통신).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-42scdVH2nMs4IvBT6R9Kse6ghFygmQ2Ph+G2XWwRU+M=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://slgvsyhftdfravmxorse.supabase.co https://tfaakrfrifduelifditf.supabase.co; connect-src 'self' https://cloudflareinsights.com https://slgvsyhftdfravmxorse.supabase.co https://tfaakrfrifduelifditf.supabase.co wss://slgvsyhftdfravmxorse.supabase.co wss://tfaakrfrifduelifditf.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  # [D-106 Turnstile] 캡차 스크립트·iframe(challenges.cloudflare.com)을 허용한다. 외부 스크립트라 vendor 자체 호스팅(D-13·47)이 불가능하다.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-42scdVH2nMs4IvBT6R9Kse6ghFygmQ2Ph+G2XWwRU+M=' https://static.cloudflareinsights.com https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://slgvsyhftdfravmxorse.supabase.co https://tfaakrfrifduelifditf.supabase.co; connect-src 'self' https://cloudflareinsights.com https://slgvsyhftdfravmxorse.supabase.co https://tfaakrfrifduelifditf.supabase.co wss://slgvsyhftdfravmxorse.supabase.co wss://tfaakrfrifduelifditf.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 # three.js(폴더에 버전이 들어 있음)와 글꼴은 내용이 바뀌지 않으므로 길게 캐시한다. 업그레이드하면 새 폴더 이름을 쓴다.
 /vendor/three-0.160.0/*

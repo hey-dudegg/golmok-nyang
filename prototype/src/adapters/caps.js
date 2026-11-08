@@ -2,6 +2,7 @@
 import { Feedback } from './feedback.js';
 import { LocalMock } from './local_mock.js';
 import { SUPABASE_CONFIG, FEATURES_DEFAULT } from '../config.js';
+import { getCaptchaToken } from './turnstile.js';
 import { pickSupabaseConfig, loadSupabaseClient, createSupabaseCaps, ensureSession, loadFeatures } from './supabase.js';
 
 // ───────────────────────── 회원 · 저장소 · AI (런타임 기능, 없으면 이 브라우저 안에서 체험) ─────────────────────────
@@ -19,7 +20,7 @@ export async function initCaps(opts = {}) {
       Caps.mode = 'supabase';
       try {
         const client = await (opts.loadClient || loadSupabaseClient)(sb);
-        Caps.uid = await ensureSession(client);
+        Caps.uid = await ensureSession(client, sb.turnstileSiteKey ? () => (opts.getCaptcha || getCaptchaToken)(sb.turnstileSiteKey) : null);
         const features = await loadFeatures(client); // 못 읽으면 기본값
         const c = createSupabaseCaps(client, sb, features);
         Object.assign(Caps, { user: c.user, db: c.db, room: c.room, lock: c.lock });
