@@ -2,7 +2,7 @@
 -- 목적: 홍보 잠금·도배 방지 함수 promo_claim·promo_clear, 표 3개, 비공개 채널 gn:site 의 인가 정책.
 --       사람 수는 Presence(클라이언트 track), 홍보는 이 함수가 realtime.send 로 내보낸다. 다시 실행해도 안전하다.
 -- 전제: 01(is_admin·app_config). 05 의 gn_text_check 가 있으면 이름 검사에 쓰고, 없으면 길이·모양 검사만 한다(05 를 나중에 실행해도 됨).
--- [미확인] realtime.send(payload, event, topic, private)·realtime.topic() 시그니처: 테스트 프로젝트에서 check.sql [08] 의 '메시지 내보냄' 줄로 확인.
+-- [미확인] realtime.send(payload, event, topic, private)·realtime.topic() 시그니처: 테스트 프로젝트에서 check_08_realtime.sql 의 '메시지 내보냄' 줄로 확인.
 -- 값(uid·주소)은 이 파일에 없다.
 
 create table if not exists public.promo_state (id int primary key check (id = 1), holder uuid, until timestamptz not null default 'epoch');

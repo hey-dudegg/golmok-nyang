@@ -36,9 +36,9 @@ revoke insert, update, delete on public.app_config from anon;
 -- 초깃값(이미 있으면 건드리지 않는다). features 는 D-82~84 스위치.
 insert into public.app_config (key, value) values
   ('features',    '{"login":false,"board_write":false,"names_anon":true}'),
-  ('report_hide', '{"post":3,"comment":3,"name":3}'),
+  ('report_hide', '{"post":5,"comment":5,"name":5}'),
   ('terms_ver',   '"2026-10"'),
-  ('limits',      '{"post":{"gap_s":30,"per10m":3,"per1h":6,"dup_h":24},"comment":{"gap_s":10,"per10m":10,"per1h":30,"dup_h":1},"name":{"gap_s":5,"per10m":10,"per1h":20},"nick":{"per1h":3}}')
+  ('limits',      '{"post":{"gap_s":30,"per10m":3,"per1h":6,"dup_h":24},"comment":{"gap_s":10,"per10m":10,"per1h":30,"dup_h":1},"name":{"gap_s":5,"per10m":10,"per1h":20},"nick":{"per1h":3},"report":{"per1h":10},"vote":{"per1h":30}}')
 on conflict (key) do nothing;
 
 -- 기능 스위치 판정. 값이 없으면 꺼짐.

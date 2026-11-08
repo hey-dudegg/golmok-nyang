@@ -1,4 +1,4 @@
-// 필터 정규식(core/text_filter.js)·공통 벡터(tests/filter_cases.json)·check_05.sql 벡터 일치 단위 시험 (M2-6b). 서버 없이. 사용: node --test tests/unit/
+// 필터 정규식(core/text_filter.js)·공통 벡터(tests/filter_cases.json)·check_05_filter.sql 벡터 일치 단위 시험 (M2-6b). 서버 없이. 사용: node --test tests/unit/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -20,10 +20,10 @@ test('정규화: 전각·대소문자·0폭 문자·구분 기호', () => {
 test('오류 문구는 걸린 단어를 알려 주지 않고 코드마다 있다', () => {
   for (const code of ['filter_word', 'filter_url', 'filter_contact', 'filter_chars']) assert.ok(FILTER_MSG[code]);
 });
-test('check_05.sql [05] 벡터가 filter_cases.json 과 같다(앞뒤 따옴표 $v$ 로 감싼 본문이 모두 있다)', () => {
-  const sql = fs.readFileSync(new URL('../../supabase/tests/check_05.sql', import.meta.url), 'utf8');
+test('check_05_filter.sql [05] 벡터가 filter_cases.json 과 같다(앞뒤 따옴표 $v$ 로 감싼 본문이 모두 있다)', () => {
+  const sql = fs.readFileSync(new URL('../../supabase/tests/check_05_filter.sql', import.meta.url), 'utf8');
   const have = new Set([...sql.matchAll(/\$v\$([\s\S]*?)\$v\$/g)].map((m) => m[1] + '|'));
   const want = [...V.block, ...V.pass];
-  for (const c of want) assert.ok(sql.includes('$v$' + c.text + '$v$'), 'check_05.sql 에 없음: ' + JSON.stringify(c.text));
+  for (const c of want) assert.ok(sql.includes('$v$' + c.text + '$v$'), 'check_05_filter.sql 에 없음: ' + JSON.stringify(c.text));
   assert.equal(have.size >= want.length - 3, true); // 같은 글이 겹치면 집합이 작다
 });

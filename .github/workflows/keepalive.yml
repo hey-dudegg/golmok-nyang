@@ -1,0 +1,38 @@
+# Supabase 무료 프로젝트 정지 방지 (D-09, D-107). 하루 1회 두 프로젝트(prod, test)에 공개 REST GET 1건.
+# 주소·publishable(anon) 키는 prototype/src/config.js(이미 공개)에서 node로 읽는다. DB Secret·environment 없음.
+# 주의: schedule은 기본 브랜치(main)의 파일만 동작한다. GitHub는 60일간 저장소 활동이 없으면 schedule을 끈다 [미확인] -> 꺼지면 Actions 화면에서 다시 켠다.
+# [미확인] /rest/v1/ 루트가 publishable 키로 2xx인지는 첫 실행에서 확인. 아니면 공개 읽기 가능한 작은 표 ?limit=1로 바꾼다.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: REST GET (prod, test)
+        run: |
+          cp prototype/src/config.js "$RUNNER_TEMP/config.mjs"
+          node --input-type=module -e '
+            const { pathToFileURL } = await import("node:url");
+            const { SUPABASE_CONFIG } = await import(pathToFileURL(process.env.RUNNER_TEMP + "/config.mjs").href);
+            let bad = 0;
+            for (const [name, c] of Object.entries(SUPABASE_CONFIG)) {
+              if (!c || !c.url || !c.key) { console.log(name + ": 설정 없음, 건너뜀"); continue; }
+              try {
+                const r = await fetch(c.url + "/rest/v1/", { headers: { apikey: c.key }, signal: AbortSignal.timeout(20000) });
+                console.log(name + ": HTTP " + r.status);
+                if (!r.ok) bad++;
+              } catch (e) { console.log(name + ": 요청 실패 " + e.name); bad++; }
+            }
+            process.exit(bad ? 1 : 0);
+          '

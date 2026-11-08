@@ -29,6 +29,7 @@ drop policy if exists captures_insert on storage.objects;
 drop table if exists public.admin_kv;
 drop function if exists public.name_remove(uuid);
 drop function if exists public.name_vote(uuid, text);
+drop table if exists public.name_vote_log;
 drop table if exists public.name_votes;
 drop table if exists public.names2;
 drop function if exists public.names2_after_insert();

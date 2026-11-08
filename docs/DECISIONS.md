@@ -409,3 +409,19 @@
 ## D-104 익명 계정 90일 미접속 정리, 탈퇴 시 사진 먼저 삭제 (2026-11-08, 결정자: 팀장, M2-8)
 - 내용: daily_cleanup이 90일 미접속 익명 계정 정리(안내문에 고지). member_leave 전 클라이언트가 storage 본인 폴더 삭제(로그인 재개 때 구현)
 - 영향 역할: developer, security, documenter
+
+## D-105 SQL 자동화 기본안 (2026-11-08, 결정자: 팀장, R-23)
+- 내용: psql+Session 풀러, Secret SUPABASE_DB_URL(환경별), 01~08 전부 실행, test 푸시=테스트 자동, main=production 환경 승인 뒤. 공개 저장소라 환경 보호 사용
+- 내용(계속): 운영 check는 기본 미실행(수동 실행 버튼만), 금칙어는 Secret SEED_WORDS_SQL, npm test와 묶지 않음. 영향: devops, security
+
+## D-106 익명 다계정 남용: 캡차+임계치 상향+시간당 한도 (2026-11-08, 결정자: 사용자, P-45)
+- 내용: Turnstile 캡차(클라이언트 연동 뒤 대시보드 켜기), 신고 숨김 3→5회(D-74 변경, app_config), 계정당 시간당 신고·투표 횟수 제한
+- 영향 역할: developer, security, 사용자(대시보드)
+
+## D-107 정지 방지는 공개 REST 요청, 승인 없음 (2026-11-08, 결정자: 팀장, D-09)
+- 내용: keepalive.yml은 DB 접속 Secret 대신 config.js의 공개 주소·publishable 키로 REST 요청(두 프로젝트). environment·승인 없음
+- 영향 역할: devops, security
+
+## D-108 확인 SQL을 목적별 파일로 분할 (2026-11-08, 결정자: 사용자, D-102 변경)
+- 내용: Actions 자동 실행 전제라 check.sql·check_05.sql을 목적별(기본·이름·게시판·필터·실시간 등) 파일로 나누고 워크플로가 전부 실행
+- 영향 역할: developer, devops, tester

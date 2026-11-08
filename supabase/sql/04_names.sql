@@ -20,6 +20,12 @@ create table if not exists public.name_votes (
   uid uuid references auth.users on delete cascade,
   vote text not null check (vote in ('up','down')), primary key (name_id, uid));
 
+-- D-106 투표 횟수 제한용 기록(취소하면 name_votes 행이 지워져 셀 수 없으므로 따로). 본인 1시간 지난 행은 name_vote 가 지운다.
+create table if not exists public.name_vote_log (uid uuid references auth.users on delete cascade, created_at timestamptz not null default now());
+create index if not exists name_vote_log_uid_idx on public.name_vote_log (uid, created_at);
+alter table public.name_vote_log enable row level security;
+revoke all on public.name_vote_log from anon, authenticated;
+
 alter table public.names2 enable row level security;
 alter table public.name_votes enable row level security;
 revoke all on public.names2, public.name_votes from anon, authenticated;
@@ -73,9 +79,12 @@ declare v_status text; v_cur text; v_up int; v_down int;
 begin
   if auth.uid() is null or not public.can_name() then raise exception 'need_member' using errcode = 'P0001'; end if;
   if p_vote is null or p_vote not in ('up','down') then raise exception 'bad_vote' using errcode = 'P0001'; end if;
+  if to_regprocedure('public.gn_rate_check(text,text)') is not null then perform public.gn_rate_check('vote'); end if;   -- 05 적용 뒤: 시간당 횟수(D-106)
   select status into v_status from public.names2 where id = p_name_id for update;
   if not found then raise exception 'not_found' using errcode = 'P0001'; end if;
   if v_status <> 'ok' then return jsonb_build_object('status', v_status, 'gone', true); end if;
+  delete from public.name_vote_log where uid = auth.uid() and created_at <= now() - interval '1 hour';
+  insert into public.name_vote_log (uid) values (auth.uid());
   select vote into v_cur from public.name_votes where name_id = p_name_id and uid = auth.uid();
   if v_cur is null then insert into public.name_votes (name_id, uid, vote) values (p_name_id, auth.uid(), p_vote);
   elsif v_cur = p_vote then delete from public.name_votes where name_id = p_name_id and uid = auth.uid();

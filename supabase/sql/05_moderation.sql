@@ -2,6 +2,7 @@
 -- 목적: 금칙어 표 filter_words, 글 검사 gn_text_check, 도배 검사 gn_rate_check, 신고 reports·report(), 어드민 검토 mod_list·mod_restore·mod_remove.
 --       이름 제안·글·댓글 insert 앞 트리거를 교체(create or replace)해 필터·도배 검사를 더한다(권한 -> 필터 -> 도배 -> 서버 열 덮어쓰기 순서).
 -- 선행: 01_base·02_members·03_board·04_names. 다시 실행해도 안전하다. 금칙어 목록은 저장소에 없다(supabase/private/seed_words.sql, 따로 전달).
+-- D-106: gn_rate_check('report'|'vote') = 계정당 시간당 횟수(report 는 reports, vote 는 name_vote_log 를 센다).
 -- 오류는 코드만 던진다(3-6): filter_word·filter_url·filter_contact·filter_chars·rate_limit·dup·need_member·need_admin·not_found.
 
 -- 3-1 금칙어. RLS 켜고 정책 없음 = 방문자는 못 읽고, security definer 함수만 읽는다. 단어는 정규화(gn_n2) 뒤 모양으로 저장한다.
@@ -45,6 +46,10 @@ begin
 end $$;
 revoke all on function public.gn_text_check(text, text) from public, anon, authenticated;
 
+-- D-106 숨김 기준 3 -> 5, 시간당 신고 10·투표 30. 아직 옛 기본값 그대로일 때만 바꾸고(어드민이 조정한 값은 보존), 다시 실행해도 같다.
+update public.app_config set value = '{"post":5,"comment":5,"name":5}' where key = 'report_hide' and value = '{"post":3,"comment":3,"name":3}'::jsonb;
+update public.app_config set value = '{"report":{"per1h":10},"vote":{"per1h":30}}'::jsonb || value where key = 'limits';   -- 이미 있는 키가 이긴다
+
 -- 3-3 도배 검사. 한도는 app_config.limits(어드민이 값만 조정). 셈은 해당 표에서 uid·created_at 으로 바로 센다.
 -- p_txt 를 주면(글·댓글) 같은 본문 반복도 거부한다(dup_h 시간 안, 같은 사람, 정규화 n2 기준). 이름의 dup 은 names2 고유 인덱스가 맡는다(23505 -> 화면 dup).
 -- 'nick'(닉네임 변경 1시간당 3회)은 변경 기록 표가 없어 아직 검사하지 않는다(로그인 재개 때, D-82).
@@ -56,6 +61,14 @@ create or replace function public.gn_rate_check(p_kind text, p_txt text default 
 language plpgsql security definer set search_path = '' as $$
 declare lim jsonb; tbl text; v_last timestamptz; v_n10 int; v_n60 int; g int; a int; b int; d int;
 begin
+  if p_kind in ('report', 'vote') and auth.uid() is not null then   -- D-106 시간당 횟수(신고·이름 투표). 한도는 limits.report·limits.vote.per1h, 없으면 10·30
+    select coalesce((value -> p_kind ->> 'per1h')::int, case p_kind when 'report' then 10 else 30 end) into b from public.app_config where key = 'limits';
+    b := coalesce(b, case p_kind when 'report' then 10 else 30 end);
+    if p_kind = 'report' then select count(*) into v_n60 from public.reports where uid = auth.uid() and created_at > now() - interval '1 hour';
+    else select count(*) into v_n60 from public.name_vote_log where uid = auth.uid() and created_at > now() - interval '1 hour'; end if;
+    if v_n60 >= b then raise exception 'rate_limit' using errcode = 'P0001'; end if;
+    return;
+  end if;
   select value -> p_kind into lim from public.app_config where key = 'limits';
   tbl := case p_kind when 'post' then 'posts' when 'comment' then 'post_comments' when 'name' then 'names2' else null end;
   if lim is null or tbl is null or auth.uid() is null then return; end if;
@@ -145,6 +158,7 @@ language plpgsql security definer set search_path = '' as $$
 declare v_owner uuid; v_status text; v_th int; v_n int;
 begin
   if auth.uid() is null or p_kind is null or p_kind not in ('post', 'comment', 'name') then raise exception 'need_member' using errcode = 'P0001'; end if;
+  perform public.gn_rate_check('report');   -- D-106 계정당 시간당 신고 횟수
   if p_kind = 'name' then
     if not public.can_name() then raise exception 'need_member' using errcode = 'P0001'; end if;
     select uid, status into v_owner, v_status from public.names2 where id = p_target for update;
@@ -157,8 +171,8 @@ begin
   if v_status <> 'ok' or v_owner = auth.uid() then return; end if;
   insert into public.reports (kind, target, uid) values (p_kind, p_target, auth.uid()) on conflict do nothing;
   select count(*) into v_n from public.reports where kind = p_kind and target = p_target and not cleared;
-  select coalesce((value ->> p_kind)::int, 3) into v_th from public.app_config where key = 'report_hide';
-  if v_n >= coalesce(v_th, 3) then
+  select coalesce((value ->> p_kind)::int, 5) into v_th from public.app_config where key = 'report_hide';
+  if v_n >= coalesce(v_th, 5) then
     if p_kind = 'name' then update public.names2 set status = 'hidden', hidden_at = now() where id = p_target;
     elsif p_kind = 'post' then update public.posts set status = 'hidden', hidden_at = now() where id = p_target;
     else update public.post_comments set status = 'hidden', hidden_at = now() where id = p_target; end if;

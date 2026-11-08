@@ -63,3 +63,6 @@ C-56 | 2026-11-08 | 결정 | P-39~41 해결: 비상업·인근 지역 대체·�
 C-57 | 2026-11-08 | 변경 | 날씨 설계 개정(빌려 쓰기 9장·번쩍임 3-3), 문서 개인 이름 정리 (D-97~99) | 팀장 | architect, developer
 C-58 | 2026-11-08 | 변경 | P-42·43 해결: 이름 기록 유지, developer.md·CLAUDE.md 시험 문구 (D-101, D-102) | 사용자 | developer, tester
 C-59 | 2026-11-08 | 추가 | R-23 SQL 자동화 요구, M2-8 결과 D-103·104, P-44·45 | 사용자·팀장 | developer, devops, security, documenter
+C-60 | 2026-11-08 | 변경 | 신고 숨김 3→5회·시간당 한도·캡차(D-106, D-74 변경), SQL 자동화 D-105 | 사용자 | developer, devops, security
+C-61 | 2026-11-08 | 추가 | SQL 자동화 sql-apply·keepalive 워크플로 구현 (D-105, D-107) | 팀장 | devops, security
+C-62 | 2026-11-08 | 변경 | 확인 SQL 목적별 분할(D-108, D-102 변경) | 사용자 | developer, devops

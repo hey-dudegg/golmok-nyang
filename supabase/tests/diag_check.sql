@@ -1,4 +1,4 @@
--- diag_check.sql: check.sql 실패 원인 진단(M2-5b). SQL Editor 에서 통째로 실행. 안쪽 블록을 일부러 되돌려 아무것도 남지 않고, uid 는 <id> 로 가린다.
+-- diag_check.sql: check_*.sql 실패 원인 진단(M2-5b). SQL Editor 에서 통째로 실행. 안쪽 블록을 일부러 되돌려 아무것도 남지 않고, uid 는 <id> 로 가린다.
 select set_config('gn.k', pg_backend_pid()::text, false);
 do $d$ declare s text; v text; c text; r text := ''; i int := 0; begin begin
     foreach s in array array['?select (current_setting(''gn.k'', true) = pg_backend_pid()::text)::text || '' (앞 문장과 같은 연결)''',

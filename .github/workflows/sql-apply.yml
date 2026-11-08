@@ -1,0 +1,87 @@
+# SQL 자동 적용 (R-23, D-105). 설계: docs/design/SQL_자동화_설계.md
+# - test 브랜치 푸시 -> 환경 test: 01~08 적용 + check 판정
+# - main 푸시 -> 환경 production(Required reviewers 승인): 01~08 적용, check 없음
+# - 수동 실행(workflow_dispatch): 대상 선택, 운영 check는 run_check로만
+# 접속 문자열은 환경 Secret SUPABASE_DB_URL(Session pooler)로만 받는다. 파일에는 값을 쓰지 않는다.
+# pull_request 계열 트리거는 쓰지 않는다(fork에서 Secret 노출 방지).
+name: sql-apply
+
+on:
+  push:
+    branches: [test, main]
+    paths: ["supabase/sql/**", "supabase/tests/**", "scripts/ci/**", ".github/workflows/sql-apply.yml"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "적용 대상 환경"
+        type: choice
+        options: [test, production]
+        default: test
+      run_check:
+        description: "check 실행(production은 가짜 계정을 만들었다 되돌림, 기본 꺼짐)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sql-${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'test') }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'test') }}
+    env:
+      TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'main' && 'production' || 'test') }}
+      DO_CHECK: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_check) || (github.event_name == 'push' && github.ref_name == 'test') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SQL 적용 (01~08, 파일별 단일 트랜잭션)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGOPTIONS: "-c statement_timeout=60000"
+        run: |
+          set +x
+          if [ -z "$SUPABASE_DB_URL" ]; then echo "Secret SUPABASE_DB_URL 없음 (환경 $TARGET)"; exit 1; fi
+          # 99_rollback·diag는 패턴 밖이라 자동 실행되지 않는다.
+          files=$(ls supabase/sql/[0-8][0-9]_*.sql | sort)
+          echo "### SQL 적용: $TARGET @ ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+          for f in $files; do
+            psql "$SUPABASE_DB_URL" -X -q -1 -v ON_ERROR_STOP=1 -f "$f" > /dev/null
+            echo "- $(basename "$f") 적용 ($(sha256sum "$f" | cut -c1-8))" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: 금칙어 적용 (Secret SEED_WORDS_SQL, 없으면 건너뜀)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SEED_WORDS_SQL: ${{ secrets.SEED_WORDS_SQL }}
+        run: |
+          set +x
+          if [ -z "$SEED_WORDS_SQL" ]; then
+            echo "- 금칙어 미적용(수동)" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          seed="$RUNNER_TEMP/seed_words.sql"
+          printf '%s\n' "$SEED_WORDS_SQL" > "$seed"
+          psql "$SUPABASE_DB_URL" -X -q -1 -v ON_ERROR_STOP=1 -f "$seed" > /dev/null
+          rm -f "$seed"
+          echo "- 금칙어 적용" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: check (supabase/tests/check_*.sql 전부, 정렬 순)
+        if: env.DO_CHECK == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # 파일별 건수는 run-checks.sh 가 summary 에 쓴다. 하나가 실패해도 나머지를 돌려 정보를 모은 뒤 종합 판정한다(diag_check.sql 은 패턴 밖).
+          fail=0; n=0
+          for f in $(ls supabase/tests/check_*.sql | sort); do
+            n=$((n + 1))
+            scripts/ci/run-checks.sh "$f" || fail=$((fail + 1))
+          done
+          echo "check 종합: 파일 $n개 중 실패 $fail개"
+          echo "### check 종합: 파일 $n개 중 실패 $fail개" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$n" -eq 0 ] || [ "$fail" -gt 0 ]; then echo "check 실패 (summary 참고)"; exit 1; fi
