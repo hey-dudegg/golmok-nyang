@@ -18,6 +18,7 @@ import { h, toast } from './dom.js';
 import { buildFeedbackSection } from './feedback_admin.js';
 import { buildLandmarkSection } from './landmark_admin.js';
 import { buildModSection } from './mod_admin.js';
+import { buildPropsSection } from './props_admin.js';
 import { renderRanking } from './names_panel.js';
 import { buildRecipeSection } from './recipe_panel.js';
 import { Live, Promo } from './together.js';
@@ -176,7 +177,8 @@ export const AdminPanel = {
     const s10 = sec('의견함 (의견 보내기 시험)', false, buildFeedbackSection(this));
     const s11 = sec('명소 미리보기 (R-17)', false, buildLandmarkSection(this));
     const s12 = sec('숨김 검토 (신고 3회 숨김, 복구·삭제)', false, buildModSection());
-    body.append(s1, s2, s3, s6, s4, s5, s7, s8, s9, s10, s11, s12, this.info);
+    const s13 = sec('오브젝트 (자동차, M3-6)', false, buildPropsSection(this));
+    body.append(s1, s2, s3, s6, s4, s5, s7, s8, s9, s10, s11, s12, s13, this.info);
     document.body.append(el); this.el = el;
     this.refresh();
     this.timer = setInterval(() => this.refresh(), 1000);

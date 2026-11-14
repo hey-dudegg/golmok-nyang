@@ -17,3 +17,5 @@ export const SUPABASE_CONFIG = {
 };
 // 기능 스위치 기본값 (D-82~84, 설계 2-1): mock·static 모드, 그리고 서버에서 app_config.features 를 못 읽을 때 쓴다.
 export const FEATURES_DEFAULT = { login: false, board_write: false, names_anon: true };
+// 날씨(M3-c, D-95): 같은 출처 중계만 부른다. mock: 'auto' 면 로컬 서버(Functions 없음)에서만 고정 가짜 값, true·false 로 고정할 수 있다. ?wx=종류 강제는 localhost·127.0.0.1 에서만.
+export const WEATHER_CONFIG = { endpoint: '/api/weather?level=sido', mock: 'auto', freshMs: 30 * 60000, staleMs: 3 * 3600000, timeoutMs: 8000 };

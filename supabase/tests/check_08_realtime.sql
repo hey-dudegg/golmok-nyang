@@ -76,6 +76,16 @@ begin
     perform gn_test.as_user('anon2', true);
     perform gn_test.eq('08 다른 uid 10초 안 busy', $$select public.promo_claim('11', '다른냥')->>'code'$$, 'busy');
     perform gn_test.eq('08 이름 21자 bad_text', $$select public.promo_claim('11', repeat('가', 21))->>'code'$$, 'bad_text');
+    perform gn_test.back();
+    -- D-122/T4: 05 가 없으면 홍보 이름 검사가 건너뛰어지므로, 05 를 먼저 실행했는지(함수 존재)와 홍보 경로에 실제로 걸리는지 확인한다
+    perform gn_test.eq('08 gn_text_check 존재(05 를 08 앞에 실행)', $$select (to_regprocedure('public.gn_text_check(text,text)') is not null)::text$$, 'true');
+    if to_regprocedure('public.gn_text_check(text,text)') is not null then
+      insert into public.filter_words (word) values ('테스트금칙') on conflict do nothing;
+      perform gn_test.as_user('anon2', true);
+      perform gn_test.eq('08 홍보 이름 금칙어 bad_text', $$select public.promo_claim('11', '테스트금칙')->>'code'$$, 'bad_text');
+      perform gn_test.back();
+    end if;
+    perform gn_test.as_user('anon2', true);
     perform gn_test.eq('08 코드 모양 틀리면 bad_text', $$select public.promo_claim('11 ; x', '냥')->>'code'$$, 'bad_text');
     perform gn_test.back();
     perform gn_test.as_user('anon1', true);

@@ -121,7 +121,7 @@ function makeBackdrop(sel) {
     // fog: 장면 안개색(THREE.Color), sunDeg: 해 고도(도), nowMs: 시계
     setLight(fog, sunDeg, nowMs) {
       const ov = handle.override || {};
-      const v = backdropVariant(handle.code, nowMs, ov.sunDeg != null ? ov.sunDeg : sunDeg);
+      const v = backdropVariant(handle.code, nowMs, ov.sunDeg != null ? ov.sunDeg : sunDeg, handle.wx);
       const tint = (ov.season && SEASON_TINT[ov.season]) || v.tint;
       const u = mesh.material.uniforms, L = v.light;
       handle.variant = { season: ov.season || v.season, weather: v.weather.kind, phase: L.phase };

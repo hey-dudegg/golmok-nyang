@@ -46,13 +46,33 @@ begin
 end $$;
 revoke all on function public.gn_text_check(text, text) from public, anon, authenticated;
 
+-- D-122 닉네임 금칙어: 02 가 만든 members_guard 를 교체해 가입(INSERT)·변경(nick 이 바뀔 때 UPDATE)에서 gn_text_check('nick') 를 거친다.
+-- 02 가 05 보다 먼저 실행되므로 02 쪽에는 검사가 없고, 트리거는 함수 이름으로 부르므로 여기서 함수만 바꾸면 된다. 다시 실행해도 같다.
+-- 02 를 다시 실행하면 검사 없는 옛 본문으로 돌아가니, 그때는 05 도 다시 실행한다.
+create or replace function public.members_guard() returns trigger
+language plpgsql security definer set search_path = '' as $$
+declare v text;
+begin
+  if tg_op = 'INSERT' then
+    select value #>> '{}' into v from public.app_config where key = 'terms_ver';
+    if v is null or new.terms_ver is distinct from v then raise exception 'terms_ver' using errcode = 'P0001'; end if;
+    perform public.gn_text_check('nick', new.nick);
+    new.agreed_at := now(); new.joined_at := now();
+  else
+    new.uid := old.uid; new.age_ok := old.age_ok; new.terms_ver := old.terms_ver;
+    new.agreed_at := old.agreed_at; new.joined_at := old.joined_at;
+    if new.nick is distinct from old.nick then perform public.gn_text_check('nick', new.nick); end if;
+  end if;
+  return new;
+end $$;
+
 -- D-106 숨김 기준 3 -> 5, 시간당 신고 10·투표 30. 아직 옛 기본값 그대로일 때만 바꾸고(어드민이 조정한 값은 보존), 다시 실행해도 같다.
 update public.app_config set value = '{"post":5,"comment":5,"name":5}' where key = 'report_hide' and value = '{"post":3,"comment":3,"name":3}'::jsonb;
 update public.app_config set value = '{"report":{"per1h":10},"vote":{"per1h":30}}'::jsonb || value where key = 'limits';   -- 이미 있는 키가 이긴다
 
 -- 3-3 도배 검사. 한도는 app_config.limits(어드민이 값만 조정). 셈은 해당 표에서 uid·created_at 으로 바로 센다.
 -- p_txt 를 주면(글·댓글) 같은 본문 반복도 거부한다(dup_h 시간 안, 같은 사람, 정규화 n2 기준). 이름의 dup 은 names2 고유 인덱스가 맡는다(23505 -> 화면 dup).
--- 'nick'(닉네임 변경 1시간당 3회)은 변경 기록 표가 없어 아직 검사하지 않는다(로그인 재개 때, D-82).
+-- 'nick'(닉네임 변경 1시간당 3회) 도배는 변경 기록 표가 없어 아직 검사하지 않는다(로그인 재개 때, D-82). 닉네임 금칙어는 위 members_guard 가 이미 거친다(D-122).
 create index if not exists names2_uid_created_idx on public.names2 (uid, created_at);
 create index if not exists posts_uid_created_idx on public.posts (uid, created_at);
 create index if not exists post_comments_uid_created_idx on public.post_comments (uid, created_at);

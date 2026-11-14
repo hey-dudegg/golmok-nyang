@@ -1,0 +1,818 @@
+[
+ {
+  "latitude": 30,
+  "longitude": 120,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 5,
+   "weather_code": 0,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 10,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    0,
+    0,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 31,
+  "longitude": 121,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 6,
+   "weather_code": 3,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    3,
+    3,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 32,
+  "longitude": 122,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 7,
+   "weather_code": 61,
+   "precipitation": 2.4,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    61,
+    61,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 33,
+  "longitude": 123,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": null,
+   "weather_code": null,
+   "precipitation": null,
+   "snowfall": null,
+   "cloud_cover": null,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    2,
+    2,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 34,
+  "longitude": 124,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 9,
+   "weather_code": 0,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 10,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    0,
+    0,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 35,
+  "longitude": 125,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 10,
+   "weather_code": 3,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    3,
+    3,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 36,
+  "longitude": 126,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 11,
+   "weather_code": 61,
+   "precipitation": 2.4,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    61,
+    61,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 37,
+  "longitude": 127,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 12,
+   "weather_code": 2,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    2,
+    2,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 38,
+  "longitude": 128,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 13,
+   "weather_code": 0,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 10,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    0,
+    0,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 39,
+  "longitude": 129,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 14,
+   "weather_code": 3,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    3,
+    3,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 40,
+  "longitude": 130,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 15,
+   "weather_code": 61,
+   "precipitation": 2.4,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    61,
+    61,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 41,
+  "longitude": 131,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 16,
+   "weather_code": 2,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    2,
+    2,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 42,
+  "longitude": 132,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 17,
+   "weather_code": 0,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 10,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    0,
+    0,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 43,
+  "longitude": 133,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 18,
+   "weather_code": 3,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    3,
+    3,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 44,
+  "longitude": 134,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 19,
+   "weather_code": 61,
+   "precipitation": 2.4,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    61,
+    61,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ },
+ {
+  "latitude": 45,
+  "longitude": 135,
+  "current": {
+   "time": 1762560000,
+   "temperature_2m": 20,
+   "weather_code": 2,
+   "precipitation": 0,
+   "snowfall": 0,
+   "cloud_cover": 80,
+   "is_day": 1
+  },
+  "hourly": {
+   "time": [
+    1762556400,
+    1762560000,
+    1762563600,
+    1762567200
+   ],
+   "weather_code": [
+    2,
+    2,
+    3,
+    61
+   ],
+   "precipitation": [
+    0,
+    0,
+    0,
+    1.2
+   ],
+   "snowfall": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "cloud_cover": [
+    20,
+    30,
+    90,
+    95
+   ],
+   "temperature_2m": [
+    4,
+    5,
+    6,
+    7
+   ]
+  }
+ }
+]

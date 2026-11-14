@@ -95,7 +95,7 @@ const FUR_FRAG = /* glsl */`
 uniform vec3 colBase; uniform vec3 colStripe; uniform vec3 colPatch; uniform vec3 colWhite; uniform vec3 colSkin;
 uniform float stripeAmt; uniform float stripeFreq; uniform float patchAmt; uniform float patchScale;
 uniform float mottle; uniform float whiteAmt; uniform float whiteNoise; uniform float seed;
-uniform float density; uniform float tipLight; uniform float highlight; uniform float shellCount;
+uniform float density; uniform float tipLight; uniform float highlight; uniform float shellCount; uniform float shade;
 varying vec3 vRest; varying vec3 vRestN; varying vec3 vN; varying vec3 vWP; varying vec3 vComb;
 varying float vH; varying float vFur; varying float vW; varying vec2 vT;
 ${NOISE_GLSL}
@@ -160,7 +160,7 @@ void main(){
   float ndl = dot(N, sunDir);
   float diff = clamp((ndl + 0.75) / 1.75, 0.0, 1.0);
   vec3 amb = mix(gndCol, skyCol, N.y * 0.5 + 0.5);
-  vec3 light = sunCol * diff + amb;
+  vec3 light = sunCol * diff * (1.0 - shade * 0.75) + amb; // shade: 차 밑 등 그늘 (M3-6, 0이면 기존과 같다)
   // lamp
   vec3 Lp = lampPos - vWP; float ld = length(Lp); Lp /= ld;
   float lamp = lampOn * clamp((dot(N, Lp) + 0.5) / 1.5, 0.0, 1.0) / (1.0 + ld * ld * 0.12);
@@ -185,6 +185,7 @@ export function makeFurMaterial(genomeColors, shellCount) {
     ...LIGHT,
     bones: { value: Array.from({ length: 24 }, () => new THREE.Matrix4()) },
     shellCount: { value: shellCount },
+    shade: { value: 0 },
     furLen: { value: 0.03 },
     furPuff: { value: 0 },
     breath: { value: 0 },

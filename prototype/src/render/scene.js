@@ -5,9 +5,14 @@ import { sunPosition } from '../core/time.js';
 import { TAU, clamp, lerp, makeRng, smooth } from '../core/util.js';
 import { LIGHT } from './shaders.js';
 import { attachBackdrop } from './backdrop.js';
+import { FLASH, createWeatherFx } from './weather_fx.js';
 import { VIEW_MODES, buildAlley, buildMarket, buildPark, canvasTex, speckle } from './scene_themes.js';
+import { buildPropsFor } from './props.js';
+import { buildShelterRoofs } from './shelter_roofs.js';
+import { needShelter } from '../core/weather_rules.js';
 
 // ───────────────────────── 골목 장면 ─────────────────────────
+const _g = new THREE.Color();
 const AZ_LIMIT = 75 * Math.PI / 180; // D-64: 좌우 회전 제한(담 뒤·바닥판 끝 가림)
 
 
@@ -39,7 +44,13 @@ export class Scene3D {
     this.env = new THREE.Group(); this.scene.add(this.env);
     this.obstacles = [];
     this.sky = this.makeSky(); this.scene.add(this.sky);
+    const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+    this.fx = createWeatherFx(this.scene, { flash: !(q && q.get('flash') === '0'), height: () => this.renderer.domElement.height, tint: () => this.scene.fog.color.clone().lerp(new THREE.Color(0xffffff), 0.55) });
+    this.wxKind = null; this.wxRegion = '';
   }
+  // 날씨(날씨_설계 3장): wx { kind, amt } | null. 하늘·빛 섞기는 setTime 이 fx.cur 로, 입자는 tickWeather 가
+  setWeather(wx, region) { this.wxKind = wx ? wx.kind : null; this.wxRegion = region || ''; this.fx.set(wx); if (this.shelterG) this.shelterG.visible = needShelter(wx); }
+  tickWeather(dt, nowMs = Date.now()) { if (this.fx.tick(dt, nowMs, this.wxRegion) && this.lastTimeArgs) this.setTime(...this.lastTimeArgs); }
   makeSky() {
     const m = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
@@ -109,6 +120,8 @@ export class Scene3D {
     if (theme === 'alley') buildAlley(this, E, r, dong, std, box, cyl);
     else if (theme === 'market') buildMarket(this, E, r, dong, std, box, cyl);
     else buildPark(this, E, r, dong, std, box, cyl);
+    this.shelterG = buildShelterRoofs(E, theme, std, box); this.shelterG.visible = false; // 비 피할 처마·지붕 (M3-f): 비·폭풍일 때만 보인다(맑은 날 화면 그대로)
+    buildPropsFor(this, E, theme, dong, std); // 오브젝트 (M3-6): 기능 스위치 꺼짐이면 아무것도 놓지 않는다
     this.dongCode = dong.c; this.backdropTilt = (this.view || VIEW_MODES.B).tilt[theme] || 0;
     this.setBackdrop(landmark); // 명소 원경 (R-17): 테마(바닥·담) 위에 얹는다. 설계 17장 자리
   }
@@ -116,6 +129,8 @@ export class Scene3D {
   setBackdrop(sel) { return attachBackdrop(this, sel); }
   // 실제 시각·위치에 맞춘 빛
   setTime(date, lat, lng) {
+    this.lastTimeArgs = [date, lat, lng];
+    const W = this.fx.cur;
     const { alt, az } = sunPosition(date, lat, lng);
     const deg = alt * 180 / Math.PI;
     const day = smooth(clamp((deg + 4) / 14, 0, 1));
@@ -131,18 +146,21 @@ export class Scene3D {
     const sc = sunCol.clone().multiplyScalar(lerp(0, 1.35, day)).add(moon.clone().multiplyScalar(0.28 * (1 - day)));
     const skyTop = new THREE.Color('#0c1630').lerp(new THREE.Color('#5f8fcf'), day);
     const hor = new THREE.Color('#1c2440').lerp(new THREE.Color('#b8cde0'), day).lerp(new THREE.Color('#f0b088'), gold * 0.7);
+    // 날씨: 하늘을 회색 쪽으로(밤엔 절반), 해 빛 배수, 번쩍임 가산 (날씨_설계 3-1·3-3)
+    const wg = W.g * (1 - 0.5 * (1 - day)), wsun = lerp(1, W.sun, 0.4 + 0.6 * day) * (1 + FLASH.max * W.flash), wbr = W.br * day;
+    for (const col of [skyTop, hor]) { const l = col.r * 0.3 + col.g * 0.59 + col.b * 0.11; col.lerp(_g.setRGB(l, l, l), wg).addScalar(wbr); }
     this.sky.material.uniforms.top.value.copy(skyTop);
     this.sky.material.uniforms.hor.value.copy(hor);
-    this.sky.material.uniforms.sunCol.value.copy(sunCol).multiplyScalar(day);
+    this.sky.material.uniforms.sunCol.value.copy(sunCol).multiplyScalar(day * (W.sun < 1 ? W.sun * 0.5 : 1));
     this.sky.material.uniforms.night.value = 1 - day;
     LIGHT.sunDir.value.copy(dir);
     this.sun.position.copy(dir).multiplyScalar(14); this.sun.target.position.set(0, 0, -0.5);
-    this.sun.color.copy(sunCol); this.sun.intensity = lerp(0.18, 2.2, day);
+    this.sun.color.copy(sunCol); this.sun.intensity = lerp(0.18, 2.2, day) * wsun;
     if (deg < -3) this.sun.color.copy(moon);
     this.hemi.color.copy(new THREE.Color('#2a3558').lerp(new THREE.Color('#c4d6ee'), day));
     this.hemi.groundColor.copy(new THREE.Color('#151518').lerp(new THREE.Color('#6a5e52'), day));
-    this.hemi.intensity = lerp(0.55, 1.0, day);
-    LIGHT.sunCol.value.copy(sc);
+    this.hemi.intensity = lerp(0.55, 1.0, day) * (1 + FLASH.max * W.flash);
+    LIGHT.sunCol.value.copy(sc).multiplyScalar(wsun);
     LIGHT.skyCol.value.copy(new THREE.Color('#1b2340').lerp(new THREE.Color('#8a9cb6'), day));
     LIGHT.gndCol.value.copy(new THREE.Color('#0d0d10').lerp(new THREE.Color('#4a423a'), day));
     const lampOn = 1 - smooth(clamp((deg + 2) / 8, 0, 1));
@@ -152,10 +170,12 @@ export class Scene3D {
     this.lamp.intensity = lampOn * 9;
     if (this.lampBulb) this.lampBulb.material.color.set(lampOn > 0.3 ? 0xffe2a8 : 0x9a9a92);
     const fog = hor.clone().lerp(skyTop, 0.2);
+    this.scene.fog.near = 9 * W.fog; this.scene.fog.far = 28 * lerp(1, W.fog, 0.7);
+    LIGHT.fogNear.value = 8 * W.fog; LIGHT.fogFar.value = 30 * lerp(1, W.fog, 0.7);
     this.scene.fog.color.copy(fog); LIGHT.fogCol.value.copy(fog);
     this.scene.background = fog;
     this.lastLight = [fog, deg, date.getTime()];
-    if (this.backdrop) this.backdrop.setLight(fog, deg, date.getTime()); // 원경 색조만 갱신(지오메트리는 그대로)
+    if (this.backdrop) { this.backdrop.wx = this.wxKind ? { kind: this.wxKind, haze: W.haze } : null; this.backdrop.setLight(fog, deg, date.getTime()); } // 원경 색조만 갱신(지오메트리는 그대로)
     LIGHT.exposure.value = 1.0;
     this.renderer.toneMappingExposure = 1;
   }

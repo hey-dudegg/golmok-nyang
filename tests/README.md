@@ -3,6 +3,14 @@
 브라우저(puppeteer-core + 설치된 Chrome)로 `prototype/` 페이지를 열어 확인하는 회귀 시험과, 동작이 그대로인지 보는 기준값 비교다.
 리팩토링(구조 분리) 단계마다 "분리 전후 동작 동일"을 확인하는 안전망으로 쓴다 (docs/design/구조_리팩토링_제안.md 5장).
 
+
+## 로컬 확인 (CLAUDE.md에서 옮김, T7)
+- 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
+  (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
+- 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
+- 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style.css`.
+- `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요.
+
 ## 준비
 
 1. Node.js 18 이상, Chrome(또는 Chromium/Edge) 설치
@@ -50,10 +58,11 @@
 | `npm run test:feedback` | feedback_ui.js | R-16 의견 보내기 실제 화면 경로: 팝업 열고 닫기·포커스·전송·쿨다운·500자·빈 값·허니팟·링크·XSS·실패 유지·어드민 의견함, 390x800 겹침 확인. 그림은 `tests/out/fb_*.png` | 전부 ok, 오류 0 (약 50초) |
 | `npm run test:namesui` | names_ui.js | M2-6a 모의 모드 화면: 이름 짓기 안내 팝업 1회(`gn_names_notice`)·입력칸 아래 안내문, 익명이 가입 시트 없이 이름 제안, 게시판 '준비 중' 안내. 그림은 `tests/out/names_*.png` | 전부 ok, 오류 0 |
 | `npm run test:backdrop` | backdrop.js | R-17 명소 배경: 16곳 모두 생성·이름 표시, 후보 2~3곳 모두 생성, 구성 시간(최대 50ms), 지역 전환 10회 뒤 지오메트리·텍스처·셰이더 수 그대로(누수 0), 시각 변화 때 메시 재생성 없음·밤 창불빛, landmarks.json 404 때 기본 테마로 정상 | 전부 PASS, 오류 0 (약 30초) |
+| `npm run test:props` | props.js | M3-6 오브젝트 O1(기능 스위치 켠 상태 ?props=1): 본네트 y 0.42 유지·차 밑 layer·점유 대체 + 자연스러움 T1~T8(위치 점프·5분 mount<=2·그 자리 반응·츄르·경로 포기·사슬 반복·복원 예외·제거 지연) + 자세 높이·누수 | 전부 PASS |
 | `npm run test:view -- --size 390x800 --shots` | backdrop_view.js | R-17 시야 방식(A 현재·B 담 낮춤·C 카메라 위로) x 16곳 가시성: 기본·근접 시야 카메라를 한 evaluate 안에서 고정해 배경 메시 켬/끔 픽셀 차이 비율(%). 앱의 선택 타이머·camAnim 이 끼어들 틈이 없다. 결과 tests/out/view/visibility_<크기>.json, --shots 면 대표 6곳 그림 | 오류 0 (판단 자료, 합격선 없음. 약 80~90초라 TEST_SLOW=2 권장, run_all 제외) |
 | `npm run shots` | shots.js | 일반·어드민·지역 시트 x 390x800·1100x800 스크린샷 | 화면별 오류 0. 그림은 눈으로 본다 |
 | `npm run test:loadfail` | load_fail.js | src 모듈(core·main·ui) 404, 지역 자료 404일 때 로딩 화면에 role=alert 안내 + 정상 열기 | 경우 4개 + 정상 PASS |
-| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·backdrop·compare·core, shots 제외) | 전부 PASS |
+| `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·backdrop·props·compare·core, shots 제외) | 전부 PASS |
 
 모든 시험은 마지막 줄에 `RESULT PASS|FAIL`을 찍고, 종료 코드도 0/1로 돌려준다.
 오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style.css`, `data/*.json`) 요청 실패가 들어간다.

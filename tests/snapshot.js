@@ -65,7 +65,7 @@ run('snapshot (상태 기준값)', async () => {
   const errs = [];
   const res = { meta: { fixed: new Date(FIXED).toISOString(), t0: new Date(T0).toISOString(), codes: CODES, note: '비교할 때 meta는 빼고 본다' }, regions: {} };
   for (const c of CODES) {
-    const p = await open(b, `?admin&still=30&pr=0.3&shells=2#${c}`, { width: 1100, height: 800, errs, settle: 3000, before: (p) => p.evaluateOnNewDocument(fixClock, FIXED) });
+    const p = await open(b, `?admin&still=30&pr=0.3&shells=2&wx=clear#${c}`, { width: 1100, height: 800, errs, settle: 3000, before: (p) => p.evaluateOnNewDocument(fixClock, FIXED) });
     res.regions[c] = await p.evaluate(summarize, FIXED, T0);
     if (c === CODES[0]) {
       await p.click('#btnMove'); await wait(800);

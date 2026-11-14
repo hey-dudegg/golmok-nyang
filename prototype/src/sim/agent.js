@@ -5,6 +5,7 @@ import { REACT_META } from '../core/touch_rules.js';
 import { TAU, angDiff, clamp, damp, dampAngle, lerp, makeRng, smooth } from '../core/util.js';
 import { Clock } from '../state/clock.js';
 import { PARAM_KEYS, poseTarget } from '../render/poses.js';
+import { hopTick, leaveSteps, noteAct, propFrameTick, resetSlot, slotReactSteps } from '../core/prop_actions.js';
 
 export class CatAgent {
   constructor(cat, view, world, rng) {
@@ -22,6 +23,7 @@ export class CatAgent {
     this.earT = [rng.range(2, 8), rng.range(2, 8)]; this.earK = [0, 0];
     this.meowT = rng.range(15, 50);
     this.jump = null; this.lastAction = '';
+    this.y = 0; this.hop = null; this.slot = null; this.layer = null; this.hopArc = 0; this.shadeK = 0; // 오브젝트(M3-6): 서 있는 면 높이·도약·점유 지점·충돌 무시 층
     this.time = rng() * 100;
     // 세계 시계 연동 (enterClock을 부르면 켜진다)
     this.clk = false; this.entry = null; this.sim = false; this.simNow = 0;
@@ -61,7 +63,7 @@ export class CatAgent {
     const { entry, prev } = Clock.entryAt(this.cat, now);
     const H0 = Clock.home(prev, this.world);
     this.clk = true; this.override = false; this.manual = false; this.repeatKey = null; this.isReaction = false;
-    this.x = H0.x; this.z = H0.z; this.jump = null; this.v.root.position.y = 0;
+    resetSlot(this); this.x = H0.x; this.z = H0.z; this.jump = null; this.v.root.position.y = 0; // 복원은 화면에 그리기 전에만(4A-1 예외)
     this.yaw = this.yawTarget = makeRng(prev.seed + ':yaw').range(-0.7, 0.7);
     this.setPose('sit'); Object.assign(this.P, this.T);
     this.sim = true; this.simNow = entry.t0;
@@ -76,11 +78,12 @@ export class CatAgent {
     const st = Clock.stateAt(this.cat, entry.t0, false);
     this.E = 1 - st.needs.sleep; this.B = st.needs.play;
     this.action = entry.key; this.lastAction = entry.key;
-    this.steps = []; this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0; this.jump = null;
-    const walk = Math.hypot(H.x - this.x, H.z - this.z) > 0.15;
+    const keep = !!this.slot && this.slot.action === entry.key; // 반응 뒤 같은 지점 행동을 이어 감(내려왔다 다시 오르지 않는다)
+    this.steps = keep ? [] : leaveSteps(this, false); this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0; this.jump = null;
+    const walk = !keep && (this.steps.length > 0 || Math.hypot(H.x - this.x, H.z - this.z) > 0.15);
     this.label = walk ? '골목 산책 중' : A.label;
     if (walk) this.steps.push(STEP.walk(H.x, H.z, 1.1, { timeout: 24 }));
-    this.steps.push(STEP.lazy((a) => { a.label = A.label; a.world.onLabel && a.world.onLabel(a); return A.steps(a, r); }), STEP.hold());
+    this.steps.push(STEP.lazy((a) => { a.label = A.label; a.world.onLabel && a.world.onLabel(a); const st = A.steps(a, r); if (!resume) noteAct(a, entry.key); return st; }), STEP.hold());
     this.world.onLabel && this.world.onLabel(this);
   }
   clockTick(now) {
@@ -155,7 +158,8 @@ export class CatAgent {
   runAction(k, isReaction) {
     const A = isReaction ? REACTIONS[k] : ACTIONS[k];
     this.action = k; this.lastAction = k; this.label = A.label; this.isReaction = !!isReaction;
-    this.steps = A.steps(this, this.r);
+    const keep = !isReaction && this.slot && this.slot.action === k;
+    this.steps = [...(keep ? [] : leaveSteps(this, false)), ...A.steps(this, this.r)]; if (!isReaction) noteAct(this, k);
     this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0;
     this.world.onLabel && this.world.onLabel(this);
   }
@@ -170,6 +174,8 @@ export class CatAgent {
       this.lastAction = 'ignore'; this.world.onLabel && this.world.onLabel(this); return;
     }
     this.jump = null;
+    const ps = this.slot && !this.enc ? slotReactSteps(this, k) : null; // 지점 위·아래에서는 그 자리 반응 (D-120)
+    if (ps) { this.action = k; this.lastAction = k; this.label = R.label; this.isReaction = true; this.steps = ps; this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0; this.world.onLabel && this.world.onLabel(this); return; }
     this.runAction(k in REACTIONS ? k : 'stare', true);
   }
   // ── 매 프레임 ──
@@ -194,12 +200,13 @@ export class CatAgent {
     }
     // 이동
     let speedNow = 0;
-    if (this.jump) {
+    if (this.hop) hopTick(this, dt);
+    else if (this.jump) {
       const J = this.jump; J.t += dt; const k = clamp(J.t / J.dur, 0, 1);
       const d = J.dist * this.scale * smooth(k);
       this.x = J.x0 + Math.sin(this.yaw) * d; this.z = J.z0 + Math.cos(this.yaw) * d;
-      this.v.root.position.y = Math.sin(k * Math.PI) * 0.12 * this.scale;
-      if (k >= 1) { this.jump = null; this.v.root.position.y = 0; this.setPose('crouch', { pupil: 0.8 }); }
+      this.v.root.position.y = this.y + Math.sin(k * Math.PI) * 0.12 * this.scale;
+      if (k >= 1) { this.jump = null; this.v.root.position.y = this.y; this.setPose('crouch', { pupil: 0.8 }); }
     } else if (this.move && !this.arrived) {
       const M = this.move;
       const dx = M.x - this.x, dz = M.z - this.z, dist = Math.hypot(dx, dz);
@@ -293,6 +300,7 @@ export class CatAgent {
     // 가끔 울기
     this.meowT -= dt;
     if (this.meowT < 0) { this.meowT = this.r.range(25, 70); if (F.eye > 0.3 && !this.isReaction && !this.enc) this.say(this.kitten ? this.r.pick(['미야', '먀아', '삐약']) : this.r.pick(['냥', '야옹', '냐아', '앵'])); }
+    propFrameTick(this, dt);
     // 배치
     this.v.root.position.x = this.x; this.v.root.position.z = this.z;
     this.v.root.rotation.y = this.yaw;

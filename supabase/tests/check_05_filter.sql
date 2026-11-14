@@ -166,6 +166,13 @@ begin
   perform gn_test.raises('05 이름에 기호 거부', format($$insert into public.names2 (region, name, uid) values ('27', 'a.com', %L)$$, gn_test.uid('anon1')), 'filter_chars');
   perform gn_test.raises('05 이름에 연락처 숫자말 거부', format($$insert into public.names2 (region, name, uid) values ('27', '공일공냥', %L)$$, gn_test.uid('anon1')), 'filter_contact');
   perform gn_test.back();
+  -- 닉네임 필터(members_guard, D-122): 정상 가입 -> 금칙어·빈 값·길이 초과 변경 거부
+  perform gn_test.as_user('mem1', false);
+  perform gn_test.allowed('05 닉네임 정상 가입', format($$insert into public.members (uid, nick, age_ok, terms_ver) values (%L, '미미', true, '2026-10')$$, gn_test.uid('mem1')));
+  perform gn_test.raises('05 닉네임 금칙어 거부', format($$update public.members set nick = '테스트금칙' where uid = %L$$, gn_test.uid('mem1')), 'filter_word');
+  perform gn_test.raises('05 닉네임 빈 값 거부', format($$update public.members set nick = '' where uid = %L$$, gn_test.uid('mem1')), 'filter_chars');
+  perform gn_test.denied('05 닉네임 13자 초과 거부', format($$update public.members set nick = repeat('가', 13) where uid = %L$$, gn_test.uid('mem1')));
+  perform gn_test.back();
 
   -- 결과를 변수로 옮긴 뒤 일부러 오류를 내 위의 모든 변경을 되돌린다
   select string_agg(name || chr(31) || result, chr(30) order by n)

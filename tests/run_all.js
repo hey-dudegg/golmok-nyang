@@ -19,6 +19,7 @@ const ALL = [
   ['namesui', 'names_ui.js'],
   ['findcat', 'find_cat.js'],
   ['backdrop', 'backdrop.js'],
+  ['props', 'props.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];

@@ -1,0 +1,28 @@
+{
+  "codes": {
+    "clear": [0, 1], "cloudy": [2, 3], "fog": [45, 48],
+    "rain": [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82],
+    "snow": [71, 73, 75, 77, 85, 86], "storm": [95, 96, 99]
+  },
+  "unknownCodes": [4, 10, 44, 58, 60, 68, 70, 78, 83, 90, 97, 98, 100],
+  "direct": [
+    { "in": { "cloud_cover": 10 }, "kind": "clear" },
+    { "in": { "cloud_cover": 39.9 }, "kind": "clear" },
+    { "in": { "cloud_cover": 40 }, "kind": "cloudy" },
+    { "in": { "cloud_cover": 90, "precipitation": 0.1, "snowfall": 0 }, "kind": "rain" },
+    { "in": { "cloud_cover": 90, "precipitation": 0.09 }, "kind": "cloudy" },
+    { "in": { "cloud_cover": 90, "precipitation": 2, "snowfall": 0.5 }, "kind": "snow" },
+    { "in": { "weather_code": null, "cloud_cover": 20, "precipitation": 0, "snowfall": 0 }, "kind": "clear" },
+    { "in": { "weather_code": 63, "cloud_cover": 5 }, "kind": "rain" },
+    { "in": {}, "kind": null }
+  ],
+  "amt": [
+    { "kind": "rain", "precipitation": 4, "snowfall": 0, "amt": 0.5 },
+    { "kind": "rain", "precipitation": 20, "snowfall": 0, "amt": 1 },
+    { "kind": "storm", "precipitation": 2, "snowfall": 0, "amt": 0.25 },
+    { "kind": "snow", "precipitation": 0, "snowfall": 1.5, "amt": 0.5 },
+    { "kind": "snow", "precipitation": 0, "snowfall": 9, "amt": 1 },
+    { "kind": "cloudy", "precipitation": 5, "snowfall": 0, "amt": 0 },
+    { "kind": "fog", "precipitation": 5, "snowfall": 0, "amt": 0 }
+  ]
+}

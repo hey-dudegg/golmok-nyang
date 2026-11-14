@@ -16,6 +16,7 @@
     "test:fur": "node tests/fur_probe.js --mode flicker --tag run --variants roll,d0.8",
     "test:findcat": "node tests/find_cat.js",
     "test:backdrop": "node tests/backdrop.js",
+    "test:props": "node tests/props.js",
     "test:view": "node tests/backdrop_view.js",
     "snapshot": "node tests/snapshot.js",
     "baseline": "node tests/snapshot.js --baseline && node tests/pose_check.js after --baseline && node tests/core_ref.js --baseline",

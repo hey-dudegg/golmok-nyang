@@ -41,6 +41,9 @@ import { openSignup, requireGate } from './ui/signup.js';
 import { Live, Promo } from './ui/together.js';
 import { AppInteract } from './app/interact.js';
 import { AppVisit } from './app/visit.js';
+import { WxUI } from './app/weather_ui.js';
+import { AppProps } from './app/props_app.js';
+import { rectHit, rectPush } from './core/props.js';
 
 // ───────────────────────── 앱 ─────────────────────────
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches;
@@ -88,6 +91,7 @@ class App {
     const first = linked || REGIONS.unitOf(store.get('region', '') || store.get('dong', '')) || REGIONS.unitOf('11') || REGIONS.units[0];
     LandmarkData.load().then(() => this.refreshBackdrop(true)); // 명소 자료 (R-17): 늦게 와도 배경만 다시 그린다
     this.goDong(first, undefined, { nosave: !!linked });
+    WxUI.init(this);
     this.renderMember();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
@@ -184,7 +188,8 @@ class App {
   updateClock() {
     const now = this.previewTime ? new Date(this.previewTime) : TEST.hour != null ? new Date(Date.UTC(2026, 9, 10, +TEST.hour - 9, 0)) : new Date();
     this.refreshBackdrop(); // 주가 바뀌면(월요일 00:00 KST) 다음 후보로
-    this.s.setTime(now, this.dong.lat, this.dong.lng);
+    WxUI.scene(this); // 날씨 (M3-d·e): 값이 없으면 맑음·칸 숨김
+    this.s.setTime(now, this.dong.lat, this.dong.lng); WxUI.panel(this);
     this.world.night = this.s.isNight ? 1 : 0; this.world.day = this.s.dayAmt;
     const kst = new Date(now.getTime() + 9 * 3600000);
     const hh = kst.getUTCHours(), mm = kst.getUTCMinutes();
@@ -200,18 +205,19 @@ class App {
   // ── 세계 규칙 ──
   blocked(x, z, r) {
     if (x < BOUNDS.x0 || x > BOUNDS.x1 || z < BOUNDS.z0 || z > BOUNDS.z1) return true;
-    for (const o of this.s.obstacles) { if (o.wall) { if (z < o.z + 0.3 + r) return true; } else if (Math.hypot(x - o.x, z - o.z) < o.r + r * 0.5) return true; }
+    for (const o of this.s.obstacles) { if (o.wall) { if (z < o.z + 0.3 + r) return true; } else if (o.hx !== undefined) { if (rectHit(o, x, z, r * 0.5)) return true; } else if (Math.hypot(x - o.x, z - o.z) < o.r + r * 0.5) return true; }
     return false;
   }
   resolve(a, x, z) {
     let stuck = false;
     for (const o of this.s.obstacles) {
       if (o.wall) { if (z < o.z + 0.32) z = o.z + 0.32; continue; }
+      if (o.hx !== undefined) { if (o.id === a.layer) continue; const q = rectPush(o, x, z, 0.08); if (q) { x = q.x; z = q.z; stuck = true; } continue; } // 오브젝트 사각형 (M3-6). 차 밑에 든 고양이(layer)는 통과
       const dx = x - o.x, dz = z - o.z, d = Math.hypot(dx, dz), m = o.r + 0.08;
       if (d < m) { x = o.x + (dx / (d || 1)) * m; z = o.z + (dz / (d || 1)) * m; stuck = true; }
     }
     for (const o of this.agents) {
-      if (o === a || o.hidden) continue;
+      if (o === a || o.hidden || Math.abs(o.y - a.y) >= 0.2) continue; // 높이가 다르면(차 위·아래) 겹침 밀기 없음
       const dx = x - o.x, dz = z - o.z, d = Math.hypot(dx, dz), m = 0.17 * (a.scale + o.scale);
       if (d < m && d > 1e-4) { x += (dx / d) * (m - d) * 0.5; z += (dz / d) * (m - d) * 0.5; }
     }
@@ -301,6 +307,7 @@ class App {
     const cam = this.s.camera;
     if (Math.abs(this.vox) > 0.5 || Math.abs(this.voy) > 0.5) cam.setViewOffset(innerWidth, innerHeight, this.vox, this.voy, innerWidth, innerHeight);
     else if (cam.view && cam.view.enabled) cam.clearViewOffset();
+    this.s.tickWeather(dt, Date.now());
     this.s.renderer.render(this.s.scene, cam);
     if (this.updateFindCat) this.updateFindCat();
     // 말풍선
@@ -328,7 +335,7 @@ class App {
   }
 }
 // 나눈 부분(놀러가기·교감)을 App 에 붙인다. 메서드 속성(열거 안 됨)을 그대로 옮겨 class 안에 있던 것과 같게 한다
-for (const Part of [AppVisit, AppInteract]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
+for (const Part of [AppVisit, AppInteract, AppProps]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
 Recipes.notify = (msg) => toast(msg);
 const app = new App();
 if (isTestHost(location.hostname)) { window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel, VIEW_MODES }; } // 시험용 노출은 ?admin일 때만

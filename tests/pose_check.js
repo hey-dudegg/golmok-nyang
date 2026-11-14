@@ -9,12 +9,13 @@ const { launch, open, run, OUT, BASELINE, ensureDir } = require('./lib/common');
 
 const mode = process.argv.includes('before') ? 'before' : 'after';
 const saveBase = process.argv.includes('--baseline');
+const PROPS = !!process.env.PROPS; // PROPS=1: 오브젝트 자세(lie/hideLow/peek)까지 포함해 검사(기준값 비교·저장 제외, M3-6)
 const GN = ['head', 'ear', 'chest', 'hips', 'front', 'hind', 'tail'];
 
 run('pose_check ' + mode, async () => {
   const b = await launch();
   const errs = [];
-  const p = await open(b, '?admin&still=2&pr=0.3&shells=2', { width: 400, height: 300, errs, settle: 2500 });
+  const p = await open(b, '?admin&still=2&pr=0.3&shells=2' + (PROPS ? '&props=1' : ''), { width: 400, height: 300, errs, settle: 2500 });
   const res = await p.evaluate((mode) => {
     const X = window.__pose, V3 = window.__app.mascot.v.mesh.position.constructor;
     const cats = [
@@ -76,6 +77,7 @@ run('pose_check ' + mode, async () => {
   }
   console.log(`뚫린 칸 수(자세x체형 ${cells} 중):`, bad, '  ERR', JSON.stringify(errs));
   const bf = path.join(BASELINE, 'pose_' + mode + '.json');
+  if (PROPS) return !errs.length && (mode === 'before' || bad === 0);
   let same = true;
   if (saveBase) { fs.writeFileSync(path.join(ensureDir(BASELINE), 'pose_' + mode + '.json'), json + '\n'); console.log('기준값 저장:', path.relative(process.cwd(), bf)); }
   else if (fs.existsSync(bf)) { same = fs.readFileSync(bf, 'utf8').trim() === json; console.log('기준값과 같음:', same); }

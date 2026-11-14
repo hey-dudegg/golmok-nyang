@@ -125,9 +125,12 @@ export function weatherFor(regionCode, nowMs) {
   const d = Math.floor((nowMs + KST) / DAY), r = makeRng('wx:' + String(regionCode).slice(0, 2) + ':' + d)();
   return r < 0.6 ? { kind: 'clear', haze: 1 } : r < 0.85 ? { kind: 'haze', haze: 1.35 } : { kind: 'mist', haze: 1.75 };
 }
-export function backdropVariant(regionCode, nowMs, sunDeg) {
+// 실제 날씨 원경 배수 (날씨_설계 3-1). wx { kind, haze? } 가 있으면 가짜 날씨 대신 쓴다 (D-95)
+export const WX_HAZE = { clear: 1, cloudy: 1.35, fog: 1.75, rain: 1.5, snow: 1.4, storm: 1.6 };
+export function backdropVariant(regionCode, nowMs, sunDeg, wx) {
   const season = seasonOf(nowMs);
-  return { season, tint: SEASON_TINT[season], weather: weatherFor(regionCode, nowMs), light: phaseFromSunDeg(sunDeg) };
+  const weather = wx && WX_HAZE[wx.kind] != null ? { kind: wx.kind, haze: Number.isFinite(wx.haze) ? wx.haze : WX_HAZE[wx.kind] } : weatherFor(regionCode, nowMs);
+  return { season, tint: SEASON_TINT[season], weather, light: phaseFromSunDeg(sunDeg) };
 }
 export function landmarkSeed(sel) { return hashStr('lm:' + (sel && sel.place ? sel.place.id : 'none')) >>> 0; }
 

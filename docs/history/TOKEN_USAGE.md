@@ -35,3 +35,12 @@
 2026-11-08 | developer | M2-1 ?fur 스위치 삭제+npm test | 28k | 22 | 작은 수정, npm test 전체 1회
 2026-11-08 | architect | 날씨 설계 개정·이름 정리 | 62k | 44 | 날씨_설계 20KB 1회·수정설계 6KB, 작은 Edit 다수
 2026-11-08 | security | M2-8 2차 보안 점검 | 63k | 15 | 범위 grep 위주, 통독 없음
+-- 분석 완료(2026-11-08, 토큰_최적화_설계.md 12장: 28~36줄). 이후 미분석 1건
+2026-11-14 | architect | M3-7 상자 놓기 설계·날씨 9장 이동 | 63k | 29 | 날씨 9장 6KB·실시간 설계 8KB·오브젝트 설계 6KB, 반복 읽기 없음
+2026-11-14 | developer | M3-2 날씨 중계·어댑터 | 69k | 23 | 날씨 설계 1·7장, feedback Function 참고, 시험 1벌
+2026-11-14 | architect | 오브젝트 자연스러움·상자 이름·날씨 6장 | 73k | 54 | 상자 설계 전체 16KB·오브젝트 15KB·필터 5KB, Edit 잘게 나눔
+2026-11-14 | developer | M3-3 날씨 패널·장면 | 97k | 40 | 설계 100줄·scene.js·weather 상태, swiftshader 측정 로그 김
+2026-11-14 | prop-developer | M3-6 자동차 O1 | 215k | 70 | 설계 24~293줄 25KB·agent.js 전체 18KB·behavior·clock 전체, 스크린샷 4장
+-- 분석 완료(2026-11-14, 토큰_최적화_설계.md 14장)
+2026-11-14 | developer | M3-4 날씨 행동 반영 | 92k | 33 | scene_themes 150줄·clock.js 전체, 반복 없음
+2026-11-14 | tester | M3-8 통합 회귀 | - | 40 | README 6KB·설계 5KB·common.js 5KB, 총 25KB, 재읽기 0, 이미지 1
