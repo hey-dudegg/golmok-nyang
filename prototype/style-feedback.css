@@ -1,0 +1,56 @@
+/* ── 의견 보내기 (R-16): 고양이 귀가 달린 시트 ── */
+#btnFeedback svg.i { width: 16px; height: 16px; }
+@media (max-width: 720px) { #btnFeedback { padding: 8px 10px; } }
+.scrim.fbscrim { padding-top: 28px; }
+.scrim.fbscrim:not(.center) { align-items: flex-end; }
+.sheet.fbsheet { position: relative; overflow: visible; padding: 0; gap: 0; width: min(420px, 100%); max-height: none; border-radius: 22px; }
+.fbsheet::before, .fbsheet::after { content: ""; position: absolute; top: -13px; width: 34px; height: 30px; background: var(--panel-solid); clip-path: polygon(0 100%, 50% 0, 100% 100%); border-radius: 6px 6px 0 0; }
+.fbsheet::before { left: 26px; transform: rotate(-8deg); }
+.fbsheet::after { right: 26px; transform: rotate(8deg); }
+.fbsheet:focus { outline: none; }
+.fbscroll { position: relative; overflow: auto; max-height: var(--fbh, 640px); padding: 18px 20px 16px; border-radius: 22px; background: var(--panel-solid); display: flex; flex-direction: column; gap: 12px; }
+.fb-head { display: flex; align-items: flex-start; gap: 12px; }
+.fb-face { flex: none; min-width: 52px; padding: 8px 6px; border-radius: 16px; background: var(--chip); font-family: var(--f-mono); font-size: 13px; text-align: center; white-space: nowrap; color: var(--ink); }
+.fb-ttl { min-width: 0; flex: 1; }
+.fb-ttl h3 { font-size: 20px; }
+.fb-ttl p { font-size: 13px; margin-top: 3px; }
+.fb-close { margin-left: auto; flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+.fb-form { display: flex; flex-direction: column; gap: 10px; }
+.fb-form .field label { display: flex; justify-content: space-between; gap: 8px; }
+.fb-form .field input[type=text], .fb-form .field textarea { font-size: 16px; width: 100%; box-sizing: border-box; }
+.fb-count { font-variant-numeric: tabular-nums; }
+.fb-count.over { color: var(--danger); }
+.fb-honey { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+.fb-msg { min-height: 20px; font-size: 13.5px; line-height: 1.45; }
+.fb-msg.err { color: var(--danger); }
+.fb-msg.ok { color: var(--ink); font-family: var(--f-display); font-size: 16px; }
+.fb-foot { justify-content: stretch; }
+.fb-send { flex: 1; min-height: 44px; }
+.fb-send.gray { opacity: 0.5; }
+.fb-send.busy { cursor: progress; }
+.fb-privacy, .fb-keep { font-size: 11.5px !important; line-height: 1.5 !important; margin: 0; }
+.fb-keep { margin-top: -6px; }
+.fb-paws { display: flex; justify-content: center; gap: 14px; color: var(--muted); opacity: 0.4; }
+.fb-paws span { display: inline-flex; transform: rotate(-12deg); }
+.fb-paws span:nth-child(2) { transform: rotate(10deg) translateY(3px); }
+.fb-paws svg.i { width: 16px; height: 16px; }
+.fbsheet.sending .fb-face { animation: fbbounce 0.6s ease-in-out infinite; }
+.fbsheet.purr .fb-face { animation: fbpurr 0.5s ease-in-out 4; }
+@keyframes fbbounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes fbpurr { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .fbsheet.sending .fb-face, .fbsheet.purr .fb-face { animation: none; } }
+@media (max-width: 720px) { .scrim.fbscrim { padding: 28px 10px calc(10px + env(safe-area-inset-bottom, 0px)); } .sheet.fbsheet { width: 100%; } }
+#admin .adfb-row { cursor: pointer; }
+#admin .adfb-mail { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* 개인정보 안내 (M1-4): 첫 방문 알림줄·팝업 */
+.pv-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(560px, calc(100vw - 24px)); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 14px; background: var(--panel-solid); border-radius: 14px; box-shadow: var(--shadow); font-size: 12.5px; line-height: 1.5; }
+.pv-link { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; min-height: 24px; }
+.pv-ok { margin-left: auto; min-height: 36px; padding: 0 14px; }
+.sheet.pvsheet { width: min(460px, 100%); max-height: min(80vh, 640px); display: flex; flex-direction: column; gap: 8px; }
+.pv-date { margin: 0; font-size: 12px; color: var(--muted); }
+.pv-body { overflow-y: auto; display: grid; gap: 12px; font-size: 13px; line-height: 1.6; }
+.pv-sec h4 { margin: 0 0 4px; font-size: 14px; }
+.pv-sec p { margin: 0 0 4px; }
+.pv-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pv-head h3 { margin: 0; }
+.pv-close { min-height: 40px; padding: 0 14px; }

@@ -11,7 +11,7 @@ export const pmOf = (a) => a.pm || (a.pm = { cool: {}, recent: [], rej: 0, touch
 export const noteAct = (a, k) => { const m = pmOf(a); m.recent.unshift(k); m.recent.length = Math.min(3, m.recent.length); };
 
 // 지금 이 고양이가 쓸 수 있는 지점 (점유·쿨다운·최근 3개 행동·새끼 높이 제한 반영). 시계 대역(a.pm 없음)은 존재만 본다
-function pickSlot(a, action) {
+export function pickSlot(a, action) {
   const m = a.pm;
   for (const s of propSlots(action)) {
     if (s.slot.mode === 'on' && a.kitten) continue;
@@ -112,6 +112,7 @@ export function slotReactSteps(a, k) {
   if (a.time - m.touchT > 60) m.rej = 0;
   m.touchT = a.time;
   if (k === 'flee') return [PS.dismount(true), ...REACTIONS.flee.steps(a)];
+  if (k === 'eat_churu' && sl.state === 'under') { m.rej = 0; return [PS.dismount(false), ...REACTIONS.eat_churu.steps(a)]; } // 숨은 고양이는 걸어 나와 받는다 (6장, 1회: 나오면 쿨다운이라 다시 들어가지 않음)
   if (pol < 0) m.rej++; else if (pol > 0) m.rej = 0;
   if (m.rej > 2) { // 3번째 거부부터는 반복하지 않고 감정 누적으로 전환
     m.rej = 0;

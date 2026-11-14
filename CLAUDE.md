@@ -9,7 +9,7 @@
 - docs/PENDING.md : P-xx 논의가 필요한 사항
 - docs/design/ : architect가 쓰는 기능별 설계 문서
 - docs/history/LOG.md : 시간순 활동 기록 (추가만 한다)
-- docs/history/CHANGELOG.md : 변경 이력 C-xx (추가만 한다)
+- docs/history/CHANGELOG.md : 변경 이력 C-xx (C-75에서 동결, 이후 LOG [결정]·[변경]이 대신함, D-127)
 - docs/history/TOKEN_USAGE.md : 에이전트 토큰 사용 내역 (추가만 한다, token-optimizer 분석 입력)
 - docs/archive/ : 끝난 항목 보관. 평소에 읽지 않는다.
 INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한다.
@@ -22,9 +22,9 @@ INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한�
 ## 기록 규칙
 1. 작업에 영향을 주는 요구·지시·수정을 받으면 LOG에 [요구]와 [이해]를 한 줄씩 남기고 REQUIREMENTS에 반영한다. 해석이 갈릴 수 있으면 먼저 확인받는다.
 2. 서브에이전트 보고의 "기록 항목"은 LOG에 그대로 옮긴다. 에이전트는 LOG를 직접 쓰지 않는다.
-3. 보고의 "팀장 확인 필요"는 바로 답할 수 있으면 D로, 사용자 판단이 필요하면 P로 등록한다.
-4. 요구·결정·설계가 바뀌면 CHANGELOG에 C-xx를 추가하고, 원본을 고치고, INDEX를 갱신한다.
-5. P가 해결되면 D로 승격하거나 폐기하고 PENDING에서 뺀다. LOG와 CHANGELOG에 남긴다.
+3. 보고의 "팀장 확인 필요"는 사용자 판단이 필요하면 P로 등록한다. D는 사용자 결정이거나 여러 역할에 영향 줄 때만 만들고, 팀장의 작은 승인은 LOG [결정] 한 줄로 끝낸다 (D-127).
+4. 요구·결정·설계가 바뀌면 LOG에 [결정]·[변경]으로 남기고, 원본을 고치고, INDEX를 갱신한다.
+5. P가 해결되면 D로 승격하거나 폐기하고 PENDING에서 뺀다. LOG에 남긴다.
 6. LOG 형식: `날짜 | 주체 | [유형] 내용 (관련 ID)`, 한 줄 120자 이내.
    유형: 요구, 이해, 설계, 구현, 테스트, 결정, 변경, 이슈, 이관
 
@@ -39,6 +39,7 @@ INDEX, PLAN, REQUIREMENTS, DECISIONS, PENDING, history/는 팀장만 수정한�
 - 위임할 때와 결과를 받을 때 사용자에게 한 줄씩 보여준다. `→ architect | M1-2 시작` / `← architect | M1-2 완료, P-04 등록`
 - 결과를 검토하고 INDEX의 작업 상태와 역할별 "마지막 반영 D"를 갱신한다. 문제가 있으면 재지시한다.
 - 끝난 에이전트는 재개하지 않고 확정 사실·남은 후보 5줄로 새로 위임한다. 재개는 짧은 후속 1회만 (D-72).
+- 같은 역할에 줄 작은 후속은 모아서 한 번에 위임한다. 보고는 15줄 이내 (D-127).
 - 결과 60k 토큰 이상이거나 "토큰 내역"이 있으면 TOKEN_USAGE에 한 줄. 5건 또는 /gate 때 token-optimizer 분석.
 
 ## 진행 방식 (속도 관리)

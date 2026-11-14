@@ -108,6 +108,42 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
       const hasGroup = app.s.env.children.some((c) => c.userData.propId === 'car0');
       ok('T8 ' + act + ' 제거 지연 <= 2초, 지상, 그룹 제거', mounted && gone && n * DT <= 2.0 && a.y === 0 && !a.slot && !hasGroup && r.viol.length === 0, `mounted ${mounted} 지연 ${(n * DT).toFixed(2)}s viol ${v3(r)}`);
     }
+    // 11) M4-4 O2-2: (a) 만남·놀러가기 시작 때 지점 위 고양이는 도약으로 내려온 뒤 참여 / flee 뒤 차 밑 / (b) 숨은 채 츄르 / (c) 비 오면 차 밑이 비 피할 자리
+    { const from = app.dong.c === '11' ? '26' : '11', rn = Date.now;
+      for (const act of ['hoodLoaf', 'underHide']) {
+        a = mk(); a.playManual(act); r = rec(a); toOn(r); const y0 = a.y, ap0 = X.propSlots(act)[0];
+        app.forceVisit(from, 'friend'); const E = app.enc; E.wall = false; E.paused = false; let first = null, n = 0, vis = 0;
+        for (; n < 400 && (a.slot || n < 2); n++) { tick(r, 1, () => { E.step(DT); E.guest.update(DT); }); if (n === 0) first = a.y; }
+        ok('11a ' + act + ' 만남 시작: 지점을 도약·낮은 걸음으로 내려온 뒤 참여(지상, 점유 해제, 첫 프레임 y 유지)', !a.slot && a.y === 0 && !X.propOccupant(ap0.key) && Math.abs(first - y0) < 0.2 && logOf(a, 'leave').length === 1 && r.viol.length === 0, `n ${n} first ${first} viol ${v3(r)}`);
+        tick(r, 200, () => { E.step(DT); E.guest.update(DT); }); ok('11a2 ' + act + ' 내려온 뒤 만남 진행·T1 위반 0·같은 지점 쿨다운', a.enc === E && r.viol.length === 0 && a.pm.cool[ap0.key] > a.time, v3(r));
+        app.abortEnc();
+      }
+      a = mk(); a.playManual('hoodLoaf'); r = rec(a); toOn(r); app.forceAway(); for (let i = 0; i < 80 && a.slot; i++) tick(r, 1);
+      ok('11b 놀러가기 시작: 지점에서 도약으로 내려온 뒤 걸어 나감', !a.slot && a.y === 0 && r.viol.length === 0 && logOf(a, 'leave').length === 1, v3(r)); app.returnNow(); app.abortEnc && app.abortEnc();
+      // flee 뒤 숨기: 진 쪽이 주인이 되는 만남을 찾는다 (Date.now 를 밀어 시도마다 다른 시드)
+      let found = null; a = mk(); a.p.bold = 0; a.p.grumpy = 0;
+      for (let i = 0; i < 60 && !found; i++) { Date.now = () => rn() + i * 997; app.forceVisit(from, 'fight'); if (app.enc && app.enc.loser === 'host' && app.enc.hideKey) found = app.enc; else app.abortEnc(); }
+      Date.now = rn;
+      ok('11c 진 쪽이 주인인 싸움에서 숨는 지점(차 밑) 정해짐', !!found); 
+      if (found) { const E = found; E.wall = false; E.paused = false; r = rec(a); let under = 0; E.done = false;
+        for (let i = 0; i < 2600 && !under; i++) { tick(r, 1, () => { if (!E.done) { E.step(DT); E.guest.update(DT); } }); if (a.slot && a.slot.state === 'under') under = 1; }
+        ok('11d 만남 뒤 차 밑으로 숨음(걸어서, T1 위반 0)', under === 1 && a.y === 0 && logOf(a, 'mount').length === 1 && r.viol.length === 0, `under ${under} viol ${v3(r)}`); }
+      // (b) 숨은 상태 츄르: 걸어 나와 받음, 다시 들어가지 않음. 쓰다듬기는 그 자리 반응
+      a = mk(); a.playManual('underHide'); r = rec(a); toOn(r); const sx = a.x, sz = a.z, ap = X.propSlots('underHide')[0];
+      a.react('swat'); tick(r, 60); ok('11e 숨은 채 쓰다듬기: 그 자리 반응(위치 불변·점유 유지)', Math.hypot(a.x - sx, a.z - sz) < 0.02 && a.slot && a.slot.state === 'under');
+      a.react('eat_churu'); let out = false; tick(r, 400, (a) => { if (!a.slot && Math.hypot(a.x - ap.ax, a.z - ap.az) < 0.3) out = true; });
+      ok('11f 숨은 채 츄르: 걸어 나와(접근점 근처) 받음·점유 해제·다시 들어가지 않음', out && !a.slot && a.y === 0 && logOf(a, 'mount').length === 1 && !X.propOccupant(ap.key) && r.viol.length === 0, `out ${out} mount ${logOf(a, 'mount').length} viol ${v3(r)}`);
+      // (c) 비 피할 자리: 비 오는 날 일정에 차 밑이 들어오고, 처마 자리(S)와 한 칸에 하나뿐·쿨다운 지킴. 스위치 끄면 없음
+      const sched = () => { X.Clock.cache.clear(); const cat = app.mascot.cat, t0 = Math.floor(Date.now() / 600000) * 600000, L = X.Clock.between(cat, t0, t0 + 86400000); return L; };
+      const wxOld = X.Clock.wxSrc; X.Clock.wxSrc = () => ({ wx: { kind: 'rain', amt: 0.9 }, theme: 'alley' });
+      app.propsSet(true, { x: 0, z: -1.1, dir: 1 }); X.Clock.wxSrc = () => ({ wx: { kind: 'rain', amt: 0.9 }, theme: 'alley' });
+      let L = sched(), nU = 0, u = L.filter((e) => e.key === 'underHide'), both = u.filter((e) => e.S).length, gapBad = 0, last = -99;
+      L.forEach((e, i) => { if (e.key === 'underHide') { if (i - last <= 5 && (e.U || L[last].U) && Math.floor(e.t0 / 600000) === Math.floor(L[last].t0 / 600000)) gapBad++; last = i; } }); // 같은 10분 구간 안에서 변환 항목의 반복만 센다(구간 경계의 앞 구간 이음은 기존 근사)
+      const sheltered = L.filter((e) => e.S).length;
+      ok('11g 비 오는 날 일정: 차 밑 후보가 들어오고 처마 자리와 겹치지 않음·최근 5개 안 반복 0', u.length > 0 && both === 0 && gapBad === 0 && sheltered > 0, `under ${u.length} S ${sheltered} both ${both} gap ${gapBad}`);
+      app.propsSet(false); X.Clock.wxSrc = () => ({ wx: { kind: 'rain', amt: 0.9 }, theme: 'alley' }); L = sched();
+      ok('11h 스위치 꺼짐: 차 밑 행동 없음·처마 자리는 그대로', L.every((e) => e.key !== 'underHide') && L.some((e) => e.S), `n ${L.length}`);
+      X.Clock.wxSrc = wxOld; app.propsSet(true, { x: 0, z: -1.1, dir: 1 }); X.Clock.cache.clear(); }
     // 9b) 자세 높이: 차 밑 지점에서 쓰는 hideLow·peek 가 5체형 모두 틈(clear 0.20m) 안 (뼈대 최고점 + 털·귀 여유 25mm)
     { const Xp = window.__pose, V3 = app.mascot.v.mesh.position.constructor, clear = X.PROP_KINDS.car.slots[1].clear, hs = {};
       const cats = [['m', 1.5, null], ['f', 4, null], ['m', 9, null], ['f', 30, { chub: 1.16, legLen: 1.06, headSize: 1.06, earSize: 1.12 }], ['m', 60, { chub: 0.92, legLen: 0.93, headSize: 0.95, earSize: 0.9 }]];

@@ -19,7 +19,7 @@ export function openPrivacy(app, opts = {}) {
     h('div', { class: 'pv-head' }, h('h3', { text: '개인정보 안내' }), closeBtn),
     h('p', { class: 'pv-date', text: '마지막 수정: ' + PRIVACY_VERSION }),
     h('div', { class: 'pv-body' }, ...body),
-    h('p', { class: 'pv-date' }, '날씨: ', h('a', { href: 'https://open-meteo.com/', target: '_blank', rel: 'noopener noreferrer', text: 'Open-Meteo.com' }), ' (CC BY 4.0) · 기상청 예보 모델 기반'),
+    h('p', { class: 'pv-date' }, '날씨: ', h('a', { href: 'https://open-meteo.com/', target: '_blank', rel: 'noopener noreferrer', text: 'Open-Meteo.com' }), ' (', h('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener noreferrer', text: 'CC BY 4.0' }), ') · 기상청 예보 모델 기반'),
     h('p', { class: 'pv-date', text: '날씨 자료는 이 기기에 30분 보관(localStorage)해요. 받기에 실패하면 최대 3시간까지만 보관본을 써요.' }));
   close = openScrim(sheet, { center: true, onClose: () => { closeOpen = null; if (opener && opener.focus && document.contains(opener)) opener.focus(); } });
   closeOpen = close;

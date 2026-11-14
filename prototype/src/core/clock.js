@@ -4,8 +4,8 @@
 import { clamp, lerp, smooth, hashStr, makeRng } from './util.js';
 import { DAY, sunPosition } from './time.js';
 import { ACTIONS } from './behavior.js';
-import { PROP_ACTION_KEYS, propHome } from './props.js';
-import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, wxBias } from './weather_rules.js';
+import { PROPS, PROP_ACTION_KEYS, propHome, propSlots } from './props.js';
+import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, underShelterPick, wxBias } from './weather_rules.js';
 // ───────────────────────── 세계 시계 (D-19) ─────────────────────────
 // 서버 없이 시각만으로 고양이의 하루를 계산한다. 같은 (고양이 id, 시각)이면 누가 언제 들어와도 같은 행동·같은 자리 근처가 나온다.
 //  · 시간을 30초 칸으로 나누고, 칸마다 (고양이 id, 칸 번호) 시드로 "무슨 행동을, 몇 칸(30~120초, D-40) 동안, 어디서" 할지 정한다.
@@ -95,7 +95,7 @@ export function createClock(store) {
   },
   block(cat, b, depth = CLOCK.DEPTH) { // 10분 구간 b의 일정. depth만큼 앞 구간을 이어 반복 방지에 쓴다
     const src = this.wxSrc, ws = src ? src(cat, b * CLOCK.BLOCK) : null, wx = ws && ws.wx && ws.wx.kind !== 'clear' ? ws.wx : null; // 한 구간(10분)은 한 정시 안이라 날씨가 같다
-    const ck = cat.id + '|' + b + '|' + depth + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme : '');
+    const ck = cat.id + '|' + b + '|' + depth + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme + (PROPS.on && propSlots('underHide').length ? 'u' : '') : '');
     const hit = this.cache.get(ck); if (hit) return hit;
     if (this.cache.size > 400) this.cache.clear();
     const prev = depth > 0 ? this.block(cat, b - 1, depth - 1) : [];
@@ -110,6 +110,7 @@ export function createClock(store) {
       const key = cand.length ? rs.weighted(cand) : 'sit';
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
       if (wx && needShelter(wx) && SHELTER[ws.theme] && PASSIVE_KEYS.has(key) && !PROP_ACTION_KEYS.has(key) && shelterChance(wx, cat.id, slot)) { // 비 피할 자리 (4-1): 앞 칸과 같은 자리는 피한다
+        if (PROPS.on && ACTIONS.underHide && propSlots('underHide').length && !recent.includes('underHide') && underShelterPick(cat.id, slot)) { ent.key = 'underHide'; ent.label = ACTIONS.underHide.label; ent.U = 1; out.push(ent); t += n * CLOCK.SLOT; continue; } // 차 밑이 비 피할 자리 (M4-4): 쿨다운(최근 5개 행동에 없을 때)·점유는 지점 규칙, 처마 자리와 한 칸에 하나만
         const last = out.length ? out[out.length - 1].S : prev.length ? prev[prev.length - 1].S : null;
         ent.S = { ...pickShelter(ws.theme, cat.id, slot, last && last.th === ws.theme ? last.i : -1), th: ws.theme };
       }

@@ -79,6 +79,9 @@ export function pickShelter(theme, catId, slot, avoid = -1) { // (고양이 id, 
 // 비 올 때 이 칸을 비 피할 자리에서 보낼지 (세기가 셀수록 자주). 결정적
 export const shelterChance = (wx, catId, slot) => hashStr(`shelterp:${catId}:${slot}`) / 4294967296 < 0.15 + 0.65 * Math.min(1, Math.max(0, wx.amt || 0));
 
+// 비 피할 칸 중 차 밑(underHide 지점)을 고르는 비율 50% (M4-4). 나머지는 위 SHELTER 처마 자리. 결정적
+export const underShelterPick = (catId, slot) => hashStr(`shelteru:${catId}:${slot}`) / 4294967296 < 0.5;
+
 // 칸 id: round(위도×20)_round(경도×20) (0.05°)
 export const cellId = (lat, lng) => `${Math.round(lat * 20)}_${Math.round(lng * 20)}`;
 export function cellCenter(id) {

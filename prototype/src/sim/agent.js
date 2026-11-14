@@ -5,7 +5,7 @@ import { REACT_META } from '../core/touch_rules.js';
 import { TAU, angDiff, clamp, damp, dampAngle, lerp, makeRng, smooth } from '../core/util.js';
 import { Clock } from '../state/clock.js';
 import { PARAM_KEYS, poseTarget } from '../render/poses.js';
-import { hopTick, leaveSteps, noteAct, propFrameTick, resetSlot, slotReactSteps } from '../core/prop_actions.js';
+import { PS, hopTick, leaveSteps, noteAct, propFrameTick, resetSlot, slotReactSteps } from '../core/prop_actions.js';
 
 export class CatAgent {
   constructor(cat, view, world, rng) {
@@ -43,18 +43,20 @@ export class CatAgent {
     }
     const tl = E.t - ph.t0;
     this.lookAt = o; this.lookAtYou = 0; this.lookPt = null;
-    const tgt = ph.pos ? ph.pos(role, E, tl, ph) : null;
+    if (this.slot && !this._lv) { this._lv = PS.dismount(true); this._lv.start(this); } // 지점 위·아래: 도약으로 내려온 뒤 참여 (순간이동 금지, 4A-1)
+    const leaving = !!this._lv && !this._lv.tick(this, dt); if (!leaving) this._lv = null;
+    const tgt = !leaving && ph.pos ? ph.pos(role, E, tl, ph) : null;
     if (tgt && (!this._tgt || Math.hypot(tgt.x - this._tgt.x, tgt.z - this._tgt.z) > 0.04)) {
       this._tgt = tgt;
       const sp = ph.speed && typeof ph.speed === 'object' ? ph.speed[role] : ph.speed;
       this.moveTo(tgt.x, tgt.z, sp || 1, { timeout: 30 }); this._posed = false;
     }
     const moving = this.move && !this.arrived;
-    if (!moving && !this._posed) {
+    if (!leaving && !moving && !this._posed) {
       const pp = (typeof ph.pose === 'function' ? ph.pose(role, E) : ph.pose) || ['stand'];
       this.setPose(pp[0], pp[1]); this._posed = true; this.move = null;
     }
-    if (!moving) this.yawTarget = ph.yaw ? ph.yaw(this, o, role, tl) : this.yawTo(o);
+    if (!moving && !leaving) this.yawTarget = ph.yaw ? ph.yaw(this, o, role, tl) : this.yawTo(o);
     if (ph.says) ph.says.forEach((s, i) => { if (s[1] === role && tl >= s[0] && !this._said.has(i)) { this._said.add(i); this.say(s[2]); } });
     if (ph.fx) ph.fx(this, tl, role, E, ph);
   }

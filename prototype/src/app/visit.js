@@ -1,7 +1,8 @@
 // App 의 놀러가기 부분 (M0-3, 설계 7장): 자리 비움·손님·만남·표지판·시선 선. main.js 가 App.prototype 에 붙인다
 import * as THREE from 'three';
-import { BOUNDS, STEP } from '../core/behavior.js';
+import { ACTIONS, BOUNDS, STEP } from '../core/behavior.js';
 import { clamp, makeRng } from '../core/util.js';
+import { leaveSteps, pickSlot, resetSlot } from '../core/prop_actions.js';
 import { Clock } from '../state/clock.js';
 import { CatView } from '../render/cat_model.js';
 import { CatAgent } from '../sim/agent.js';
@@ -42,12 +43,12 @@ export class AppVisit {
       // 화면 중앙에서 출발해도 WALKOUT 안에 가장자리에 닿도록, 남은 시간으로 속도를 정한다(방향 전환·감속 여유 1.7초)
       const ex = m.x >= 0 ? BOUNDS.x1 - 0.03 : BOUNDS.x0 + 0.03, left = Math.max(1.5, TRIP.WALKOUT - Math.max(0, (now - trip.t0) / 1000) - 1.7);
       const sp = clamp(Math.abs(ex - m.x) / (left * 0.26 * (0.65 + 0.35 * m.scale)), 1.7, 3.2);
-      m.steps = [STEP.walk(ex, m.z, sp, { timeout: 8 })];
+      m.steps = [...leaveSteps(m, true), STEP.walk(ex, m.z, sp, { timeout: 8 })]; // 지점 위·아래면 먼저 도약으로 내려온다 (4A-1)
     }
     this.refreshFab();
   }
   hideMascot() {
-    const m = this.mascot; m.hidden = true; m.ext = true; m.v.root.visible = false;
+    const m = this.mascot; resetSlot(m); m.hidden = true; m.ext = true; m.v.root.visible = false; // 안 보이게 되므로 지점 복원은 허용(4A-1 예외)
     if (this.selected === m) this.select(null);
     this.showSign(); renderRoster(this); this.refreshFab();
     if (!this.camAnim) { // 표지판이 보이도록 기본 구도로 물러난다
@@ -88,8 +89,9 @@ export class AppVisit {
   }
   endEnc(E) {
     const host = E.host, guest = E.guest;
-    host.enc = null; host.ext = false; host._ph = null; host.lookAt = null; host.steps = []; host.step = null; host.move = null; host.arrived = true;
+    host.enc = null; host.ext = false; host._ph = null; host._lv = null; host.lookAt = null; host.steps = []; host.step = null; host.move = null; host.arrived = true;
     host.beginEntry(Clock.entryAt(host.cat, Date.now()).entry, true);
+    if (E.hideKey && ACTIONS.underHide && !host.slot && pickSlot(host, 'underHide')) { host.runAction('underHide'); host.override = true; } // 진 쪽이 차 밑으로 숨음 (끝나면 일정 복귀)
     this.removeAgent(guest);
     if (this.enc === E) this.enc = null;
     this.done.add(E.trip.id);

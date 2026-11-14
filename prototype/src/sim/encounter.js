@@ -2,6 +2,7 @@
 import { BOUNDS } from '../core/behavior.js';
 import { TAU, clamp, makeRng } from '../core/util.js';
 import { TRIP } from './trips.js';
+import { PS, pickSlot } from '../core/prop_actions.js';
 
 // 두 마리가 만나는 동안의 단계표. 시각(초)만으로 어느 단계인지 정해지고, 두 고양이는 그 단계표를 따라 움직인다.
 // 서로 바라보기: 만나는 내내 두 마리의 시선(lookAt)을 상대 머리에 묶고, 단계마다 몸 방향(yaw)과 떨어진 거리를 정한다.
@@ -12,7 +13,7 @@ export class Encounter {
     this.build();
     this.ph = this.phases[0];
     host.enc = guest.enc = this; host.ext = guest.ext = true; host._ph = guest._ph = null;
-    host.steps = []; host.step = null; host.move = null; host.arrived = true; host.jump = null; host.lookAtYou = 0; host.v.root.position.y = 0;
+    host.steps = []; host.step = null; host.move = null; host.arrived = true; host.jump = null; host.lookAtYou = 0; host._lv = null; // 지점 위·아래면 encTick 이 먼저 leaveSlot(fast 도약)으로 내려온다 (4A-1)
     guest.x = this.edge.x; guest.z = this.edge.z;
     guest.yaw = guest.yawTarget = Math.atan2(this.M.x - guest.x, this.M.z - guest.z);
     guest.setPose('stand'); Object.assign(guest.P, guest.T);
@@ -53,6 +54,9 @@ export class Encounter {
         const q = { x: clamp(lp.x + Math.cos(ang) * d, BOUNDS.x0 + 0.3, BOUNDS.x1 - 0.3), z: clamp(lp.z + Math.sin(ang) * d, BOUNDS.z0 + 0.3, BOUNDS.z1 - 0.2) };
         if (!W.blocked(q.x, q.z, 0.25)) P = q;
       }
+      const hs = this.loser === 'host' && !H.slot && pickSlot(H, 'underHide'); // 진 쪽이 주인이면 차 밑으로 숨으러 간다 (6장). 방금 내려온 지점은 쿨다운이라 제외
+      this.hideKey = hs && !W.blocked(hs.ax, hs.az, 0.2) ? hs.key : null; if (this.hideKey) P = { x: hs.ax, z: hs.az };
+      this.hideKey = hs ? hs.key : null; if (hs) P = { x: hs.ax, z: hs.az };
       this.fleeTo = P || { x: clamp(lp.x + Math.cos(away) * 0.8, BOUNDS.x0 + 0.3, BOUNDS.x1 - 0.3), z: clamp(lp.z + Math.sin(away) * 0.5, BOUNDS.z0 + 0.3, BOUNDS.z1 - 0.2) };
       add('glare', '노려보기', 0.2, { pos: (role) => at(M, u, 1.5, role), speed: 0.6,
         pose: ['crouch', { pupil: 1, eL: 0.85, eR: 0.85, puff: 0.55, tb: 1.25, twf: 2.2, tw: 0.2 }],

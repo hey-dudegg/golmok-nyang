@@ -8,7 +8,7 @@
 - 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
-- 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style.css`.
+- 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
 - `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요.
 
 ## 준비
@@ -65,7 +65,7 @@
 | `npm test` | run_all.js | 위 시험을 차례로(syntax·imports·unit·reg·pose·polarity·recipe·promo·loadfail·feedback·backdrop·props·compare·core, shots 제외) | 전부 PASS |
 
 모든 시험은 마지막 줄에 `RESULT PASS|FAIL`을 찍고, 종료 코드도 0/1로 돌려준다.
-오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style.css`, `data/*.json`) 요청 실패가 들어간다.
+오류 수에는 페이지 오류, 콘솔 오류(404 제외), 같은 서버 파일(`style*.css`, `data/*.json`) 요청 실패가 들어간다.
 시험은 `?admin`일 때만 열리는 `window.__app`, `__inter`, `__recipe`, `__pose`, `__trips`, `__lm`(명소) 등에 기댄다. 이 노출을 지우면 시험이 깨진다.
 
 ## 기준값 (tests/baseline/)
