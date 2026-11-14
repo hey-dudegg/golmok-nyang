@@ -1,6 +1,6 @@
 # SQL 자동 적용 (R-23, D-105). 설계: docs/design/SQL_자동화_설계.md
-# - test 브랜치 푸시 -> 환경 test: 01~08 적용 + check 판정
-# - main 푸시 -> 환경 production(Required reviewers 승인): 01~08 적용, check 없음
+# - test 브랜치 푸시 -> 환경 test: 01~09 적용 + check 판정
+# - main 푸시 -> 환경 production(Required reviewers 승인): 01~09 적용, check 없음
 # - 수동 실행(workflow_dispatch): 대상 선택, 운영 check는 run_check로만
 # 접속 문자열은 환경 Secret SUPABASE_DB_URL(Session pooler)로만 받는다. 파일에는 값을 쓰지 않는다.
 # pull_request 계열 트리거는 쓰지 않는다(fork에서 Secret 노출 방지).
@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: SQL 적용 (01~08, 파일별 단일 트랜잭션)
+      - name: SQL 적용 (01~09, 파일별 단일 트랜잭션)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           PGOPTIONS: "-c statement_timeout=60000"

@@ -433,3 +433,7 @@
 ## D-110 Supabase 두 프로젝트를 서울 지역으로 새로 만듦 (2026-11-08, 결정자: 사용자, P-44)
 - 내용: 도쿄 두 프로젝트 대신 서울(ap-northeast-2)에 운영·테스트 새로 생성(사용자). SQL은 Actions로 적용, config·CSP·Secret 교체. D-57 서울 표기 유지
 - 영향 역할: developer, devops, security, 사용자
+
+## D-111 로그 정리는 pg_cron 전제, rotate_logs는 anon 권한 없음 (2026-11-14, 결정자: 팀장, D-87)
+- 내용: 설계 문서의 Actions 정리 전제를 pg_cron으로 통일. rotate_logs()는 구현 시 anon·public 실행 권한 없음(daily_cleanup 안에서만)
+- 영향 역할: architect, developer, security

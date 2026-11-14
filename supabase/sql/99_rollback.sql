@@ -50,3 +50,10 @@ drop function if exists public.is_member();
 drop function if exists public.is_anon();
 drop function if exists public.is_admin();
 drop table if exists public.admins;
+-- 09_cron: 예약 작업만 해제한다(pg_cron 확장 자체는 지우지 않는다)
+do $cron$
+begin
+  if to_regclass('cron.job') is not null then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'golmok_daily_cleanup';
+  end if;
+end $cron$;

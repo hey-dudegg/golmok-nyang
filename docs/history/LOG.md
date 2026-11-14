@@ -224,3 +224,13 @@
 2026-11-08 | 팀장 | [구현] 작업 종료. 미커밋: Turnstile 연동·개인정보 7장·USER_TODO·팀장 문서. 다음: 공개값 받으면 config·CSP 교체 (M2)
 2026-11-08 | 사용자 | [요구] 현재까지 커밋·푸시, PC 이전 시 git으로 받는 것과 직접 옮길 것 설명 요청
 2026-11-08 | 팀장 | [구현] secure-check 문제 없음, Turnstile 연동·개인정보 7장·USER_TODO test 브랜치 커밋·푸시 (D-106, P-44)
+2026-11-08 | 팀장 | [이관] PC 이전 안내: git 외 직접 옮길 파일(.env·.private·supabase/private·DJ·user 등), 최신은 test 브랜치
+2026-11-14 | 사용자 | [요구] 사용자 입력 없이 팀이 할 수 있는 일 먼저 진행
+2026-11-14 | 팀장 | [이해] 공개값·P-44 대기 중이므로 daily_cleanup pg_cron 일정(D-87)과 로그_설계 정합만 착수
+2026-11-14 | architect | [설계] 로그_설계 6장·L-4, 배포_계획 (e)·정리-1을 pg_cron 일일 정리로 정합 수정 (D-87, D-107)
+2026-11-14 | 팀장 | [결정] 로그_설계 남은 Actions 전제도 정리, rotate_logs anon 권한 없음 (D-111)
+2026-11-14 | developer | [구현] 09_cron.sql(pg_cron 5 15 * * *, 재실행 안전)·check_09·rollback 해제 추가, 07 수정 불필요 확인 (D-87)
+2026-11-14 | developer | [설계] sql-apply 패턴이 09를 자동 포함해 목록 변경 없이 "01~09" 문구만 수정 (D-105)
+2026-11-14 | 팀장 | [이슈] pg_cron 활성·CI 역할의 cron 권한 미확인, 첫 sql-apply(USER_TODO 6)에서 09 결과로 확인 (D-87)
+2026-11-14 | architect | [설계] 로그_설계 8·71·102·122·126·127줄 pg_cron으로 통일, rotate_logs anon 권한 제거 (D-87, D-111)
+2026-11-14 | 팀장 | [구현] secure-check 문제 없음, 09_cron·D-111 정합 test 브랜치 커밋·푸시 (D-87, D-111)

@@ -67,3 +67,4 @@ C-60 | 2026-11-08 | 변경 | 신고 숨김 3→5회·시간당 한도·캡차(D-
 C-61 | 2026-11-08 | 추가 | SQL 자동화 sql-apply·keepalive 워크플로 구현 (D-105, D-107) | 팀장 | devops, security
 C-62 | 2026-11-08 | 변경 | 확인 SQL 목적별 분할(D-108, D-102 변경) | 사용자 | developer, devops
 C-63 | 2026-11-08 | 변경 | Supabase 프로젝트를 서울 지역으로 재생성 (D-110), 개인정보 세부 D-109 | 사용자 | developer, devops, security
+C-64 | 2026-11-14 | 변경 | 로그_설계·배포_계획 정리 수단을 pg_cron으로 정합, rotate_logs anon 권한 제거 (D-111) | 팀장 | architect, developer, security
