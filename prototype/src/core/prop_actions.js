@@ -3,7 +3,7 @@
 // 4A 규칙: 접근점까지 걸어서 간다 / 높이(a.y) 변화는 도약(a.hop) 뿐 / 반응은 그 자리에서 / 쿨다운 90초 / 최근 3개 행동 반복 금지.
 import { ACTIONS, REACTIONS, STEP } from './behavior.js';
 import { REACT_META } from './touch_rules.js';
-import { PROP_ACTION_KEYS, PROP_COOLDOWN, propClaim, propOccupant, propRelease, propSlots } from './props.js';
+import { CRATE, PROP_ACTION_KEYS, PROP_COOLDOWN, propClaim, propOccupant, propRelease, propSlots } from './props.js';
 import { clamp, damp, lerp } from './util.js';
 
 export const HOP = { slow: 1, speed: 0.7, fastSpeed: 1.0 }; // slow: 어드민 "느리게 보기" 배수(1=보통, 4=4배 느리게)
@@ -14,7 +14,7 @@ export const noteAct = (a, k) => { const m = pmOf(a); m.recent.unshift(k); m.rec
 export function pickSlot(a, action) {
   const m = a.pm;
   for (const s of propSlots(action)) {
-    if (s.slot.mode === 'on' && a.kitten) continue;
+    if (s.slot.mode === 'on' && a.kitten) continue; // 새끼는 높은 곳(본네트 0.58m·담 0.80m)에 못 오른다
     const occ = propOccupant(s.key); if (occ && occ !== a) continue;
     if (m && ((m.cool[s.key] || 0) > a.time || m.recent.includes(action))) continue;
     return s;
@@ -57,6 +57,13 @@ function abort(a, key) { // 접근 실패: 위치를 옮기지 않고 포기, �
   pmOf(a).cool[key] = a.time + PROP_COOLDOWN; a.steps.length = 0; a.steps.push(STEP.pose('sit', 2));
 }
 
+const CRATE_TOP = CRATE.h + 0.04; // 벽 위로 넘을 때의 발 높이(벽 끝보다 약간 위)
+// 상자 앞벽 위 지점: 접근점에서 지점 쪽으로 w/2 - t 만큼 들어간 곳(벽 두께 한가운데 부근)
+function wallTop(S) { const dx = S.x - S.ax, dz = S.z - S.az, d = Math.hypot(dx, dz) || 1, k = 0.2; return { x: S.ax + dx / d * k, z: S.az + dz / d * k }; }
+// 상자 안 꼬리: 세워 올려 벽 위로만 나오게 한다(앉은 몸 뒤로 눕히면 뒷벽 밖으로 샌다)
+const CRATE_TAIL = { tb: 2.0, tc: 0.0, tcs: 0.1 }; // sit 은 엉덩이가 눕는 자세(hp -0.62)라 그만큼 더 세워야 수직에 가깝다
+const CRATE_TAIL_LOAF = { tb: 1.3, tc: 0.05, tcs: 0.1 };
+const lowPose = (S) => (S.slot.mode === 'in' ? 'crouch' : 'hideLow'); // 들어가고 나올 때의 낮은 걸음 자세 (상자 안은 웅크림)
 export const PS = {
   check(S) { return { start(a) { if (Math.hypot(a.x - S.ax, a.z - S.az) > 0.3) abort(a, S.key); }, tick() { return true; } }; },
   // 위(on) 올라가기: 웅크리기 -> 도약 호 -> 착지
@@ -75,14 +82,21 @@ export const PS = {
     return false;
   } }; },
   // 아래(under) 들어가기: 접근점에서 낮은 걸음으로 직선 이동 (충돌 무시 층)
+  // 상자(in)는 앞벽을 넘어 들어간다: 웅크렸다가 벽 위로 도약 -> 벽 안쪽 바닥으로 내려앉기 (몸통이 벽 높이 아래로 벽 면을 지나지 않는다)
   enter(S) { return { start(a) {
-    this.dead = false;
+    this.dead = false; this.ph = 0; this.t = 0;
     if (!propClaim(S.key, a)) { this.dead = true; abort(a, S.key); return; }
     a.slot = { key: S.key, action: S.slot.action, S, state: 'entering' }; a.layer = S.prop.id;
-    a.setPose('hideLow'); a.moveTo(S.x, S.z, 0.45, { keepPose: true, timeout: 12 });
-  }, tick(a) {
+    if (S.slot.mode === 'in') { a.yawTarget = Math.atan2(S.x - a.x, S.z - a.z); a.setPose('crouch', { pupil: 0.9 }); return; }
+    a.setPose(lowPose(S)); a.moveTo(S.x, S.z, 0.45, { keepPose: true, timeout: 12 });
+  }, tick(a, dt) {
     if (this.dead || !a.slot || a.slot.S !== S) return true;
-    if (!a.arrived) return false;
+    if (S.slot.mode === 'in') {
+      if (this.ph === 0) { this.t += dt; if (this.t >= 0.4 * HOP.slow) { this.ph = 1; const W = wallTop(S);
+        startHop(a, W.x, W.z, CRATE_TOP, false, () => { if (a.slot && a.slot.S === S) startHop(a, S.x, S.z, 0, false, null); }); } return false; }
+      if (a.hop) return false;
+      a.setPose('crouch', { pupil: 0.8, ...CRATE_TAIL });
+    } else if (!a.arrived) return false;
     a.slot.state = 'under'; pmOf(a).log.push({ t: a.time, ev: 'mount', key: S.key }); a.yawTarget = S.yaw; return true;
   } }; },
   // 내려오기/나오기: 도약 호(fast 도 호를 생략하지 않는다)·낮은 걸음. 이 경로만 a.y 를 0으로 돌린다
@@ -97,7 +111,14 @@ export const PS = {
       else if (this.ph === 1 && this.t >= (fast ? 0.1 : 0.4) * HOP.slow) { this.ph = 2; startHop(a, S.ax, S.az, 0, !!fast, () => leaveDone(a)); }
       return false;
     }
-    if (this.ph === 0) { this.ph = 1; a.setPose('hideLow'); a.moveTo(S.ax, S.az, fast ? 2.0 : 0.5, { keepPose: true, timeout: 12 }); return false; }
+    if (S.slot.mode === 'in' && sl.state === 'under') { // 상자에서 나오기: 앞벽 위로 도약 -> 벽 밖 접근점으로 내려앉기
+      this.t += dt;
+      if (this.ph === 0) { a.setPose('crouch', { pupil: 0.9, ...CRATE_TAIL }); a.yawTarget = Math.atan2(S.ax - a.x, S.az - a.z); this.ph = 1; this.t = 0; }
+      else if (this.ph === 1 && this.t >= (fast ? 0.1 : 0.4) * HOP.slow) { this.ph = 2; const W = wallTop(S);
+        startHop(a, W.x, W.z, CRATE_TOP, !!fast, () => { if (a.slot === sl) startHop(a, S.ax, S.az, 0, !!fast, () => leaveDone(a)); else leaveDone(a); }); }
+      return false;
+    }
+    if (this.ph === 0) { this.ph = 1; a.setPose(lowPose(S)); a.moveTo(S.ax, S.az, fast ? 2.0 : 0.5, { keepPose: true, timeout: 12 }); return false; }
     if (a.arrived) { leaveDone(a); return true; }
     return false;
   } }; },
@@ -108,7 +129,7 @@ export const leaveSteps = (a, fast) => (a.slot ? [PS.dismount(fast)] : []);
 // ── 그 자리 반응 (4A-2): 지점 위·아래에서 쓰다듬기·츄르를 받으면 내려오지 않고 몸짓만. 거부 연속 2회 넘으면 전환 ──
 export function slotReactSteps(a, k) {
   const sl = a.slot; if (!sl || sl.state === 'rising' || sl.state === 'entering' || a.hop) return null;
-  const m = pmOf(a), pol = (REACT_META[k] || { pol: 0 }).pol, rest = sl.state === 'on' ? 'lie' : 'peek';
+  const m = pmOf(a), pol = (REACT_META[k] || { pol: 0 }).pol, rest = sl.state === 'on' ? 'lie' : (sl.S.slot.rest || 'peek');
   if (a.time - m.touchT > 60) m.rej = 0;
   m.touchT = a.time;
   if (k === 'flee') return [PS.dismount(true), ...REACTIONS.flee.steps(a)];
@@ -132,22 +153,50 @@ function approach(a, S) {
   const d = Math.hypot(S.ax - a.x, S.az - a.z), to = d / (0.26 * (0.65 + 0.35 * a.scale) * 1.1) * 2 + 3; // 제한 시간(4A-1)
   return [STEP.walk(S.ax, S.az, 1.1, { timeout: to }), PS.check(S)];
 }
+// 막힌 접근점은 approach()가 쿨다운을 걸어 pickSlot에서 빠지므로, 다음 지점으로 넘어가 다시 고른다 (M5-4). 모두 막히면 null
+function pickApproach(a, action) {
+  for (let S = pickSlot(a, action); S; S = pickSlot(a, action)) { const ap = approach(a, S); if (ap) return { S, ap }; }
+  return null;
+}
 export const PROP_ACTIONS = {
   hoodLoaf: { label: '본네트에서 엎드린 중',
     score: (a) => { const S = pickSlot(a, 'hoodLoaf'); return S ? 0.30 + a.world.day * 0.55 + S.slot.warm * 0.4 + a.p.bold * 0.35 + (1 - a.E) * 0.3 : 0; },
     steps: (a, r) => {
       if (a.slot && a.slot.action === 'hoodLoaf') return [STEP.pose('lie', r.range(6, 20), null, lieFx), PS.dismount(false)]; // 반응 뒤 이어서
-      const S = pickSlot(a, 'hoodLoaf'), ap = S && approach(a, S);
-      if (!ap) return [STEP.pose('sit', 2)];
+      const P = pickApproach(a, 'hoodLoaf');
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P;
       return [...ap, PS.mount(S), STEP.pose('lie', r.range(10, 30), null, lieFx), PS.dismount(false)];
+    } },
+  wallLoaf: { label: '담 위에 엎드린 중', // 호기심은 성격값이 따로 없어 장난기(playful)로 대신한다 (설계 3장: 새 성격 값 없음)
+    score: (a) => { const S = pickSlot(a, 'wallLoaf'); return S ? 0.25 + a.p.bold * 0.5 + a.p.playful * 0.5 + a.world.day * 0.3 : 0; },
+    steps: (a, r) => {
+      const alertLook = () => STEP.pose('alert', r.range(1.6, 3), null, (a) => { if (a.r() < 0.05) a.lookRandom(); }); // 가끔 두리번
+      const lie = (d) => { const s = [STEP.pose('lie', d, null, lieFx)]; if (r() < 0.3) s.push(alertLook(), STEP.pose('lie', r.range(3, 8), null, lieFx)); return s; };
+      if (a.slot && a.slot.action === 'wallLoaf') return [...lie(r.range(8, 20)), PS.dismount(false)]; // 반응 뒤 이어서
+      const P = pickApproach(a, 'wallLoaf');
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P;
+      return [...ap, PS.mount(S), ...lie(r.range(15, 40)), PS.dismount(false)];
+    } },
+  crateSit: { label: '상자 안에 들어간 중', // 새끼·소심한 쪽 가중 ("상자 사랑"). 새끼도 들어간다(높이 제한 없음)
+    score: (a) => (pickSlot(a, 'crateSit') ? 0.30 + (a.kitten ? 0.6 : 0) + (1 - a.p.bold) * 0.3 + a.p.playful * 0.2 : 0),
+    steps: (a, r) => {
+      const sit = (d) => STEP.pose(...(r() < 0.3 ? ['loaf', d, CRATE_TAIL_LOAF] : ['sit', d, CRATE_TAIL]), (a, t) => { if (Math.floor(t * 0.25) !== a._lk) { a._lk = Math.floor(t * 0.25); a.lookRandom(); } if (a.r() < 0.004) a.slowBlink(); });
+      if (a.slot && a.slot.action === 'crateSit') return [sit(r.range(5, 14)), PS.dismount(false)]; // 반응 뒤 이어서
+      const P = pickApproach(a, 'crateSit');
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P;
+      return [...ap, PS.enter(S), STEP.pose('sit', 3, CRATE_TAIL), sit(r.range(10, 35)), PS.dismount(false)];
     } },
   underHide: { label: '차 밑에 숨은 중',
     score: (a) => (pickSlot(a, 'underHide') ? 0.12 + (1 - a.p.bold) * 0.9 + (1 - a.p.social) * 0.5 : 0),
     steps: (a, r) => {
       const peek = (d) => STEP.pose('peek', d, null, (a, t) => { if (Math.floor(t * 0.3) !== a._lk) { a._lk = Math.floor(t * 0.3); a.lookRandom(); } });
       if (a.slot && a.slot.action === 'underHide') return [peek(r.range(5, 15)), PS.dismount(false)];
-      const S = pickSlot(a, 'underHide'), ap = S && approach(a, S);
-      if (!ap) return [STEP.pose('sit', 2)];
+      const P = pickApproach(a, 'underHide');
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P;
       return [...ap, PS.enter(S), STEP.pose('hideLow', 3), peek(r.range(10, 32)), STEP.pose('hideLow', 2), PS.dismount(false)];
     } },
 };

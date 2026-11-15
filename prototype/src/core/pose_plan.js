@@ -2,6 +2,7 @@
 // 눕는 쪽이면 다리를 먼저 접고(TUCK) 그 뒤에 몸을 단계별로 돌린다. 순수 계산이라 node 에서 시험한다.
 export const BODY_KEYS = ['hp', 'hy', 'hr', 'cp', 'cy', 'cr'];
 const FOLLOW_KEYS = ['np', 'ny', 'hdp', 'hdy', 'hdr']; // 목·머리는 몸 단계를 따라 같이 나눠 움직인다
+const TAIL_KEYS = ['tb', 'tc', 'tcs', 'ts'];
 export const ROT_LIMIT = 0.52; // 한 단계에서 허용하는 몸 회전(라디안, 약 30도)
 export const STAGE_MIN = 0.42; // 단계마다 확보하는 최소 시간(초)
 export const FOLD_HOLD = 0.5; // 다리 접기 단계 시간
@@ -22,7 +23,8 @@ export function planPose(from, to) {
   for (let k = 1; k < n; k++) {
     const t = k / n, s = { ...to };
     for (const key of BODY_KEYS.concat(FOLLOW_KEYS)) s[key] = mix(from[key] || 0, to[key] || 0, t);
-    if (fold) { Object.assign(s, TUCK); s.plant = 'none'; s.h = mix(from.h, to.h, t); } else { for (const key of Object.keys(to)) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); }
+    // 꼬리도 몸 회전에 맞춰 나눈다(먼저 목표로 튀면 엉덩이 기울기와 어긋나 상자 벽 밖으로 샌다)
+    if (fold) { Object.assign(s, TUCK); s.plant = 'none'; s.h = mix(from.h, to.h, t); for (const key of TAIL_KEYS) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); } else { for (const key of Object.keys(to)) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); }
     out.push({ T: s, hold });
   }
   out.push({ T: to, hold: 0 });

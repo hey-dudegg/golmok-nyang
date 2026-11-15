@@ -1,7 +1,9 @@
 // render/props.js: 오브젝트(자동차) 그리기 (M3-6 O1, 설계 5.4). 코드 도형만(D-01·13), 창은 불투명 어두운 색(투명 정렬 문제 회피)
 // scene.build 가 테마 빌더 다음에 buildPropsFor 를 부른다. 그룹을 env(E)에 넣으므로 clearEnv 가 dispose 한다(누수 없음).
 import * as THREE from 'three';
-import { CAR, PROP_KINDS, PROPS, propsEnter } from '../core/props.js';
+import { CAR, CRATE, PROP_KINDS, PROPS, WALL, propsEnter } from '../core/props.js';
+import { makeRng } from '../core/util.js';
+import { wallTex } from './scene_themes.js';
 
 export function buildCar(p, std) {
   const g = new THREE.Group(), d = p.dir || 1, { l, w, bottom, hoodY, roofY } = CAR;
@@ -30,13 +32,37 @@ export function buildCar(p, std) {
   g.position.set(p.x, 0, p.z); g.rotation.y = p.rot || 0;
   return g;
 }
-const BUILDERS = { car: buildCar };
+// 낮은 담 (M5-1): 몸통 상자 + 갓돌 상자. 몸통 질감은 뒷담 wallTex(골목) 일부를 잘라 쓴다(12m 폭 중 1.8m, 위쪽 0.8m)
+export function buildLowWall(p, std, ctx) {
+  const g = new THREE.Group(), { l, w, h, cap } = WALL;
+  const tex = wallTex(ctx.S, makeRng('lowwall:' + ctx.dong.c + ':' + p.id), ctx.dong, 'alley'), r = makeRng('lowwall:cut:' + ctx.dong.c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(l / 12, h / 2.1); tex.offset.set(r.range(0, 1 - l / 12), 1 - h / 2.1);
+  const add = (geo, mat, y) => { const m = new THREE.Mesh(geo, mat); m.position.set(0, y, 0); m.castShadow = m.receiveShadow = true; g.add(m); };
+  add(new THREE.BoxGeometry(l, h - cap, w), std({ map: tex }), (h - cap) / 2);
+  add(new THREE.BoxGeometry(l + 0.06, cap, w + 0.05), std({ color: 0x9a948a, roughness: 0.95 }), h - cap / 2); // 갓돌(살짝 튀어나옴)
+  g.position.set(p.x, 0, p.z); g.rotation.y = p.rot || 0;
+  return g;
+}
+// 종이 상자 (M5-2): 윗면 열린 4면 + 얇은 바닥(고양이 발이 y 0 이라 바닥은 0.004 평면) + 윗테두리·테이프. 색은 지역 시드로 판지 3색
+export function buildCrate(p, std) {
+  const g = new THREE.Group(), { l, w, h, t } = CRATE, r = makeRng('crate:' + p.id + ':' + Math.round(p.x * 100) + ':' + Math.round(p.z * 100));
+  const col = [0xb88a5a, 0xa87a4c, 0xc49a6a][r.int(0, 2)], card = std({ color: col, roughness: 0.95 }), inner = std({ color: 0x6b4a2c, roughness: 1 });
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+  const B = (a, b, c) => new THREE.BoxGeometry(a, b, c);
+  add(B(l, h, t), card, 0, h / 2, w / 2 - t / 2); add(B(l, h, t), card, 0, h / 2, -w / 2 + t / 2); // 앞(+z)·뒤 벽
+  add(B(t, h, w - 2 * t), card, l / 2 - t / 2, h / 2, 0); add(B(t, h, w - 2 * t), card, -l / 2 + t / 2, h / 2, 0); // 좌·우 벽
+  add(new THREE.PlaneGeometry(l - 2 * t, w - 2 * t), inner, 0, 0.004, 0).rotation.x = -Math.PI / 2; // 속바닥(어두움)
+  add(B(l + 0.01, 0.05, 0.004), std({ color: 0xd9c9a3, roughness: 0.8 }), 0, h * 0.62, w / 2 + 0.001); // 앞면 테이프 띠
+  g.position.set(p.x, 0, p.z); g.rotation.y = p.rot || 0;
+  return g;
+}
+const BUILDERS = { car: buildCar, lowwall: buildLowWall, crate: buildCrate };
 
 // 장면에 오브젝트를 놓는다. 스위치가 꺼져 있으면 아무것도 하지 않는다. 충돌용 사각형을 S.obstacles 에 더한다
 export function buildPropsFor(S, E, theme, dong, std) {
   const layout = propsEnter(theme, dong.c, S.obstacles);
   for (const p of layout) {
-    const g = BUILDERS[p.kind](p, std); g.userData.propId = p.id; E.add(g);
+    const g = BUILDERS[p.kind](p, std, { S, dong }); g.userData.propId = p.id; E.add(g);
     const K = PROP_KINDS[p.kind];
     S.obstacles.push({ id: p.id, x: p.x, z: p.z, hx: K.hx, hz: K.hz, rot: p.rot || 0 });
   }

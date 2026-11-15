@@ -7,6 +7,9 @@ export const CAR_HOOD_LEN = 0.85; // 보닛 길이(m). 성체 몸길이 약 0.4m
 export const CAR = { hood: CAR_HOOD_LEN, cabin: 1.3, trunk: 0.85, w: 0.9, bottom: 0.2, hoodY: 0.58, roofY: 0.90, wheelR: 0.19 };
 CAR.l = CAR.hood + CAR.cabin + CAR.trunk; // 차 전체 길이(m)
 
+// 낮은 담 크기 상수 (M5-1): 상자 본체 + 갓돌. 높이 0.80 은 새끼가 못 오르고 성체는 한 번 도약해 오르는 높이
+export const WALL = { l: 1.8, w: 0.22, h: 0.80, cap: 0.05 };
+
 // 종류표: 지점 pos·approach 는 오브젝트 로컬 [x(길이, 앞이 +), z(폭, +가 카메라 쪽)]. dir=-1 이면 x 를 뒤집는다(앞이 -x)
 export const PROP_KINDS = {
   car: { label: '자동차', size: { l: CAR.l, w: CAR.w, h: CAR.roofY }, hx: CAR.l / 2, hz: CAR.w / 2, themes: ['alley'],
@@ -16,8 +19,23 @@ export const PROP_KINDS = {
       { id: 'under', mode: 'under', action: 'underHide', pos: [0, 0.12], y: 0, poses: ['hideLow', 'peek'], cap: 1, clear: CAR.bottom,
         approach: [0, CAR.w / 2 + 0.17], shade: 0.7, warm: 0.2, tag: 'hide' },
     ] },
+  // 낮은 담: 위(top) 두 곳 + 뒤 그늘(behind, 지점만 정의하고 행동은 아직 없음). 앞뒤·좌우 대칭이라 dir 은 쓰지 않는다
+  lowwall: { label: '낮은 담', size: { l: WALL.l, w: WALL.w, h: WALL.h }, hx: WALL.l / 2, hz: WALL.w / 2, themes: ['alley', 'market', 'park'],
+    slots: [
+      { id: 'top0', mode: 'on', action: 'wallLoaf', pos: [-0.45, 0], y: WALL.h, poses: ['lie'], cap: 1, inset: 0.1,
+        approach: [-0.45, WALL.w / 2 + 0.17], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.2 },
+      { id: 'top1', mode: 'on', action: 'wallLoaf', pos: [0.45, 0], y: WALL.h, poses: ['lie'], cap: 1, inset: 0.1,
+        approach: [0.45, WALL.w / 2 + 0.17], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.2 },
+      { id: 'behind', mode: 'beside', action: null, pos: [0, -0.3], y: 0, poses: ['loaf'], cap: 1, approach: [0, WALL.w / 2 + 0.17], shade: 0.6, warm: 0.2, tag: 'rest' },
+    ] },
 };
-export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide']);
+// 종이 상자 (M5-2): 윗면 열린 상자. 벽 0.28 은 앉은 성체의 귀·머리만 보이는 높이. in 지점은 바닥(y 0)에 앉는다(높이 변화는 도약뿐이라 y 를 올리지 않음)
+export const CRATE = { l: 0.55, w: 0.45, h: 0.28, t: 0.02 };
+PROP_KINDS.crate = { label: '종이 상자', size: { l: CRATE.l, w: CRATE.w, h: CRATE.h }, hx: CRATE.l / 2, hz: CRATE.w / 2, themes: ['alley', 'market', 'park'],
+  slots: [
+    { id: 'in', mode: 'in', action: 'crateSit', pos: [0, 0.0], y: 0, poses: ['sit', 'loaf'], cap: 1, rest: 'sit', approach: [0, CRATE.w / 2 + 0.17], shade: 0.2, warm: 0.4, tag: 'hide' },
+  ] };
+export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit']);
 export const PROP_COOLDOWN = 90; // 같은 고양이·같은 지점 재진입 쿨다운(초, 4A-2)
 
 // 전역 상태: 지금 장면의 배치와 점유 (장면은 한 번에 하나라 모듈 단위로 둔다. 순수 상태라 node 시험 가능)
@@ -66,8 +84,8 @@ export function shapesOverlap(a, b, gap = OBJ_GAP) {
 }
 export const isFree = (me, obstacles, gap = OBJ_GAP) => !obstacles.some((o) => shapesOverlap(me, o, gap));
 // 원하는 자리(x, z)에서 가장 가까운 빈 자리 (결정적: 격자 0.05m, 거리 순·같으면 x 작은 쪽). 범위 밖이거나 없으면 null
-export function nearestFree(me, obstacles, x, z, box = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 0.6 }, step = 0.05) {
-  const t = (px, pz) => isFree({ ...me, x: px, z: pz }, obstacles);
+export function nearestFree(me, obstacles, x, z, box = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 0.6 }, step = 0.05, gap = OBJ_GAP) {
+  const t = (px, pz) => isFree({ ...me, x: px, z: pz }, obstacles, gap);
   if (x >= box.x0 && x <= box.x1 && z >= box.z0 && z <= box.z1 && t(x, z)) return { x, z };
   let best = null, bd = Infinity;
   for (let px = box.x0; px <= box.x1 + 1e-9; px += step) for (let pz = box.z0; pz <= box.z1 + 1e-9; pz += step) {
@@ -78,6 +96,33 @@ export function nearestFree(me, obstacles, x, z, box = { x0: -2.55, x1: 2.55, z0
 // 배치 (결정적): 같은 지역 코드면 같은 결과 (D-19). 명소는 쓰지 않는다 (D-26)
 // 처음 고른 자리가 막히면 가장 가까운 빈 자리로 옮긴다(없으면 건너뜀). 시험용 force 는 그 자리 그대로(겹침 허용)
 export function layoutFor({ theme, code, obstacles = [], force }) {
+  const cars = carLayout({ theme, code, obstacles, force }), obs = [...obstacles];
+  for (const c of cars) obs.push({ ...CAR_FOOT, x: c.x, z: c.z, rot: c.rot });
+  // 골목은 차가 있으면 담을 생략한다(차가 뒷줄을 차지해 둘이 붙어 보임). 시험이 담 위치를 직접 지정(force.wall)하면 그대로 놓는다
+  const walls = theme === 'alley' && cars.length && !(force && force.wall) ? [] : wallLayout({ theme, code, obstacles: obs, force });
+  for (const w of walls) obs.push({ ...PROP_KINDS.lowwall, x: w.x, z: w.z, rot: w.rot });
+  // 상자는 낮은 담 앞 접근점(wallLoaf 지점의 approach) 반경 CRATE_KEEP 안에 두지 않는다 (M5-4). 점 장애물은 원 r + OBJ_GAP 이라 r 에서 간격을 뺀다
+  for (const w of walls) for (const s of PROP_KINDS.lowwall.slots) if (s.action === 'wallLoaf') { const q = slotWorld(w, s); obs.push({ x: q.ax, z: q.az, r: CRATE_KEEP - OBJ_GAP }); }
+  return [...cars, ...walls, ...crateLayout({ theme, code, obstacles: obs, force })];
+}
+// 종이 상자 (M5-2): 차·담과 별도 난수라 기존 배치는 그대로. 골목 1~2, 시장 2~3, 공원 1. 바닥 z -1.2~-0.2 안, 앞 접근점이 무대 안
+// force: 차 위치를 못 박은 시험은 상자를 놓지 않고(force.crate = { x, z } 일 때만 그 자리 그대로), 어드민 다시 배치(code)는 항상 놓는다
+export const CRATE_KEEP = 0.2; // 상자와 담 접근점 사이 최소 거리(m)
+const CRATE_BOX = { x0: -2.1, x1: 2.1, z0: -1.25, z1: -0.1 };
+function crateLayout({ theme, code, obstacles, force }) {
+  const kind = PROP_KINDS.crate, r = makeRng('props:crate:' + ((force && force.code) || code));
+  const fixed = !!(force && force.x !== undefined && force.z !== undefined), fc = force && force.crate && typeof force.crate === 'object' ? force.crate : null;
+  if (fc) return [{ id: 'crate0', kind: 'crate', x: fc.x, z: fc.z, rot: 0, dir: 1 }];
+  if (fixed || !kind.themes.includes(theme)) return [];
+  const n = theme === 'market' ? r.int(2, 3) : theme === 'park' ? 1 : r.int(1, 2), out = [], obs = [...obstacles];
+  for (let i = 0; i < n; i++) {
+    const x = r.range(CRATE_BOX.x0, CRATE_BOX.x1), z = r.range(CRATE_BOX.z0, CRATE_BOX.z1);
+    const f = nearestFree({ hx: kind.hx, hz: kind.hz, rot: 0 }, obs, x, z, CRATE_BOX);
+    if (f) { out.push({ id: 'crate' + out.length, kind: 'crate', x: f.x, z: f.z, rot: 0, dir: 1 }); obs.push({ ...kind, x: f.x, z: f.z, rot: 0 }); }
+  }
+  return out;
+}
+function carLayout({ theme, code, obstacles, force }) {
   const kind = PROP_KINDS.car, r = makeRng('props:' + ((force && force.code) || code));
   if (!force && (!kind.themes.includes(theme) || r() >= 0.6)) return [];
   const dir = force && force.dir ? force.dir : r.chance(0.5) ? 1 : -1;
@@ -89,6 +134,24 @@ export function layoutFor({ theme, code, obstacles = [], force }) {
     if (f) ({ x, z } = f);
   }
   return [{ id: 'car0', kind: 'car', x, z, rot: 0, dir, color }];
+}
+// 낮은 담 (M5-1): 차와 별도 난수라 차 배치는 그대로. 알레이·시장 50%, 공원 100%. 뒷담 가까이 z -1.4~-0.9, 화면 안 x -1.6~1.6, 차 풋프린트와도 간격을 지킨다
+// 시험용 force: 차 위치(x, z)를 못 박은 시험은 담을 놓지 않고(force.wall 이 있을 때만 { x, z } 그대로 놓음), 어드민 다시 배치(code 만)는 테마 확률 없이 항상 놓는다
+// 시장은 가판(원 반지름 0.45, 뒷줄 z -1.45)이 z -1.0 까지 차지해 뒷줄에는 못 놓는다: 가판 앞 z -0.5 까지 허용(가판과 0.3m 간격을 두려면 z -0.59 이상이 필요)
+// 시장은 담 앞 접근점(0.28m)이 가판에 막히지 않게 담과 가판 사이를 0.3m 이상 둔다 (M5-4)
+const WALL_GAP_MARKET = 0.3;
+const WALL_BOX = { x0: -1.6, x1: 1.6, z0: -1.4, z1: -0.9 }, WALL_BOX_MARKET = { ...WALL_BOX, z1: -0.5 };
+function wallLayout({ theme, code, obstacles, force }) {
+  const kind = PROP_KINDS.lowwall, r = makeRng('props:wall:' + ((force && force.code) || code));
+  const fixed = !!(force && force.x !== undefined && force.z !== undefined);
+  const fw = force && force.wall && typeof force.wall === 'object' ? force.wall : null;
+  if (force ? (fixed && !force.wall) : (!kind.themes.includes(theme) || r() >= (theme === 'park' ? 1 : 0.5))) return [];
+  let x = r.range(WALL_BOX.x0, WALL_BOX.x1), z = r.range(WALL_BOX.z0, WALL_BOX.z1);
+  if (fw) return [{ id: 'wall0', kind: 'lowwall', x: fw.x, z: fw.z, rot: 0, dir: 1 }];
+  const f = nearestFree({ hx: kind.hx, hz: kind.hz, rot: 0 }, obstacles, x, z, theme === 'market' ? WALL_BOX_MARKET : WALL_BOX, 0.05, theme === 'market' ? WALL_GAP_MARKET : OBJ_GAP);
+  if (!f && !force) return [];
+  if (f) ({ x, z } = f);
+  return [{ id: 'wall0', kind: 'lowwall', x, z, rot: 0, dir: 1 }];
 }
 // 장면을 지을 때 부른다: 스위치가 꺼져 있으면 항상 빈 배열
 export function propsEnter(theme, code, obstacles) {

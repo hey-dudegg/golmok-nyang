@@ -65,3 +65,27 @@ test('가장 긴 전환도 시간이 합리적(6초 이내)', () => {
   for (const a of names) for (const b of names) if (a !== b) long = Math.max(long, playTransition(DIMS[0], a, b).settle);
   assert.ok(long <= 6, 'settle ' + long.toFixed(2));
 });
+// M5-4: 눕지 않는 전환은 중간 단계도 다리·꼬리를 나눠 움직이고(한 번에 목표로 튀지 않음), 눕는 전환은 꼬리를 단계별로 나눈다
+const TAIL = ['tb', 'tc', 'tcs', 'ts'], TAIL_STEP = 0.6;
+test('planPose 중간 단계: 비눕기는 첫 단계가 변화량의 절반 이하, 눕기는 꼬리 단계 변화가 상한 이하', () => {
+  let plain = 0, fold = 0;
+  for (const dim of DIMS) for (const a of names) for (const b of names) {
+    if (a === b) continue;
+    const A = poseTarget(dim, a), B = poseTarget(dim, b), st = planPose(A, B);
+    if (st.length < 2) continue;
+    if (A.plant !== 'none' && B.plant !== 'none') {
+      plain++;
+      const S = st[0].T;
+      for (const k of Object.keys(B)) {
+        if (typeof A[k] !== 'number' || typeof B[k] !== 'number') continue;
+        const all = Math.abs(B[k] - A[k]); if (all < 0.05) continue;
+        assert.ok(Math.abs(S[k] - A[k]) <= all * 0.55 + 1e-9, `${a}>${b} ${k}: ${(S[k] - A[k]).toFixed(2)} / ${all.toFixed(2)}`);
+      }
+    } else {
+      fold++;
+      let prev = A;
+      for (const s of st) { for (const k of TAIL) if (typeof B[k] === 'number') assert.ok(Math.abs(s.T[k] - prev[k]) <= TAIL_STEP, `${a}>${b} ${k} 단계 ${Math.abs(s.T[k] - prev[k]).toFixed(2)}`); prev = s.T; }
+    }
+  }
+  assert.ok(plain > 0 && fold > 0, `시험 대상 plain=${plain} fold=${fold}`);
+});
