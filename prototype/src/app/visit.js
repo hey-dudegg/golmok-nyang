@@ -62,7 +62,7 @@ export class AppVisit {
     if (was) { // 화면 가장자리에서 걸어 들어온다
       const r = makeRng('ret:' + trip.id), side = r.chance(0.5) ? 1 : -1;
       m.x = side > 0 ? BOUNDS.x1 - 0.03 : BOUNDS.x0 + 0.03; m.z = r.range(-0.5, 0.5);
-      m.yaw = m.yawTarget = Math.atan2(-m.x, -m.z * 0.2); m.setPose('stand'); Object.assign(m.P, m.T);
+      m.yaw = m.yawTarget = Math.atan2(-m.x, -m.z * 0.2); m.setPose('stand'); m.snapPose();
     }
     m.beginEntry(Clock.entryAt(m.cat, now).entry, true);
     renderRoster(this); this.refreshFab();

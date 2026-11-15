@@ -35,11 +35,11 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
     ok('0b 차 안쪽은 blocked, 접근점은 아님', app.blocked(0, -1.1, 0.2) && !app.blocked(ap.ax, ap.az, 0.2));
     const rs = app.resolve(a, 0, -0.9); ok('0c resolve 가 차 밖으로 밈', rs.z > -0.9 + 0.01 && rs.stuck);
     a.layer = 'car0'; const rs2 = app.resolve(a, 0, -0.9); ok('0d layer 면 통과', Math.abs(rs2.z + 0.9) < 1e-9); a.layer = null;
-    // 1) hoodLoaf: 걸어 접근 -> 도약 -> y 0.42 유지 -> 내려옴 0.42->0
+    // 1) hoodLoaf: 걸어 접근 -> 도약 -> y 0.58 유지 -> 내려옴 0.58->0
     let r = rec(a); a.playManual('hoodLoaf'); let held = 0;
-    tick(r, 1600, (a) => { if (a.slot && a.slot.state === 'on' && Math.abs(a.y - 0.42) < 1e-6) held++; });
-    ok('1a hood y 0.42 도달', Math.abs(r.maxY - 0.42) < 1e-6, r.maxY);
-    ok('1b 0.42 유지 10초 이상', held * DT >= 10, held * DT);
+    tick(r, 1600, (a) => { if (a.slot && a.slot.state === 'on' && Math.abs(a.y - 0.58) < 1e-6) held++; });
+    ok('1a hood y 0.58 도달', Math.abs(r.maxY - 0.58) < 1e-6, r.maxY);
+    ok('1b 0.58 유지 10초 이상', held * DT >= 10, held * DT);
     ok('1c 내려와 y 0·지점 해제', a.y === 0 && !a.slot && !X.propOccupant('car0:hood') && logOf(a, 'mount').length === 1 && logOf(a, 'leave').length === 1, JSON.stringify(logOf(a)));
     ok('1d T1 위반 0', r.viol.length === 0, v3(r));
     // 2) underHide: layer 변화·풋프린트 내부 도착·밀림 없음·나옴
@@ -55,7 +55,7 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
     ok('2f 점유 중 대체: 오르지 않고 y 0', r.maxY === 0 && !a.slot);
     // 3) T3: on 지점 쓰다듬기 10회 (거부 연속 상한) — (a) 무시하고 엎드림
     a = mk(); a.playManual('hoodLoaf'); r = rec(a); toOn(r);
-    ok('T3 준비: 올라감', a.slot && a.slot.state === 'on' && Math.abs(a.y - 0.42) < 1e-6);
+    ok('T3 준비: 올라감', a.slot && a.slot.state === 'on' && Math.abs(a.y - 0.58) < 1e-6);
     const P0 = { x: a.x, z: a.z, y: a.y }; let xzMax = 0;
     for (let k = 0; k < 10; k++) { a.react('swat'); tick(r, 50, (a) => { xzMax = Math.max(xzMax, Math.hypot(a.x - P0.x, a.z - P0.z)); }); }
     ok('T3a 10회 반응 동안 x·z 변화 <= 0.02', xzMax <= 0.02, xzMax.toFixed(4));
@@ -99,7 +99,7 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
     // 7) T7: 복원 예외 — enterClock 직후 지점 착석 상태(첫 프레임 예외), 그 뒤 프레임부터 T1
     a = mk(); a.manual = false; a.cat.id = 'sim0'; X.Clock.cache.clear(); a.pm = null; let rest = null;
     outer: for (let h = 0; h < 96; h++) { const t = Date.UTC(2026, 9, 10, 0, 0) + h * 1800000; for (const e of X.Clock.between(a.cat, t, t + 1800000)) if (e.key === 'hoodLoaf' && e.t1 - e.t0 >= 90000) { for (const off of [20, 26, 32, 38, 44]) { a.enterClock(e.t0 + off * 1000); if (a.slot && a.slot.state === 'on') { rest = { e, off }; break outer; } } } }
-    ok('T7a 복원 직후 이미 본네트 위(첫 프레임 예외)', rest && Math.abs(a.y - 0.42) < 1e-6, rest ? rest.off : 'none');
+    ok('T7a 복원 직후 이미 본네트 위(첫 프레임 예외)', rest && Math.abs(a.y - 0.58) < 1e-6, rest ? rest.off : 'none');
     if (rest) { a.sim = false; r = rec(a); a.manual = true; tick(r, 100); ok('T7b 두 번째 프레임부터 T1 위반 0', r.viol.length === 0, v3(r)); }
     // 8) T8: 오브젝트 제거 — 안·위의 고양이가 먼저 나온 뒤 제거 (<= 2초)
     for (const act of ['hoodLoaf', 'underHide']) {

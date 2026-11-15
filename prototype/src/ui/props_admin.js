@@ -7,7 +7,7 @@ import { h, toast } from './dom.js';
 export function buildPropsSection(panel) {
   const app = panel.app;
   const chk = (label, fn, id) => { const i = h('input', { type: 'checkbox', id, onchange: () => fn(i.checked) }); return [h('label', { class: 'row' }, i, ' ' + label), i]; };
-  const [swL, sw] = chk('오브젝트 기능 켜기 (개발 중 꺼짐, D-120)', (v) => { app.propsSet(v); toast(v ? '오브젝트 켬 (장면을 다시 지었어요)' : '오브젝트 끔'); }, 'adPropsOn');
+  const [swL, sw] = chk('오브젝트 기능 켜기 (개발 중 꺼짐, D-120)', (v) => { app.propsSet(v); toast(!v ? '오브젝트 끔' : PROPS.layout.length ? '오브젝트 켬 (장면을 다시 지었어요)' : '오브젝트 켬 · 이 지역엔 차가 없어요. 다시 배치를 눌러 보세요'); }, 'adPropsOn');
   const [mkL] = chk('지점 표시 (접근점 파랑 · 지점 초록 · 점유 빨강)', (v) => app.propsMarks(v), 'adPropsMarks');
   const [slL] = chk('도약 느리게 보기 (4배)', (v) => { HOP.slow = v ? 4 : 1; }, 'adPropsSlow');
   const seed = h('input', { type: 'text', value: 'a', 'aria-label': '배치 시드', id: 'adPropsSeed', style: 'width:5em' });

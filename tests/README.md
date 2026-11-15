@@ -9,6 +9,9 @@
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
+- 자세 전환 확인판(M4-6): `prototype/pose_check.html`(localhost만). 모든 전환을 격자로 반복 재생, 칸마다 몸 회전 최대 속도(도/초) 표시.
+  `?from=belly&to=side` 로 좁히고 `?page=n`·`?cols=&rows=` 로 넘김. `?still` 이면 시간을 멈추고 `__posecheck.advance(초)`로 진행(캡쳐용).
+  자동 검사: `npm run test:unit`의 `pose_motion.test.mjs` (모든 자세 쌍의 회전 속도·프레임 변화 한계).
 - `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요.
 
 ## 준비

@@ -16,7 +16,7 @@ export class Encounter {
     host.steps = []; host.step = null; host.move = null; host.arrived = true; host.jump = null; host.lookAtYou = 0; host._lv = null; // 지점 위·아래면 encTick 이 먼저 leaveSlot(fast 도약)으로 내려온다 (4A-1)
     guest.x = this.edge.x; guest.z = this.edge.z;
     guest.yaw = guest.yawTarget = Math.atan2(this.M.x - guest.x, this.M.z - guest.z);
-    guest.setPose('stand'); Object.assign(guest.P, guest.T);
+    guest.setPose('stand'); guest.snapPose();
   }
   build() {
     const E = this, H = this.host, G = this.guest, W = H.world, r = makeRng('enc:' + this.trip.id), B = 0.3 * (H.scale + G.scale);

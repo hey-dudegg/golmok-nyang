@@ -4,6 +4,7 @@ import { ACTIONS, BOUNDS, REACTIONS, STEP } from '../core/behavior.js';
 import { REACT_META } from '../core/touch_rules.js';
 import { TAU, angDiff, clamp, damp, dampAngle, lerp, makeRng, smooth } from '../core/util.js';
 import { Clock } from '../state/clock.js';
+import { PoseQueue, blendPose } from '../core/pose_plan.js';
 import { PARAM_KEYS, poseTarget } from '../render/poses.js';
 import { PS, hopTick, leaveSteps, noteAct, propFrameTick, resetSlot, slotReactSteps } from '../core/prop_actions.js';
 
@@ -13,7 +14,7 @@ export class CatAgent {
     this.p = cat.g.personality; this.kitten = cat.g.months < 6;
     this.x = 0; this.z = 0; this.yaw = 0; this.yawTarget = 0;
     this.E = rng.range(0.35, 1); this.B = rng.range(0, 0.6);
-    this.P = poseTarget(view.dim, 'sit'); this.T = { ...this.P };
+    this.P = poseTarget(view.dim, 'sit'); this.pq = new PoseQueue(this.P);
     this.ov = {};
     this.steps = []; this.step = null; this.action = null; this.label = '';
     this.move = null; this.arrived = true; this.speed = 0;
@@ -67,7 +68,7 @@ export class CatAgent {
     this.clk = true; this.override = false; this.manual = false; this.repeatKey = null; this.isReaction = false;
     resetSlot(this); this.x = H0.x; this.z = H0.z; this.jump = null; this.v.root.position.y = 0; // 복원은 화면에 그리기 전에만(4A-1 예외)
     this.yaw = this.yawTarget = makeRng(prev.seed + ':yaw').range(-0.7, 0.7);
-    this.setPose('sit'); Object.assign(this.P, this.T);
+    this.setPose('sit'); this.snapPose();
     this.sim = true; this.simNow = entry.t0;
     this.beginEntry(entry);
     const el = Math.max(0, (now - entry.t0) / 1000);
@@ -112,7 +113,11 @@ export class CatAgent {
   playManual(k) { this.play(k); this.override = false; this.manual = true; this.steps.push(STEP.hold()); }
   resumeSchedule() { this.manual = false; this.repeatKey = null; this.override = false; this.beginEntry(Clock.entryAt(this.cat, Date.now()).entry, true); }
   get scale() { return this.v.dim.scale; }
-  setPose(name, extra) { const t = poseTarget(this.v.dim, name, extra); this.T = t; this.v.plant = t.plant; }
+  get T() { return this.pq.T; }
+  // 자세 전환: 몸 회전이 크면 PoseQueue 가 단계로 나눈다 (M4-6). 단계마다 plant 도 맞춘다
+  setTarget(t) { this.pq.set(t); this.v.plant = this.pq.T.plant; }
+  setPose(name, extra) { this.setTarget(poseTarget(this.v.dim, name, extra)); }
+  snapPose() { this.pq.snap(); this.v.plant = this.pq.T.plant; }
   yawTo(o) { return Math.atan2(o.x - this.x, o.z - this.z); }
   mom() { return this.cat.mother ? this.world.agents.find((x) => x.cat.id === this.cat.mother) : null; }
   nearestCat(maxD) { let best = null, bd = maxD; for (const o of this.world.agents) { if (o === this || o.hidden) continue; const d = Math.hypot(o.x - this.x, o.z - this.z); if (d < bd) { bd = d; best = o; } } return best; }
@@ -224,7 +229,7 @@ export class CatAgent {
         this.x = pushed.x; this.z = pushed.z;
         if (pushed.stuck) M.stuckT = (M.stuckT || 0) + dt; if (M.stuckT > 1.5) this.arrived = true;
       }
-      if (!M.keepPose && this.T !== this._walkPose) { this._walkPose = poseTarget(this.v.dim, 'stand', { tb: M.speed > 2 ? 0.35 : this.p.social > 0.6 ? 1.2 : 0.75, tw: 0.08 }); this.T = this._walkPose; this.v.plant = 'all'; }
+      if (!M.keepPose && this.pq.goal !== this._walkPose) { this._walkPose = poseTarget(this.v.dim, 'stand', { tb: M.speed > 2 ? 0.35 : this.p.social > 0.6 ? 1.2 : 0.75, tw: 0.08 }); this.setTarget(this._walkPose); }
     }
     const runK = clamp((speedNow / (0.26 * this.scale) - 1.6) / 1.2, 0, 1);
     this.gaitAmt = damp(this.gaitAmt, speedNow > 0.01 ? 1 : 0, 10, dt);
@@ -234,12 +239,9 @@ export class CatAgent {
     this.yaw = dampAngle(this.yaw, this.yawTarget, this.move && !this.arrived ? 7 : 4, dt);
     // 다른 고양이와 겹침 방지 (멈춰 있을 때 살살 밀기)
     // 자세 보간
-    const P = this.P, T = this.T;
-    for (const k of PARAM_KEYS) {
-      if (T[k] === undefined) continue;
-      const rate = k === 'eye' || k === 'mouth' ? 10 : k === 'puff' ? 3 : k === 'h' ? 5 : 4.2;
-      P[k] = damp(P[k], T[k], this.jump ? 14 : rate, dt);
-    }
+    const P = this.P;
+    if (this.pq.tick(dt)) this.v.plant = this.pq.T.plant;
+    blendPose(P, this.pq.T, PARAM_KEYS, dt, !!this.jump, damp);
     // 최종 자세 = 보간값 + 오버레이
     const F = this.v.pose;
     for (const k of PARAM_KEYS) F[k] = P[k] + (this.ov[k] || 0);

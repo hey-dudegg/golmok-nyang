@@ -1,7 +1,7 @@
 // 오브젝트(core/props.js·prop_actions.js) 단위 시험: 배치 결정성·지점 좌표·충돌·점유·점수·기능 스위치 (M3-6 O1, 설계 8장 core 단위)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CAR, CAR_HOOD_LEN, PROPS, PROP_KINDS, layoutFor, propClaim, propHome, propOccupant, propRelease, propSlots, propsEnter, rectHit, rectPush, slotWorld } from '../../prototype/src/core/props.js';
+import { CAR, CAR_FOOT, CAR_HOOD_LEN, OBJ_GAP, PROPS, isFree, nearestFree, shapesOverlap, PROP_KINDS, layoutFor, propClaim, propHome, propOccupant, propRelease, propSlots, propsEnter, rectHit, rectPush, slotWorld } from '../../prototype/src/core/props.js';
 import { ACTIONS, BOUNDS } from '../../prototype/src/core/behavior.js';
 import { EMO_BIAS, createClock } from '../../prototype/src/core/clock.js';
 import { PROP_ACTIONS, registerPropActions } from '../../prototype/src/core/prop_actions.js';
@@ -38,6 +38,34 @@ test('layoutFor 결정성·테마·범위', () => {
 test('layoutFor: 겹치는 원형 장애물이면 건너뛴다(없는 장면)', () => {
   const big = [{ x: 0, z: -1.1, r: 3 }];
   for (let i = 0; i < 30; i++) assert.deepEqual(layoutFor({ theme: 'alley', code: 'q' + i, obstacles: big }), []);
+});
+test('간섭(R-24): 장면 장애물·차·놓은 상자 모든 쌍이 간격 이상 떨어진다', () => {
+  const scene = (gx, j) => { const sx0 = gx > 0 ? -2.4 : 0.6, o = [{ x: 0, z: -2, wall: true }];
+    for (let i = 0; i < 4; i++) o.push({ x: sx0 + i * 0.5 + j * 0.01, z: -1.66, r: 0.3 });
+    o.push({ x: sx0 + 2.3, z: -1.45, r: 0.45 }, { x: -3.3, z: -1.55, r: 0.3 }, { x: gx > 0 ? -1 : 2.6, z: -1.35, r: 0.35 }, { x: 2.75, z: -0.95, r: 0.38 }); return o; };
+  let cars = 0, boxes = 0;
+  for (const gx of [-1.6, 1.2, 2.2]) for (let j = 0; j < 5; j++) for (let i = 0; i < 40; i++) {
+    const obs = scene(gx, j), a = layoutFor({ theme: 'alley', code: 'k' + gx + j + i, obstacles: obs });
+    if (a.length) { cars++; obs.push({ ...CAR_FOOT, x: a[0].x, z: a[0].z, rot: 0 }); }
+    // 사용자가 상자를 놓는다: 차 한가운데를 눌러도 가장 가까운 빈 자리로 밀린다
+    const want = a.length ? { x: a[0].x, z: a[0].z } : { x: 0, z: -1 }, f = nearestFree({ hx: 0.25, hz: 0.2, rot: 0.4 }, obs, want.x, want.z);
+    if (f) { boxes++; obs.push({ ...f, hx: 0.25, hz: 0.2, rot: 0.4 }); }
+    const real = obs.filter((o) => !o.wall);
+    for (let m = 0; m < real.length; m++) for (let n = m + 1; n < real.length; n++) {
+      if (m < 8 && n < 8) continue; // 장면 장애물끼리는 장면 담당(이 시험 밖)
+      assert.ok(!shapesOverlap(real[m], real[n], OBJ_GAP - 1e-6), `겹침 ${gx} ${j} ${i}: ${m},${n}`);
+    }
+  }
+  assert.ok(cars > 100 && boxes > 100, `차 ${cars} 상자 ${boxes}`);
+});
+test('shapesOverlap: 돌출(바퀴·범퍼) 포함 풋프린트, 회전 직사각형, 원', () => {
+  const car = { ...CAR_FOOT, x: 0, z: 0, rot: 0 };
+  assert.ok(CAR_FOOT.hx > CAR.l / 2 && CAR_FOOT.hz > CAR.w / 2);
+  assert.ok(shapesOverlap(car, { x: 0, z: 0.8, r: 0.3 }, 0.15)); // 원 가장자리 0.5 < 0.47+0.15
+  assert.ok(!shapesOverlap(car, { x: 0, z: 1.0, r: 0.3 }, 0.15));
+  assert.ok(shapesOverlap(car, { x: 1.8, z: 0, hx: 0.25, hz: 0.2, rot: 0.7 }, 0));
+  assert.ok(!shapesOverlap(car, { x: 3.0, z: 0, hx: 0.25, hz: 0.2, rot: 0.7 }, 0.15));
+  assert.ok(isFree(car, [{ x: 0, z: -2, wall: true }]));
 });
 test('slotWorld: 방향(dir)·접근점은 카메라 쪽(+z)', () => {
   const car = { id: 'car0', kind: 'car', x: 0.2, z: -1.1, rot: 0, dir: 1 }, hood = PROP_KINDS.car.slots[0];
