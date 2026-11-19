@@ -1,5 +1,6 @@
 // 시험용 정적 서버: node 내장 http·fs·path 만 쓴다 (D-61). 저장소 루트를 제공한다.
 //   const { startServer } = require('./lib/static_server');  const s = await startServer(); s.baseUrl; await s.close();
+//   CLI: node tests/lib/static_server.js [포트]  (기본 8000, http://127.0.0.1:<포트>/prototype/ 출력, Ctrl+C 종료)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -54,3 +55,12 @@ function startServer(port = 0) {
 }
 
 module.exports = { startServer, ROOT };
+
+if (require.main === module) {
+  const port = Number(process.argv[2]) || 8000;
+  startServer(port).then((s) => {
+    console.log(s.baseUrl);
+    const stop = () => s.close().then(() => process.exit(0));
+    process.on('SIGINT', stop); process.on('SIGTERM', stop);
+  }).catch((e) => { console.error(e.message); process.exit(1); });
+}

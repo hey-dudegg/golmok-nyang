@@ -5,14 +5,14 @@
 
 
 ## 로컬 확인 (CLAUDE.md에서 옮김, T7)
-- 저장소 루트에서 `python3 -m http.server 8000` → http://localhost:8000/prototype/
+- 저장소 루트에서 `node tests/lib/static_server.js` → http://127.0.0.1:8000/prototype/ (포트는 인자로 지정, 기본 8000, Ctrl+C로 종료. Node만 있으면 되고 별도 설치는 없다.)
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
 - 자세 전환 확인판(M4-6): `prototype/pose_check.html`(localhost만). 모든 전환을 격자로 반복 재생, 칸마다 몸 회전 최대 속도(도/초) 표시.
   `?from=belly&to=side` 로 좁히고 `?page=n`·`?cols=&rows=` 로 넘김. `?still` 이면 시간을 멈추고 `__posecheck.advance(초)`로 진행(캡쳐용).
   자동 검사: `npm run test:unit`의 `pose_motion.test.mjs` (모든 자세 쌍의 회전 속도·프레임 변화 한계).
-- `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요.
+- `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요: 위 `node tests/lib/static_server.js`를 켜 둔 채 실행한다.
 
 ## 준비
 
@@ -23,7 +23,7 @@
    ```
 3. `npm test`는 서버를 따로 켤 필요 없다. `run_all`이 node 내장 정적 서버(`tests/lib/static_server.js`, D-61)를 빈 포트에 띄우고 끝나면 닫는다. `BASE_URL`을 주면 그 외부 서버를 쓴다. 개별 `npm run test:<이름>`은 아래 서버가 필요하다. 화면을 직접 볼 때도 저장소 루트를 정적 서버로 연다 (`file://`로 열면 모듈·데이터 fetch가 막힌다)
    ```
-   python -m http.server 8000      (macOS·Linux는 python3)
+   node tests/lib/static_server.js 8000
    ```
    페이지: http://localhost:8000/prototype/
 

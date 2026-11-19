@@ -1,26 +1,18 @@
-# INDEX (마지막 갱신: 2026-11-15)
+# INDEX (마지막 갱신: 2026-11-19)
 ## 현재
-- 마일스톤: M5 작게(O2 담·종이 상자) 진행(2026-11-15 승인). 사용자 할 일: USER_TODO.md
-- 다음 팀 작업: 다음 세션: 시험 9 판정·눈 재질·M5-8 진입점 → /gate
+- 마일스톤: M5 마감(2026-11-19, 작업표 archive/INDEX-M5.md). M6 범위 승인 대기. 사용자 할 일: USER_TODO.md
+- 다음 팀 작업: M6 범위 승인 후 /milestone (후보: 상자 놓기 R-06 B-1~B-5)
 - 로컬 저장소가 원본. 원본 아티팩트: https://claude.ai/artifact/S2WQEgUYBgfJfc99d9RhoL (D-51, D-21)
-## 이번 마일스톤 작업 (M5 작게, 2026-11-15 계획)
+## 이번 마일스톤 작업 (없음, M6 승인 대기)
 | 작업 | 내용 | 담당 | 관련 | 상태 |
 |---|---|---|---|---|
-| M5-1 | 낮은 담: 배치·메시·담 위 엎드리기(wallLoaf)·새끼 높이 제한 | prop-developer | R-24 D-120 | 완료(unit 316, props 55) |
-| M5-2 | 종이 상자: 배치·메시·상자 안 앉기(crateSit, 귀·머리만) | prop-developer | R-24 D-120 | 완료(unit 319, props 66) |
-| M5-3 | 새 행동 시험: props·극성·자세 전환 한계(D-129) | tester | D-129 D-73 | 완료(15/15, props 68) |
-| M5-4 | 통합 회귀(npm test 전체)·화면 겹침 확인 | tester→prop-dev | D-125 | 완료(14/14, unit 322, props 74) |
-| M5-5 | 토큰 X1~X5 위임 양식·정의 반영 | 팀장 | 토큰 16장 | 완료(M4 마감 때) |
-| M5-6 | hoodLoaf·crateSit·underHide 접근점 재선택 | prop-developer | R-24 | 완료(props 74, unit 322) |
-| M5-7 | 만남 뒤 지오메트리 2개 잔존 조사 | debugger | M5-4 | 완료(누수 아님) |
-| M5-8 | tests/README 로컬 서버 node로 안내 | documenter | M5-4 | 보류(서버 진입점 필요) |
 | 이월 | M2-2 서울 DB·첫 실행 / M2-8 최종 보안 / M2-11 문안 / 폰 확인 7-1 | | D-110 P-44 | 사용자 대기 |
 ## 역할별 현황
 | 역할 | 상태 | 진행 중 | 마지막 반영 D |
 |---|---|---|---|
 | tester·debugger·developer | 대기 | M5-4 완료 / M5-4 수정 완료 / M4-6 완료 | D-129 / D-129 |
 | security·token·architect·devops | 대기 | M3-5 완료 / 토큰 5차 완료 / M5-4 설계 반영 | D-123 / D-129·107 |
-| prop-developer·그 외 | 대기 | M5-6 완료 / M5-8 보류 | D-129 / D-109 |
+| prop-developer·그 외 | 대기 | M5-6 완료 / M5-8 완료 | D-129 / D-129 |
 ## 논의 필요 (P) - 원본: PENDING.md
 | ID | 한 줄 요약 | ID | 한 줄 요약 |
 |---|---|---|---|
@@ -77,4 +69,4 @@
 ## 설계 문서 (docs/design/)
 - 골목냥_수정설계_2026-10-18.md(R-08~15, 10장 구현 순서·12장 확정), 의견함_명소배경(R-16·17), 숏츠_행동(R-14)
 - 2차_연결_설계.md(M2-4 본문, 2·3·8장은 _표·_필터·_실시간), 배포_계획(색인+장별 6파일)·배포_실행_순서(M2-2), 토큰(12장)·보안·로그 설계(R-18~20), 개인정보_안내, 문제해결_털_지지직(D-70·71), 날씨_설계(R-22, M3)·날씨_인근_빌리기, 상자_놓기_설계(R-06), SQL_자동화_설계(R-23)
-- 보관됨: D-06,16,66,69 (archive/DECISIONS-M1.md), D-34,35,65,71,94,102,114 (archive/DECISIONS-M3.md, D-84~129 범위에서 94·102·114·115 제외), D-115 (archive/DECISIONS-M4.md), 작업표 M0~M4(archive/INDEX-M0~M4.md), legacy/
+- 보관됨: D-06,16,66,69 (archive/DECISIONS-M1.md), D-34,35,65,71,94,102,114 (archive/DECISIONS-M3.md, D-84~129 범위에서 94·102·114·115 제외), D-115 (archive/DECISIONS-M4.md), 작업표 M0~M5(archive/INDEX-M0~M5.md), legacy/

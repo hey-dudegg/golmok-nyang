@@ -225,14 +225,17 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
     app.propsSet(false); ok('10 끄면 장애물·행동 표에서 사라짐', !app.s.obstacles.some((o) => o.hx) && !X.ACTIONS.hoodLoaf && !X.ACTIONS.underHide && !X.ACTIONS.wallLoaf && !X.ACTIONS.crateSit);
     return { out };
   });
-  // 9) 누수: 차가 있는 같은 지역을 10번 다시 지어도 지오메트리·텍스처 수 그대로 (렌더가 돈 뒤에 잰다)
+  // 9) 누수: 차가 있는 같은 지역을 여러 번 다시 지어도 지오메트리·텍스처 누적 증가 없음 (렌더가 돈 뒤에 잰다)
   const memNow = () => p.evaluate(() => new Promise((res) => { window.__advance(3); setTimeout(() => res({ g: window.__app.s.renderer.info.memory.geometries, t: window.__app.s.renderer.info.memory.textures }), 900); }));
   await p.evaluate(() => window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 })); await memNow(); /* 첫 렌더 뒤 안정 */ await p.evaluate(() => window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 })); const m0 = await memNow();
-  await p.evaluate(() => { for (let i = 0; i < 10; i++) window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 }); }); const memAfter = await memNow();
+  // 반복 다시 짓기 8회, 회마다 측정. memory.geometries는 그려진 것만 세어 ±3 흔들리므로(M5-7) 단발 비교 대신 누적 증가로 판정:
+  // 뒤 절반 최대 <= 앞 절반 최대 + 3 (진짜 누수 회당 +1 이상이면 차이 4 이상). 텍스처는 흔들림 없어 처음값 +2.
+  const series = []; for (let i = 0; i < 8; i++) { await p.evaluate(() => window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 })); series.push(await memNow()); }
+  const memAfter = series[series.length - 1];
   let fail = 0;
   for (const [n, c, d] of R.out) { if (!c) fail++; console.log((c ? 'PASS ' : 'FAIL ') + n + (d ? '  [' + d + ']' : '')); }
-  const noLeak = memAfter.g <= m0.g + 2 && memAfter.t <= m0.t + 2;
-  console.log((noLeak ? 'PASS ' : 'FAIL ') + '9 누수 0 (다시 짓기 10번 뒤 지오메트리·텍스처) ' + JSON.stringify(m0) + ' -> ' + JSON.stringify(memAfter)); if (!noLeak) fail++;
+  const gs = series.map((x) => x.g), h = gs.length >> 1; const noLeak = Math.max(...gs.slice(h)) <= Math.max(...gs.slice(0, h)) + 3 && Math.max(...series.map((x) => x.t)) <= m0.t + 2;
+  console.log((noLeak ? 'PASS ' : 'FAIL ') + '9 누수 0 (다시 짓기 8회 누적 증가 없음) g=' + gs.join(',') + ' t ' + m0.t + '->' + memAfter.t); if (!noLeak) fail++;
   if (errs.length) { fail++; console.log('FAIL 콘솔 오류 ' + errs.slice(0, 3).join(' | ')); }
   const total = R.out.length + 2; console.log(`props: ${total - fail}/${total} 항목 통과`); // 누수·콘솔 오류도 집계
   await b.close(); return fail === 0;

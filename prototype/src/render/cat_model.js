@@ -375,6 +375,7 @@ export class CatView {
   }
   dispose() {
     this.mesh.geometry.dispose(); this.mat.dispose(); this.eyeMat.dispose();
+    if (this.eyeMatR && this.eyeMatR !== this.eyeMat) this.eyeMatR.dispose();
     this.root.traverse((o) => { if (o.geometry && o.geometry !== SHADOW_GEO) o.geometry.dispose(); });
   }
 }
