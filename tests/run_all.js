@@ -20,6 +20,8 @@ const ALL = [
   ['findcat', 'find_cat.js'],
   ['backdrop', 'backdrop.js'],
   ['props', 'props.js'],
+  ['props_b', 'props_b.js'],
+  ['props_gift', 'props_gift.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];

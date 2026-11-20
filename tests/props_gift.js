@@ -1,4 +1,4 @@
-// 선물 상자(M6-5) 브라우저 시험: 등장·배수·giftPeek·giftSniff·만료 T8·두 탭 일정 일치·누수. tests/props.js 가 불러 쓴다.
+// 선물 상자(M6-5) 브라우저 시험: 등장·배수·giftPeek·giftSniff·만료 T8·두 탭 일정 일치·누수. 단독 실행(node tests/props_gift.js)도 된다.
 // 항목은 [이름, 통과, 설명] 배열로 돌려준다.
 async function giftTests(p, b, open, errs) {
   const out = []; const ok = (n, c, d) => out.push([n, !!c, d === undefined ? '' : String(d)]);
@@ -79,7 +79,32 @@ async function giftTests(p, b, open, errs) {
   const gs = []; for (let i = 0; i < 8; i++) { await place({ id: 'gl' + i }); await mem(); await ev(() => window.__props.Box.set(null, 'expire')); await sleep(1500); await ev(() => window.__app.propsRemoveTick()); gs.push(await mem()); }
   const h = gs.length >> 1, noLeak = Math.max(...gs.slice(h)) <= Math.max(...gs.slice(0, h)) + 3;
   ok('G9 누수 0 (놓기·만료 8회 지오메트리 ' + gs.join(',') + ')', noLeak);
+  // G10 어드민 오브젝트 구역 버튼 (M7-1): 놓기 -> 상태줄 이름·남은 시간·gift0 생김 -> 치우기 -> '상자 없음'·gift0 사라짐
+  const p3 = await open(b, '?admin&props=1&still=2&pr=0.3&shells=2&hour=13#11', { width: 390, height: 800, errs, settle: 2000 });
+  const adLine = () => p3.evaluate(() => { const e = document.getElementById('adBoxLine'); return e ? e.textContent : null; });
+  const hasG = () => p3.evaluate(() => !!window.__props.PROPS.layout.find((q) => q.id === 'gift0' && !q.gone));
+  const waitG = async (want) => { for (let i = 0; i < 24; i++) { if ((await hasG()) === want) return want; await sleep(250); } return await hasG(); };
+  const btnOk = await p3.evaluate(() => !!document.getElementById('adBoxPlace') && !!document.getElementById('adBoxClear') && !!document.getElementById('adBoxLine'));
+  const line0 = await adLine();
+  await p3.evaluate(() => document.getElementById('adBoxPlace').click());
+  const gOn = await waitG(true); await sleep(900); const line1 = await adLine();
+  await p3.evaluate(() => document.getElementById('adBoxClear').click());
+  const gOff = await waitG(false); await sleep(900); const line2 = await adLine();
+  ok('G10 어드민 상자 버튼: 놓기->이름·남은 시간·gift0 / 치우기->상자 없음·gift0 없음', btnOk && /상자 없음/.test(line0 || '') && gOn && /어드민의 상자/.test(line1 || '') && /[0-9]/.test(line1 || '') && gOff === false && /상자 없음/.test(line2 || ''), JSON.stringify({ btnOk, line0, gOn, line1, gOff, line2 }));
+  await p3.close();
   await ev(() => window.__app.propsSet(false)); await ev(() => window.__props.Box.set(null, 'expire'));
   return out;
 }
 module.exports = { giftTests };
+if (require.main === module) { // 단독 실행 (M7-2): node tests/props_gift.js
+  const { launch, open, run } = require('./lib/common');
+  run('props_gift (선물 상자 G1~G10·T8)', async () => {
+    const b = await launch(); const errs = [];
+    const p = await open(b, '?admin&props=1&still=2&pr=0.3&shells=2&hour=13#11', { width: 390, height: 800, errs, settle: 2000 });
+    const out = await giftTests(p, b, open, errs); let fail = 0;
+    for (const [n, c, d] of out) { if (!c) fail++; console.log((c ? 'PASS ' : 'FAIL ') + n + (d ? '  [' + d + ']' : '')); }
+    if (errs.length) { fail++; console.log('FAIL 콘솔 오류 ' + errs.slice(0, 3).join(' | ')); }
+    const total = out.length + 1; console.log(`props_gift: ${total - fail}/${total} 항목 통과`);
+    await b.close(); return fail === 0;
+  });
+}
