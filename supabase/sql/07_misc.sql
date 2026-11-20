@@ -15,7 +15,7 @@ grant execute on function public.member_leave() to authenticated;
 -- 하루 1회 정리(D-09). 호출 주체: 어드민 또는 데이터베이스 관리 역할(스케줄러). 일반 방문자는 거부.
 create or replace function public.daily_cleanup() returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare n_users int := 0; n_posts int := 0; n_names int := 0; n_reports int := 0; n_orphans int := 0;
+declare n_users int := 0; n_posts int := 0; n_names int := 0; n_reports int := 0; n_orphans int := 0; n_box int := 0;
 begin
   -- session_user 는 set role 뒤에도 바뀌지 않으므로(관리 세션이 authenticated 로 바꿔 불러도 통과), 바꾼 역할(role 설정)도 본다.
   -- security definer 안에서 current_user 는 소유자라 쓸 수 없다. role 설정은 API(anon·authenticated)면 그 이름, 스케줄러면 'none'.
@@ -56,7 +56,11 @@ begin
       get diagnostics n_orphans = row_count; n_reports := n_reports + n_orphans;
     end if;
   end if;
-  return jsonb_build_object('users', n_users, 'posts', n_posts, 'names', n_names, 'reports', n_reports);
+  if to_regclass('public.box_log') is not null then   -- 상자 놓기 기록 2일 지난 행(M6-1)
+    execute $q$delete from public.box_log where created_at < now() - interval '2 days'$q$;
+    get diagnostics n_box = row_count;
+  end if;
+  return jsonb_build_object('users', n_users, 'posts', n_posts, 'names', n_names, 'reports', n_reports, 'box', n_box);
 end $$;
 revoke all on function public.daily_cleanup() from public, anon;
 grant execute on function public.daily_cleanup() to authenticated;   -- 안에서 어드민·관리 역할만 통과

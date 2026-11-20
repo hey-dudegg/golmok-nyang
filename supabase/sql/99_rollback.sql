@@ -1,8 +1,23 @@
 -- 99_rollback.sql  (되돌리기. 평소에는 실행하지 않는다. 테스트 프로젝트를 처음 상태로 돌릴 때만)
--- 목적: 01~08 이 만든 것을 역순으로 지운다(08 삭제는 맨 앞).
+-- 목적: 01~10 이 만든 것을 역순으로 지운다(08 삭제는 맨 앞).
 -- 주의: members·bonds·posts·names2·app_config·admins 등의 데이터가 모두 사라진다. 익명·회원 계정(auth.users)은 지우지 않는다.
 --       버킷 captures 와 그 파일은 SQL 로 지울 수 없다(저장소가 막음). 필요하면 대시보드 Storage 에서 지운다.
 
+-- 10_box (맨 앞): 상자 함수·표 삭제. reports 의 box 신고를 지우고 kind 제약을 05 모양으로 되돌린다(reports 는 아래에서 다시 지워지지만 부분 되돌리기 대비).
+do $box$
+begin
+  if to_regclass('public.reports') is not null then
+    delete from public.reports where kind = 'box';
+    alter table public.reports drop constraint if exists reports_kind_check;
+    alter table public.reports add constraint reports_kind_check check (kind in ('post', 'comment', 'name'));
+  end if;
+end $box$;
+drop function if exists public.box_clear(text);
+drop function if exists public.box_place(text, text);
+drop function if exists public.box_list();
+drop function if exists public.gn_box_send(text, uuid, timestamptz, timestamptz, int, text);
+drop table if exists public.box_log;
+drop table if exists public.box_state;
 drop policy if exists gn_site_presence on realtime.messages;
 drop policy if exists gn_site_read on realtime.messages;
 drop function if exists public.promo_clear();

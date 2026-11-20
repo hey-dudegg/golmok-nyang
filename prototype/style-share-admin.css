@@ -100,3 +100,9 @@
 .catchip .gt .i { width: 14px; height: 14px; }
 .catchip.guest { box-shadow: none; border: 1.5px dashed var(--muted); }
 
+#boxBar { right: 14px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); max-width: min(290px, calc(100vw - 28px)); padding: 8px; display: grid; gap: 6px; }
+#boxBar .boxrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#boxBar .boxform small { display: block; margin-top: 4px; font-size: 11.5px; opacity: 0.75; }
+#boxBar input { flex: 1 1 110px; min-width: 0; padding: 7px 10px; border-radius: 10px; border: 0; box-shadow: inset 0 0 0 1px var(--line); background: var(--panel-solid); color: inherit; font-size: 14px; }
+#boxBar .boxnote { font-size: 12.5px; padding: 0 2px; }
+#boxBar .boxnote[hidden], #boxBar [hidden] { display: none; }

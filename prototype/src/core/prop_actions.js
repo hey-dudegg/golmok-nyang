@@ -3,7 +3,7 @@
 // 4A 규칙: 접근점까지 걸어서 간다 / 높이(a.y) 변화는 도약(a.hop) 뿐 / 반응은 그 자리에서 / 쿨다운 90초 / 최근 3개 행동 반복 금지.
 import { ACTIONS, REACTIONS, STEP } from './behavior.js';
 import { REACT_META } from './touch_rules.js';
-import { CRATE, PROP_ACTION_KEYS, PROP_COOLDOWN, propClaim, propOccupant, propRelease, propSlots } from './props.js';
+import { CRATE, GIFT, PROP_ACTION_KEYS, PROP_COOLDOWN, propClaim, propOccupant, propRelease, propSlots } from './props.js';
 import { clamp, damp, lerp } from './util.js';
 
 export const HOP = { slow: 1, speed: 0.7, fastSpeed: 1.0 }; // slow: 어드민 "느리게 보기" 배수(1=보통, 4=4배 느리게)
@@ -11,12 +11,15 @@ export const pmOf = (a) => a.pm || (a.pm = { cool: {}, recent: [], rej: 0, touch
 export const noteAct = (a, k) => { const m = pmOf(a); m.recent.unshift(k); m.recent.length = Math.min(3, m.recent.length); };
 
 // 지금 이 고양이가 쓸 수 있는 지점 (점유·쿨다운·최근 3개 행동·새끼 높이 제한 반영). 시계 대역(a.pm 없음)은 존재만 본다
-export function pickSlot(a, action) {
-  const m = a.pm;
-  for (const s of propSlots(action)) {
+// opt: { gift: true(선물 상자 지점만), as: 행동 키(최근 3개 행동 검사용) }. 선물 상자 지점은 world.gift 가 있을 때만 후보(없으면 만료·미래 시각), 있으면 먼저 고른다 (M6-5)
+export function pickSlot(a, action, opt) {
+  const m = a.pm, g = a.world && a.world.gift, key = (opt && opt.as) || action;
+  const all = propSlots(action).filter((s) => s.prop.look !== 'gift' || g), list = g ? [...all.filter((s) => s.prop.look === 'gift'), ...all.filter((s) => s.prop.look !== 'gift')] : all;
+  for (const s of list) {
+    if (opt && opt.gift && s.prop.look !== 'gift') continue;
     if (s.slot.mode === 'on' && a.kitten) continue; // 새끼는 높은 곳(본네트 0.58m·담 0.80m)에 못 오른다
     const occ = propOccupant(s.key); if (occ && occ !== a) continue;
-    if (m && ((m.cool[s.key] || 0) > a.time || m.recent.includes(action))) continue;
+    if (m && ((m.cool[s.key] || 0) > a.time || m.recent.includes(key))) continue;
     return s;
   }
   return null;
@@ -85,7 +88,7 @@ export const PS = {
   // 상자(in)는 앞벽을 넘어 들어간다: 웅크렸다가 벽 위로 도약 -> 벽 안쪽 바닥으로 내려앉기 (몸통이 벽 높이 아래로 벽 면을 지나지 않는다)
   enter(S) { return { start(a) {
     this.dead = false; this.ph = 0; this.t = 0;
-    if (!propClaim(S.key, a)) { this.dead = true; abort(a, S.key); return; }
+    if (S.prop.gone || !propClaim(S.key, a)) { this.dead = true; abort(a, S.key); return; } // 사라지는 중인 상자에는 들어가지 않는다 (M6-5)
     a.slot = { key: S.key, action: S.slot.action, S, state: 'entering' }; a.layer = S.prop.id;
     if (S.slot.mode === 'in') { a.yawTarget = Math.atan2(S.x - a.x, S.z - a.z); a.setPose('crouch', { pupil: 0.9 }); return; }
     a.setPose(lowPose(S)); a.moveTo(S.x, S.z, 0.45, { keepPose: true, timeout: 12 });
@@ -154,10 +157,11 @@ function approach(a, S) {
   return [STEP.walk(S.ax, S.az, 1.1, { timeout: to }), PS.check(S)];
 }
 // 막힌 접근점은 approach()가 쿨다운을 걸어 pickSlot에서 빠지므로, 다음 지점으로 넘어가 다시 고른다 (M5-4). 모두 막히면 null
-function pickApproach(a, action) {
-  for (let S = pickSlot(a, action); S; S = pickSlot(a, action)) { const ap = approach(a, S); if (ap) return { S, ap }; }
+function pickApproach(a, action, opt) {
+  for (let S = pickSlot(a, action, opt); S; S = pickSlot(a, action, opt)) { const ap = approach(a, S); if (ap) return { S, ap }; }
   return null;
 }
+const crateSitStep = (r, d) => STEP.pose(...(r() < 0.3 ? ['loaf', d, CRATE_TAIL_LOAF] : ['sit', d, CRATE_TAIL]), (a, t) => { if (Math.floor(t * 0.25) !== a._lk) { a._lk = Math.floor(t * 0.25); a.lookRandom(); } if (a.r() < 0.004) a.slowBlink(); });
 export const PROP_ACTIONS = {
   hoodLoaf: { label: '본네트에서 엎드린 중',
     score: (a) => { const S = pickSlot(a, 'hoodLoaf'); return S ? 0.30 + a.world.day * 0.55 + S.slot.warm * 0.4 + a.p.bold * 0.35 + (1 - a.E) * 0.3 : 0; },
@@ -180,7 +184,8 @@ export const PROP_ACTIONS = {
       return [...ap, PS.mount(S), ...lie(r.range(15, 40)), PS.dismount(false)];
     } },
   crateSit: { label: '상자 안에 들어간 중', // 새끼·소심한 쪽 가중 ("상자 사랑"). 새끼도 들어간다(높이 제한 없음)
-    score: (a) => (pickSlot(a, 'crateSit') ? 0.30 + (a.kitten ? 0.6 : 0) + (1 - a.p.bold) * 0.3 + a.p.playful * 0.2 : 0),
+    score: (a) => { const S = pickSlot(a, 'crateSit'); if (!S) return 0; const v = 0.30 + (a.kitten ? 0.6 : 0) + (1 - a.p.bold) * 0.3 + a.p.playful * 0.2, g = a.world.gift;
+      return g && S.prop.look === 'gift' ? v * (g.age < GIFT.newMs ? GIFT.multNew : GIFT.mult) : v; }, // 선물 상자: 배수 2.5(처음 15분 4)
     steps: (a, r) => {
       const sit = (d) => STEP.pose(...(r() < 0.3 ? ['loaf', d, CRATE_TAIL_LOAF] : ['sit', d, CRATE_TAIL]), (a, t) => { if (Math.floor(t * 0.25) !== a._lk) { a._lk = Math.floor(t * 0.25); a.lookRandom(); } if (a.r() < 0.004) a.slowBlink(); });
       if (a.slot && a.slot.action === 'crateSit') return [sit(r.range(5, 14)), PS.dismount(false)]; // 반응 뒤 이어서
@@ -188,6 +193,28 @@ export const PROP_ACTIONS = {
       if (!P) return [STEP.pose('sit', 2)];
       const { S, ap } = P;
       return [...ap, PS.enter(S), STEP.pose('sit', 3, CRATE_TAIL), sit(r.range(10, 35)), PS.dismount(false)];
+    } },
+  // 선물 상자 (M6-5, 상자_놓기_설계 5-3): 호기심은 성격값이 없어 장난기로 대신한다(감정 편향은 EMO_BIAS curious)
+  giftPeek: { label: '상자에서 빼꼼 내다보는 중',
+    score: (a) => (pickSlot(a, 'crateSit', { gift: true, as: 'giftPeek' }) ? 0.2 + a.p.playful * 0.6 + (1 - a.p.bold) * 0.4 : 0),
+    steps: (a, r) => {
+      const peek = (d) => STEP.pose('peek', d, CRATE_TAIL_LOAF, (a, t) => { if (Math.floor(t * 0.3) !== a._lk) { a._lk = Math.floor(t * 0.3); a.lookRandom(); } });
+      if (a.slot && a.slot.S.prop.look === 'gift') return [peek(r.range(3, 7)), PS.dismount(false)]; // 반응 뒤 이어서
+      const P = pickApproach(a, 'crateSit', { gift: true, as: 'giftPeek' });
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P, tail = r() < 0.5 ? [crateSitStep(r, r.range(5, 12))] : []; // 빼꼼 뒤 앉거나 바로 나옴
+      return [...ap, PS.enter(S), STEP.pose('crouch', 1.5, CRATE_TAIL), peek(r.range(4, 10)), ...tail, PS.dismount(false)];
+    } },
+  giftSniff: { label: '상자 냄새를 맡는 중', // 놓인 뒤 첫 결정·처음 15분·고양이당 1회(첫 결정만이라 자동으로 1회)
+    score: (a) => { const g = a.world.gift; return g && g.first && g.age < GIFT.newMs && pickSlot(a, 'crateSit', { gift: true, as: 'giftSniff' }) ? 1.6 : 0; },
+    steps: (a, r) => {
+      const P = pickApproach(a, 'crateSit', { gift: true, as: 'giftSniff' });
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P, sniff = STEP.pose('crouch', 3, { np: 0.1, hdp: -0.05 }, (a, t) => { a.ov.hdp = Math.sin(t * 16) * 0.025; });
+      const o = r(); // 냄새 뒤: 들어가 앉기 / 빼꼼 / 그냥 떠남
+      if (o < 0.3) return [...ap, sniff, STEP.pose('sit', 2)];
+      const inner = o < 0.65 ? crateSitStep(r, r.range(8, 20)) : STEP.pose('peek', r.range(4, 9), CRATE_TAIL_LOAF);
+      return [...ap, sniff, PS.enter(S), STEP.pose('crouch', 1.5, CRATE_TAIL), inner, PS.dismount(false)];
     } },
   underHide: { label: '차 밑에 숨은 중',
     score: (a) => (pickSlot(a, 'underHide') ? 0.12 + (1 - a.p.bold) * 0.9 + (1 - a.p.social) * 0.5 : 0),

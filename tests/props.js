@@ -225,6 +225,7 @@ run('props (오브젝트 O1: hoodLoaf·underHide + T1~T8)', async () => {
     app.propsSet(false); ok('10 끄면 장애물·행동 표에서 사라짐', !app.s.obstacles.some((o) => o.hx) && !X.ACTIONS.hoodLoaf && !X.ACTIONS.underHide && !X.ACTIONS.wallLoaf && !X.ACTIONS.crateSit);
     return { out };
   });
+  R.out.push(...await require('./props_gift').giftTests(p, b, open, errs)); // 선물 상자 (M6-5)
   // 9) 누수: 차가 있는 같은 지역을 여러 번 다시 지어도 지오메트리·텍스처 누적 증가 없음 (렌더가 돈 뒤에 잰다)
   const memNow = () => p.evaluate(() => new Promise((res) => { window.__advance(3); setTimeout(() => res({ g: window.__app.s.renderer.info.memory.geometries, t: window.__app.s.renderer.info.memory.textures }), 900); }));
   await p.evaluate(() => window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 })); await memNow(); /* 첫 렌더 뒤 안정 */ await p.evaluate(() => window.__app.propsSet(true, { x: 0, z: -1.1, dir: 1 })); const m0 = await memNow();

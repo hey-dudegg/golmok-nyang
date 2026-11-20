@@ -4,6 +4,8 @@
 // 탭끼리는 BroadcastChannel로 이야기한다. 잠금은 localStorage의 한 칸(탭 사이 거의 동시에 눌러도 한 명만 남게 쓴 뒤 다시 읽어 확인).
 // 게시판·이웃 데이터(db)는 지금처럼 브라우저 localStorage로 대신한다.
 import { FEATURES_DEFAULT } from '../config.js';
+import { validateBoxPayload } from '../core/box.js';
+import { createMockBox } from './box.js';
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', ''];
 export const LocalMock = {
   usable: () => LOCAL_HOSTS.includes(location.hostname),
@@ -34,13 +36,14 @@ export const LocalMock = {
         if (m.id === id) return;
         if (m.t === 'hb') { const known = peers.has(m.id); peers.set(m.id, { r: m.r, at: Date.now() }); if (!known) beat(); changed(); }
         else if (m.t === 'bye') { peers.delete(m.id); changed(); }
-        else if (m.t === 'msg') for (const f of handlers) f(m.kind, m.data, m.id);
+        else if (m.t === 'msg') { const d = m.kind === 'box' ? validateBoxPayload(m.data) : m.data; if (d) for (const f of handlers) f(m.kind, d, m.id); }
       };
       timer = setInterval(() => { beat(); changed(); }, 2500);
       addEventListener('pagehide', () => { try { ch.postMessage({ t: 'bye', id }); } catch (e) {} clearInterval(timer); });
     }
     return R;
   },
+  box: (room) => createMockBox(room),
   // lock: acquire(키, {holder, ttlMs}) -> 성공하면 true. 이미 다른 사람이 잡고 있으면(만료 전) false
   lock() {
     const k = (key) => 'golmok:lock:' + key;

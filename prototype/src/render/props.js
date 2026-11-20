@@ -1,7 +1,7 @@
 // render/props.js: 오브젝트(자동차) 그리기 (M3-6 O1, 설계 5.4). 코드 도형만(D-01·13), 창은 불투명 어두운 색(투명 정렬 문제 회피)
 // scene.build 가 테마 빌더 다음에 buildPropsFor 를 부른다. 그룹을 env(E)에 넣으므로 clearEnv 가 dispose 한다(누수 없음).
 import * as THREE from 'three';
-import { CAR, CRATE, PROP_KINDS, PROPS, WALL, propsEnter } from '../core/props.js';
+import { CAR, CRATE, PROP_KINDS, PROPS, WALL, giftWorld, propsEnter } from '../core/props.js';
 import { makeRng } from '../core/util.js';
 import { wallTex } from './scene_themes.js';
 
@@ -45,6 +45,7 @@ export function buildLowWall(p, std, ctx) {
 }
 // 종이 상자 (M5-2): 윗면 열린 4면 + 얇은 바닥(고양이 발이 y 0 이라 바닥은 0.004 평면) + 윗테두리·테이프. 색은 지역 시드로 판지 3색
 export function buildCrate(p, std) {
+  if (p.look === 'gift') return buildGiftCrate(p, std);
   const g = new THREE.Group(), { l, w, h, t } = CRATE, r = makeRng('crate:' + p.id + ':' + Math.round(p.x * 100) + ':' + Math.round(p.z * 100));
   const col = [0xb88a5a, 0xa87a4c, 0xc49a6a][r.int(0, 2)], card = std({ color: col, roughness: 0.95 }), inner = std({ color: 0x6b4a2c, roughness: 1 });
   const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
@@ -56,6 +57,33 @@ export function buildCrate(p, std) {
   g.position.set(p.x, 0, p.z); g.rotation.y = p.rot || 0;
   return g;
 }
+// 선물 상자 (M6-5, 상자_놓기_설계 5-2): 종이 갈색(밝은 크라프트) 몸통 + 위로 벌어진 날개 4장 + 빨간 테이프 줄. 크기·지점은 crate 그대로
+function buildGiftCrate(p, std) {
+  const g = new THREE.Group(), { l, w, h, t } = CRATE, card = std({ color: 0xd2a96b, roughness: 0.95 }), inner = std({ color: 0x7a5a36, roughness: 1 }), tape = std({ color: 0xc0392b, roughness: 0.7 });
+  const add = (geo, mat, x, y, z, par = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; par.add(m); return m; };
+  const B = (a, b, c) => new THREE.BoxGeometry(a, b, c);
+  add(B(l, h, t), card, 0, h / 2, w / 2 - t / 2); add(B(l, h, t), card, 0, h / 2, -w / 2 + t / 2);
+  add(B(t, h, w - 2 * t), card, l / 2 - t / 2, h / 2, 0); add(B(t, h, w - 2 * t), card, -l / 2 + t / 2, h / 2, 0);
+  add(new THREE.PlaneGeometry(l - 2 * t, w - 2 * t), inner, 0, 0.004, 0).rotation.x = -Math.PI / 2;
+  const fl = 0.13; // 날개: 윗테두리에서 바깥으로 약 35도 벌어짐 (위 가장자리가 고양이 귀 높이보다 약간 위)
+  for (const [x, z, ax, sx, sz] of [[0, w / 2, 'x', l, 1], [0, -w / 2, 'x', l, -1], [l / 2, 0, 'z', w, -1], [-l / 2, 0, 'z', w, 1]]) {
+    const pv = new THREE.Group(); pv.position.set(x, h, z); const fm = add(B(ax === 'x' ? sx : t, fl, ax === 'x' ? t : sx), card, 0, fl / 2, 0, pv);
+    fm.position.set(0, fl / 2 * 0.9, 0); if (ax === 'x') pv.rotation.x = 0.6 * sz; else pv.rotation.z = 0.6 * sz; g.add(pv);
+  }
+  add(B(l + 0.01, 0.05, 0.004), tape, 0, h * 0.62, w / 2 + 0.001); // 앞면 테이프 줄
+  g.position.set(p.x, 0, p.z); g.rotation.y = p.rot || 0; g.userData.gift = true;
+  return g;
+}
+// 선물 상자 등장·퇴장 0.3초 (아래에서 위로 커지기·줄어들기). 끝나면 done(). 33ms 간격 자체 타이머라 장면 루프를 건드리지 않는다
+export function giftPop(g, dir, done) {
+  if (g.userData.pop) clearInterval(g.userData.pop);
+  const t0 = performance.now(), D = 300; g.scale.setScalar(dir > 0 ? 0.01 : 1);
+  const id = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / D), e = dir > 0 ? k : 1 - k; g.scale.setScalar(Math.max(0.01, e));
+    if (k >= 1) { clearInterval(id); g.userData.pop = null; if (done) done(); } }, 33);
+  g.userData.pop = id;
+}
+// 그룹이 쓴 지오메트리·재질을 해제 (텍스처 없는 재질만. 상자는 색 재질뿐)
+export function disposeGroup(g) { if (g.userData.pop) clearInterval(g.userData.pop); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && !Array.isArray(o.material)) o.material.dispose(); }); }
 const BUILDERS = { car: buildCar, lowwall: buildLowWall, crate: buildCrate };
 
 // 장면에 오브젝트를 놓는다. 스위치가 꺼져 있으면 아무것도 하지 않는다. 충돌용 사각형을 S.obstacles 에 더한다
@@ -66,5 +94,14 @@ export function buildPropsFor(S, E, theme, dong, std) {
     const K = PROP_KINDS[p.kind];
     S.obstacles.push({ id: p.id, x: p.x, z: p.z, hx: K.hx, hz: K.hz, rot: p.rot || 0 });
   }
+  const box = PROPS.boxSrc && PROPS.boxSrc(), gw = box ? giftWorld(box, dong.c, S.obstacles, layout) : null; // 선물 상자: 놓여 있으면 새로 지은 장면에도 바로 (기능 스위치 꺼져도 겉모습은 보인다)
+  if (gw) addGift(S, E, gw, std, false);
   return PROPS.layout;
+}
+// 선물 상자 한 개를 장면에 더한다 (등장 애니메이션 anim). 충돌 사각형·배치 목록도 함께
+export function addGift(S, E, gw, std, anim) {
+  const g = buildCrate(gw, std); g.userData.propId = gw.id; E.add(g);
+  S.obstacles.push({ id: gw.id, x: gw.x, z: gw.z, hx: CRATE.l / 2, hz: CRATE.w / 2, rot: 0 }); PROPS.layout.push(gw);
+  if (anim) giftPop(g, 1);
+  return g;
 }

@@ -5,7 +5,7 @@ import { fmtKST } from '../core/format.js';
 import { h, toast } from './dom.js';
 import { errText } from './err_text.js';
 
-const KIND = { name: '이름', post: '글', comment: '댓글' };
+const KIND = { name: '이름', post: '글', comment: '댓글', box: '상자' };
 
 export function buildModSection() {
   const info = h('div', { class: 'note adinfo', id: 'adModInfo' });
@@ -27,7 +27,7 @@ export function buildModSection() {
       h('span', { text: `[${KIND[x.kind] || x.kind}] ${x.text || ''}` }),
       h('small', { text: `신고 ${Number(x.reports) || 0}건` }),
       h('button', { type: 'button', class: 'btn ghost adbtn', text: '복구', 'aria-label': '다시 보이게 하기', onclick: () => run(() => m.restore(x.kind, x.target), '다시 보이게 했어요') }),
-      h('button', { type: 'button', class: 'btn ghost adbtn', text: '삭제', 'aria-label': '화면에서 완전히 지우기', onclick: () => { if (confirm('화면 어디에도 안 보이게 지울까요?')) run(() => m.remove(x.kind, x.target), '지웠어요'); } }))) : [h('div', { class: 'note', text: '숨겨진 것이 없어요' })]));
+      x.kind === 'box' ? null : h('button', { type: 'button', class: 'btn ghost adbtn', text: '삭제', 'aria-label': '화면에서 완전히 지우기', onclick: () => { if (confirm('화면 어디에도 안 보이게 지울까요?')) run(() => m.remove(x.kind, x.target), '지웠어요'); } }))) : [h('div', { class: 'note', text: '숨겨진 것이 없어요' })]));
   };
   draw();
   return h('div', { class: 'adfbwrap' },

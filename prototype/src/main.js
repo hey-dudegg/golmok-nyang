@@ -39,6 +39,7 @@ import { openShare } from './ui/share.js';
 import { initFindCat } from './ui/find_cat.js';
 import { openSignup, requireGate } from './ui/signup.js';
 import { Live, Promo } from './ui/together.js';
+import { BoxUi } from './ui/box.js';
 import { AppInteract } from './app/interact.js';
 import { AppVisit } from './app/visit.js';
 import { WxUI } from './app/weather_ui.js';
@@ -72,7 +73,7 @@ class App {
   async start() {
     const resize = () => { const pr = TEST.pr || Math.min(devicePixelRatio || 1, 1.75); this.s.resize(innerWidth, innerHeight, pr); };
     addEventListener('resize', resize); resize();
-    this.bindInput(); initFindCat(this);
+    this.bindInput(); initFindCat(this); this.giftInit();
     $('#btnMove').addEventListener('click', () => openPicker(this));
     $('#btnBoard').addEventListener('click', () => this.openBoard());
     $('#btnMember').addEventListener('click', () => { if (isMemberNow() && Member.me) toast(`${Member.me.nick}님은 이미 골목 이웃이에요`); else if (adminPowers()) toast('어드민은 가입 없이 모든 기능을 쓸 수 있어요'); else if (isMemberNow()) toast('회원 화면을 시험 중이에요'); else openSignup(this, '골목 이웃이 되어 주세요'); });
@@ -95,7 +96,7 @@ class App {
     this.renderMember();
     this.last = performance.now();
     requestAnimationFrame((t) => this.frame(t));
-    initCaps().then(async () => { if (Caps.notice) toast(Caps.notice); await Member.load(); await Bonds.load(); await Recipes.init(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); await AdminPanel.init(this); });
+    initCaps().then(async () => { if (Caps.notice) toast(Caps.notice); await Member.load(); await Bonds.load(); await Recipes.init(); Board.start(); if (this.dong) Names.watch(this.dong.c, true); this.renderMember(); renderCard(this); Live.init(this); BoxUi.init(this); await AdminPanel.init(this); });
     setInterval(() => this.updateClock(), 30000);
     addEventListener('hashchange', () => { const d = REGIONS.unitOf(location.hash.replace('#', '')); if (d && d !== this.dong) this.goDong(d); });
   }
@@ -134,7 +135,7 @@ class App {
   }
   // ── 동네 이동 ──
   goDong(d, focusCatId, opts) {
-    this.dong = d; if (!(opts && opts.nosave)) store.set('region', d.c); if (Live.app) Live.setRegion(d.c);
+    this.dong = d; if (!(opts && opts.nosave)) store.set('region', d.c); if (Live.app) { Live.setRegion(d.c); BoxUi.setRegion(d.c); }
     try { history.replaceState(null, '', '#' + d.c); } catch (e) {}
     $('#pUp').textContent = d.level === 'sido' ? '대한민국' : d.sido + (d.level === 'sgg' ? '' : ' ' + sggShort(d.sgg));
     $('#pDong').textContent = d.level === 'sido' ? d.sido : d.n; $('#pCode').textContent = ({ sido: '시/도 ', sgg: '시/군/구 ' }[d.level] || '행정동 ') + d.c;

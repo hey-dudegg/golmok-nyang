@@ -13,7 +13,7 @@ import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, underShelterP
 //  · 욕구·감정은 시각의 함수. 교감으로 생기는 변화(츄르 먹은 시각 등)는 일정에 쓰지 않고 표시용 상태에만 반영한다.
 export const CLOCK = { SLOT: 30000, BLOCK_SLOTS: 20, DEPTH: 3 };
 CLOCK.BLOCK = CLOCK.SLOT * CLOCK.BLOCK_SLOTS;
-export const PASSIVE_KEYS = new Set(['sit', 'loaf', 'nap', 'sideNap', 'belly', 'groom', 'stretch', 'yawn', 'watch', 'hoodLoaf', 'underHide', 'wallLoaf', 'crateSit']);
+export const PASSIVE_KEYS = new Set(['sit', 'loaf', 'nap', 'sideNap', 'belly', 'groom', 'stretch', 'yawn', 'watch', 'hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff']);
 export const NEED_DEFS = [['sleep', '졸림'], ['hunger', '배고픔'], ['play', '놀고 싶음'], ['social', '관심이 고픔']];
 export const EMO_DEFS = [['calm', '편안'], ['happy', '기쁨'], ['playful', '장난'], ['curious', '호기심'], ['wary', '경계'], ['scared', '겁'], ['grumpy', '짜증'], ['lonely', '외로움']];
 // 감정이 행동 점수를 얼마나 밀어 주는지 (감정 0.5가 기준)
@@ -22,6 +22,7 @@ export const EMO_BIAS = {
   groom: { calm: 0.4 }, wander: { curious: 0.7 }, hunt: { playful: 0.9 }, zoom: { playful: 1, scared: -0.6 }, watch: { curious: 0.6, lonely: 0.6, wary: 0.3 },
   hissAt: { grumpy: 0.9, wary: 0.5 }, greet: { happy: 0.4, lonely: 0.5 },
   wallLoaf: { curious: 0.6, calm: 0.4, scared: -0.7 }, hoodLoaf: { calm: 0.6, happy: 0.3, wary: -0.6, scared: -0.9 }, underHide: { scared: 1.0, wary: 0.8, calm: -0.2, playful: -0.4 }, crateSit: { calm: 0.4, playful: 0.3 }, // 오브젝트 행동 (M3-6)
+  giftPeek: { curious: 0.6, playful: 0.3 }, giftSniff: { curious: 0.8 }, // 선물 상자 (M6-5)
 };
 export function vnoise(seed, ms, periodMs) { // 시각에 따라 천천히 변하는 0~1 값 (칸 사이는 부드럽게 이음)
   const c = Math.floor(ms / periodMs), f = ms / periodMs - c;
@@ -36,6 +37,7 @@ export function circadian(hour) { // 한낮·새벽에 졸림이 높고 해질�
 export function createClock(store) {
   return {
   cache: new Map(),
+  giftSrc: null, // () => { placed, until, spot, id } | null. 지금 장면의 선물 상자(app/props_app 가 넣는다). 없으면 선물 행동 없음 (M6-5, D-19: 입력은 시각뿐)
   wxSrc: null, // (cat, ms) => { wx: { kind, amt }, theme } | null. 날씨 연결(app/weather_ui)이 넣는다. 없으면 날씨 반영 없음 (M3-f)
   state(cat, ms, recent, personal, wx) {
     const p = cat.g.personality, id = cat.id, kitten = cat.g.months < 6;
@@ -71,7 +73,11 @@ export function createClock(store) {
   ctx(cat, ms, st) { // 점수 함수(ACTIONS[k].score)가 읽는 모양으로 맞춘 계산용 대역
     const { alt } = sunPosition(new Date(ms), cat.geo.lat, cat.geo.lng), deg = alt * 180 / Math.PI;
     return { p: cat.g.personality, kitten: cat.g.months < 6, cat, E: 1 - st.needs.sleep, B: st.needs.play,
-      world: { night: deg < -3 ? 1 : 0, day: smooth(clamp((deg + 4) / 14, 0, 1)) }, nearestCat: () => null, mom: () => null };
+      world: { night: deg < -3 ? 1 : 0, day: smooth(clamp((deg + 4) / 14, 0, 1)), gift: this.giftAt(ms) }, nearestCat: () => null, mom: () => null };
+  },
+  giftAt(ms) { // 그 시각에 상자가 있나(placed <= ms < until, 결정 시점 기준). age: 놓인 뒤 ms, first: 놓인 뒤 이 고양이의 첫 결정
+    const g = this.giftSrc && this.giftSrc();
+    return g && ms >= g.placed && ms < g.until ? { placed: g.placed, until: g.until, spot: g.spot, id: g.id, age: ms - g.placed, first: !!this._gfirst } : null;
   },
   weights(cat, ms, st, recent, wx) { // 행동 후보와 점수 (잡음 전). recent: 최근 행동 키, 최신이 앞
     const c = this.ctx(cat, ms, st), out = [];
@@ -94,8 +100,8 @@ export function createClock(store) {
     return l.map((x) => ({ ...x, p: x.w / sum }));
   },
   block(cat, b, depth = CLOCK.DEPTH) { // 10분 구간 b의 일정. depth만큼 앞 구간을 이어 반복 방지에 쓴다
-    const src = this.wxSrc, ws = src ? src(cat, b * CLOCK.BLOCK) : null, wx = ws && ws.wx && ws.wx.kind !== 'clear' ? ws.wx : null; // 한 구간(10분)은 한 정시 안이라 날씨가 같다
-    const ck = cat.id + '|' + b + '|' + depth + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme + (PROPS.on && propSlots('underHide').length ? 'u' : '') : '');
+    const gs = this.giftSrc && this.giftSrc(), src = this.wxSrc, ws = src ? src(cat, b * CLOCK.BLOCK) : null, wx = ws && ws.wx && ws.wx.kind !== 'clear' ? ws.wx : null; // 한 구간(10분)은 한 정시 안이라 날씨가 같다
+    const ck = cat.id + '|' + b + '|' + depth + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme + (PROPS.on && propSlots('underHide').length ? 'u' : '') : '') + (gs ? '|g' + gs.placed + ':' + gs.until + ':' + gs.id : '');
     const hit = this.cache.get(ck); if (hit) return hit;
     if (this.cache.size > 400) this.cache.clear();
     const prev = depth > 0 ? this.block(cat, b - 1, depth - 1) : [];
@@ -106,7 +112,9 @@ export function createClock(store) {
       const n = rs.pick([1, 2, 3, 4]); // 30~120초 (D-40)
       const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
       const st = this.state(cat, t, recent, false, wx);
+      const lastE = out.length ? out[out.length - 1] : prev[prev.length - 1]; this._gfirst = !!(gs && lastE && lastE.t0 < gs.placed); // 상자가 놓인 뒤 첫 결정
       const cand = this.weights(cat, t, st, recent, wx).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
+      this._gfirst = false;
       const key = cand.length ? rs.weighted(cand) : 'sit';
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
       if (wx && needShelter(wx) && SHELTER[ws.theme] && PASSIVE_KEYS.has(key) && !PROP_ACTION_KEYS.has(key) && shelterChance(wx, cat.id, slot)) { // 비 피할 자리 (4-1): 앞 칸과 같은 자리는 피한다

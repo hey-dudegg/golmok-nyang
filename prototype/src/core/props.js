@@ -1,6 +1,7 @@
 // core/props.js: 오브젝트(자동차) 정의·배치·지점 좌표·점유 (M3-6 O1, 설계 docs/design/오브젝트_상호작용_설계.md 2장)
 // core 규칙: three·DOM 없음. 기능 스위치(PROPS.on)는 개발 중 꺼짐 (D-120): 꺼져 있으면 배치는 항상 빈 배열이라 기존 화면·행동이 그대로다.
 import { makeRng } from './util.js';
+import { BOUNDS } from './behavior.js';
 
 // ── 차 크기 상수 (D-128: 소형 세단 비율. 전체 길이 3.0m 유지, 보닛 0.85 + 캐빈 1.3 + 트렁크 0.85. 이 값만 바꾸면 지점이 따라간다) ──
 export const CAR_HOOD_LEN = 0.85; // 보닛 길이(m). 성체 몸길이 약 0.4m 가 엎드려 앞유리 앞에 들어간다
@@ -35,11 +36,11 @@ PROP_KINDS.crate = { label: '종이 상자', size: { l: CRATE.l, w: CRATE.w, h: 
   slots: [
     { id: 'in', mode: 'in', action: 'crateSit', pos: [0, 0.0], y: 0, poses: ['sit', 'loaf'], cap: 1, rest: 'sit', approach: [0, CRATE.w / 2 + 0.17], shade: 0.2, warm: 0.4, tag: 'hide' },
   ] };
-export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit']);
+export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff']);
 export const PROP_COOLDOWN = 90; // 같은 고양이·같은 지점 재진입 쿨다운(초, 4A-2)
 
 // 전역 상태: 지금 장면의 배치와 점유 (장면은 한 번에 하나라 모듈 단위로 둔다. 순수 상태라 node 시험 가능)
-export const PROPS = { on: false, layout: [], force: null, claims: new Map() };
+export const PROPS = { on: false, layout: [], force: null, claims: new Map(), boxSrc: null }; // boxSrc: () => 지금 보는 지역의 상자|null (app 이 state/box 를 연결, 층 규칙상 render 는 state 를 못 본다)
 
 const rot = (p, lx, lz) => { const c = Math.cos(p.rot || 0), s = Math.sin(p.rot || 0); return [p.x + lx * c + lz * s, p.z - lx * s + lz * c]; };
 // 지점의 월드 좌표: { x, z, y, ax, az(접근점), key, yaw }
@@ -153,6 +154,52 @@ function wallLayout({ theme, code, obstacles, force }) {
   if (f) ({ x, z } = f);
   return [{ id: 'wall0', kind: 'lowwall', x, z, rot: 0, dir: 1 }];
 }
+// 선물 상자 자리 (M6-2, 상자_놓기_설계 5-1): 같은 code·seed 면 모든 화면이 같은 자리(결정적). 기본 화면 안 x -1.2~1.2, z 0~0.8, 통로 0.5m, 접근점은 BOUNDS 안. 20번 시도해 없으면 null
+// obstacles: 점·직사각형 장애물, props: 배치된 오브젝트({ kind, x, z, rot }) 목록
+export const GIFT_BOX = { x0: -1.2, x1: 1.2, z0: 0, z1: 0.8 };
+export const GIFT_GAP = 0.5;
+// 기본 카메라(main.js 와 같은 값: 위치 (0,0.95,3.4), 타깃 = 고양이가 원점일 때 (0,0.24,-0.2), 세로 시야각 36도)에서 상자 8꼭짓점이 화면 안인지 (M6-9). 가장 좁은 화면 390/800 기준으로 자리를 정한다
+export const GIFT_CAM = { pos: [0, 0.95, 3.4], tgt: [0, 0.24, -0.2], fov: 36, aspect: 390 / 800 };
+export function giftInView(x, z, aspect = GIFT_CAM.aspect) {
+  const P = GIFT_CAM.pos, T = GIFT_CAM.tgt, th = Math.tan(GIFT_CAM.fov * Math.PI / 360);
+  const f = [T[0] - P[0], T[1] - P[1], T[2] - P[2]], fl = Math.hypot(...f); for (let i = 0; i < 3; i++) f[i] /= fl;
+  let rx = -f[2], rz = f[0]; const rl = Math.hypot(rx, rz); rx /= rl; rz /= rl; // right = f × up(0,1,0), 수평
+  const up = [-rz * f[1], rz * f[0] - rx * f[2], rx * f[1]]; // right × f
+  for (const dx of [-CRATE.l / 2, CRATE.l / 2]) for (const dz of [-CRATE.w / 2, CRATE.w / 2]) for (const y of [0, CRATE.h]) {
+    const d = [x + dx - P[0], y - P[1], z + dz - P[2]], dep = d[0] * f[0] + d[1] * f[1] + d[2] * f[2];
+    if (dep <= 0.05) return false;
+    if (Math.abs((d[0] * rx + d[2] * rz) / dep / (th * aspect)) > 1 || Math.abs((d[0] * up[0] + d[1] * up[1] + d[2] * up[2]) / dep / th) > 1) return false;
+  }
+  return true;
+}
+// 이 z 에서 상자 중심이 화면 안에 들 수 있는 |x| 최댓값 (이분법, 최대 GIFT_BOX.x1). 안 되면 -1
+export function giftXMax(z, aspect = GIFT_CAM.aspect) {
+  if (!giftInView(0, z, aspect)) return -1;
+  let lo = 0, hi = GIFT_BOX.x1; if (giftInView(hi, z, aspect)) return hi;
+  for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (giftInView(m, z, aspect)) lo = m; else hi = m; }
+  return lo;
+}
+// 단계별 찾기: 첫 단계(통로 0.5m, z 0~0.8)가 우선이고, 자리가 없으면 더 먼 쪽(z -0.5~) → 통로 0.3m → 오브젝트 최소 간격 순 (M6-9)
+const GIFT_STAGES = [{ z0: 0, z1: 0.8, gap: GIFT_GAP }, { z0: -0.5, z1: 0.8, gap: GIFT_GAP }, { z0: -0.5, z1: 0.8, gap: 0.3 }, { z0: -0.5, z1: 0.8, gap: OBJ_GAP }];
+export function giftSpot({ code, seed, obstacles = [], props = [] }) {
+  const kind = PROP_KINDS.crate, r = makeRng('gift:' + code + ':' + seed);
+  const obs = [...obstacles, ...props.filter((p) => p && footOf(p.kind)).map((p) => ({ ...footOf(p.kind), x: p.x, z: p.z, rot: p.rot || 0 }))];
+  for (const st of GIFT_STAGES) for (let i = 0; i < 20; i++) {
+    const z = r.range(st.z0, st.z1), xm = giftXMax(z);
+    if (xm < 0) continue;
+    const x = r.range(-xm, xm), az = z + kind.slots[0].approach[1];
+    if (az > BOUNDS.z1 || x < BOUNDS.x0 || x > BOUNDS.x1) continue;
+    if (isFree({ hx: kind.hx, hz: kind.hz, rot: 0, x, z }, obs, st.gap)) return { kind: 'crate', look: 'gift', x, z, rot: 0, seed };
+  }
+  return null;
+}
+// 상자 한 개(Box.get() 모양)를 이 장면의 오브젝트로: 자리가 없으면 null (패널 문구로만 존재). id 'gift0', 행동 배수는 GIFT
+export const GIFT = { mult: 2.5, multNew: 4, newMs: 15 * 60000, id: 'gift0' }; // crateSit 배수(처음 15분은 4)
+export function giftWorld(box, code, obstacles = [], props = []) {
+  if (!box || !Number.isFinite(box.until)) return null;
+  const s = giftSpot({ code, seed: box.seed, obstacles, props });
+  return s && { ...s, id: GIFT.id, placed: box.placed, until: box.until, boxId: box.id };
+}
 // 장면을 지을 때 부른다: 스위치가 꺼져 있으면 항상 빈 배열
 export function propsEnter(theme, code, obstacles) {
   PROPS.claims.clear();
@@ -162,13 +209,14 @@ export function propsEnter(theme, code, obstacles) {
 // 행동 키에 맞는 지점들 (월드 좌표 포함)
 export function propSlots(action) {
   const out = [];
-  for (const p of PROPS.layout) for (const s of PROP_KINDS[p.kind].slots) if (s.action === action) out.push(slotWorld(p, s));
+  for (const p of PROPS.layout) if (!p.gone) for (const s of PROP_KINDS[p.kind].slots) if (s.action === action) out.push(slotWorld(p, s)); // 사라지는 중(gone)인 오브젝트는 새로 고르지 않는다
   return out;
 }
 // 세계 시계 일정의 자리: 지점 접근점 (스위치 꺼짐·지점 없음이면 null)
 export function propHome(action) {
   if (!PROPS.on || !PROP_ACTION_KEYS.has(action)) return null;
-  const s = propSlots(action)[0];
+  const gift = action === 'giftPeek' || action === 'giftSniff'; // 선물 상자 행동은 상자 지점(crateSit)의 gift 쪽 접근점에서 시작
+  const s = propSlots(gift ? 'crateSit' : action).filter((q) => !gift || q.prop.look === 'gift')[0];
   return s ? { x: s.ax, z: s.az } : null;
 }
 // 점유 (cap 은 지점 정의, O1 은 모두 1)

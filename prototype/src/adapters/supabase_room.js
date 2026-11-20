@@ -2,6 +2,7 @@
 // room: 채널 하나 gn:site(비공개). Presence 로 사람 수(지역 코드만 싣는다 - uid·닉네임 없음), 홍보 수신은 같은 채널의 broadcast 'promo'.
 // lock: 클라이언트는 broadcast 를 보낼 수 없다. rpc promo_claim 이 서버에서 판정하고 이긴 경우에만 서버가 내보낸다.
 // client 는 인자로 받아 시험에서 가짜를 넣는다. 보이는 동안만 접속한다(60초 넘게 숨겨지면 해제, 다시 보이면 재가입).
+import { validateBoxPayload } from '../core/box.js';
 const TOPIC = 'gn:site';
 
 // opts(시험용): { doc, hideMs, id, setTimer, clearTimer }
@@ -21,6 +22,10 @@ export function createRoom(client, opts = {}) {
     ch = c;
     c.on('presence', { event: 'sync' }, () => { if (ch === c) notify(); });
     c.on('broadcast', { event: 'promo' }, (m) => { if (ch === c) for (const f of handlers) { try { f('promo', m && m.payload, null); } catch (e) {} } });
+    c.on('broadcast', { event: 'box' }, (m) => { // 나쁜 페이로드는 버린다(설계 3장)
+      const p = validateBoxPayload(m && m.payload); if (!p || ch !== c) return;
+      for (const f of handlers) { try { f('box', p, null); } catch (e) {} }
+    });
     c.subscribe((status) => {
       if (ch !== c) return;
       const was = live; live = status === 'SUBSCRIBED';

@@ -30,10 +30,10 @@ run('m02c (홍보 잠금)', async () => {
   // 저장 지역: ?r= 로 열면 그 지역을 보여 주되 저장된 지역은 바꾸지 않는다
   const C = await open(b, '?still=30&pr=0.4', { width: 800, height: 600, errs, settle: 1500 });
   await C.evaluate(() => localStorage.setItem('golmok:region', JSON.stringify('11')));
-  await C.goto(url('?r=26&still=30&pr=0.4'), { waitUntil: 'load' }); await wait(2500);
+  await C.goto(url('?r=26&still=30&pr=0.4'), { waitUntil: 'load' }); await C.waitForFunction(() => window.__app && window.__app.dong, { timeout: 20000 * SLOW });
   const r26 = [await C.evaluate(() => window.__app.dong.c), await C.evaluate(() => localStorage.getItem('golmok:region'))];
   console.log('?r=26 shows', r26[0], 'stored', r26[1]);
-  await C.goto(url('?still=30&pr=0.4'), { waitUntil: 'load' }); await wait(2500);
+  await C.goto(url('?still=30&pr=0.4'), { waitUntil: 'load' }); await C.waitForFunction(() => window.__app && window.__app.dong, { timeout: 20000 * SLOW });
   const plain = [await C.evaluate(() => window.__app.dong.c), await C.evaluate(() => localStorage.getItem('golmok:region'))];
   console.log('plain reload', plain[0], 'stored', plain[1]);
   console.log(`잠금 ${pass}/${gaps.length} 통과`, 'ERR', JSON.stringify(errs));
