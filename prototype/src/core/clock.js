@@ -4,7 +4,7 @@
 import { clamp, lerp, smooth, hashStr, makeRng } from './util.js';
 import { DAY, sunPosition } from './time.js';
 import { ACTIONS } from './behavior.js';
-import { PROPS, PROP_ACTION_KEYS, propHome, propSlots } from './props.js';
+import { PROPS, PROP_ACTION_KEYS, TOWER_KEYS, propHome, propSlots } from './props.js';
 import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, underShelterPick, wxBias } from './weather_rules.js';
 // ───────────────────────── 세계 시계 (D-19) ─────────────────────────
 // 서버 없이 시각만으로 고양이의 하루를 계산한다. 같은 (고양이 id, 시각)이면 누가 언제 들어와도 같은 행동·같은 자리 근처가 나온다.
@@ -23,6 +23,7 @@ export const EMO_BIAS = {
   hissAt: { grumpy: 0.9, wary: 0.5 }, greet: { happy: 0.4, lonely: 0.5 },
   wallLoaf: { curious: 0.6, calm: 0.4, scared: -0.7 }, hoodLoaf: { calm: 0.6, happy: 0.3, wary: -0.6, scared: -0.9 }, underHide: { scared: 1.0, wary: 0.8, calm: -0.2, playful: -0.4 }, crateSit: { calm: 0.4, playful: 0.3 }, // 오브젝트 행동 (M3-6)
   giftPeek: { curious: 0.6, playful: 0.3 }, giftSniff: { curious: 0.8 }, // 선물 상자 (M6-5)
+  towerLookout: { curious: 0.6, wary: 0.3, calm: 0.2, scared: -0.8 }, towerLie: { calm: 0.5, happy: 0.3, scared: -0.7 }, towerDen: { scared: 0.9, wary: 0.6, calm: 0.2, playful: -0.4 }, // 캣타워 (M8-1)
 };
 export function vnoise(seed, ms, periodMs) { // 시각에 따라 천천히 변하는 0~1 값 (칸 사이는 부드럽게 이음)
   const c = Math.floor(ms / periodMs), f = ms / periodMs - c;
@@ -83,6 +84,7 @@ export function createClock(store) {
     const c = this.ctx(cat, ms, st), out = [];
     for (const [k, A] of Object.entries(ACTIONS)) {
       if (k === 'followMom' && !cat.mother) continue;
+      if (TOWER_KEYS.has(k) && recent.some((x) => TOWER_KEYS.has(x))) continue; // 캣타워 묶음: 최근 3개 중 하나만 (M8-1)
       if (PROP_ACTION_KEYS.has(k) && recent.includes(k)) continue; // 지점 재진입 쿨다운·사슬 반복 금지 (4A-2, 일정도 같은 규칙)
       let s = A.score(c, c.world);
       const ri = recent.indexOf(k);
@@ -113,8 +115,8 @@ export function createClock(store) {
       const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
       const st = this.state(cat, t, recent, false, wx);
       const lastE = out.length ? out[out.length - 1] : prev[prev.length - 1]; this._gfirst = !!(gs && lastE && lastE.t0 < gs.placed); // 상자가 놓인 뒤 첫 결정
-      const cand = this.weights(cat, t, st, recent, wx).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
-      this._gfirst = false;
+      const cand = this.weights(cat, t, st, recent, wx).filter((x) => out.length >= 2 || !TOWER_KEYS.has(x.key)).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
+      this._gfirst = false; // 위 filter: 구간 첫 2칸은 tower 금지 (M8-6). prev는 depth-1 일정이라 실제 앞 구간과 다를 수 있어, 경계 너머 묶음 반복을 이력 없이 막는다
       const key = cand.length ? rs.weighted(cand) : 'sit';
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
       if (wx && needShelter(wx) && SHELTER[ws.theme] && PASSIVE_KEYS.has(key) && !PROP_ACTION_KEYS.has(key) && shelterChance(wx, cat.id, slot)) { // 비 피할 자리 (4-1): 앞 칸과 같은 자리는 피한다

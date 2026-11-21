@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CAR, CRATE, PROP_KINDS, PROPS, WALL, giftWorld, propsEnter } from '../core/props.js';
 import { makeRng } from '../core/util.js';
 import { wallTex } from './scene_themes.js';
+import { buildTower } from './props_tower.js';
 
 export function buildCar(p, std) {
   const g = new THREE.Group(), d = p.dir || 1, { l, w, bottom, hoodY, roofY } = CAR;
@@ -84,13 +85,15 @@ export function giftPop(g, dir, done) {
 }
 // 그룹이 쓴 지오메트리·재질을 해제 (텍스처 없는 재질만. 상자는 색 재질뿐)
 export function disposeGroup(g) { if (g.userData.pop) clearInterval(g.userData.pop); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && !Array.isArray(o.material)) o.material.dispose(); }); }
-const BUILDERS = { car: buildCar, lowwall: buildLowWall, crate: buildCrate };
+const BUILDERS = { car: buildCar, lowwall: buildLowWall, crate: buildCrate, tower: buildTower };
 
 // 장면에 오브젝트를 놓는다. 스위치가 꺼져 있으면 아무것도 하지 않는다. 충돌용 사각형을 S.obstacles 에 더한다
 export function buildPropsFor(S, E, theme, dong, std) {
-  const layout = propsEnter(theme, dong.c, S.obstacles);
+  const narrow = typeof innerWidth !== 'undefined' && innerWidth <= 720;
+  const layout = propsEnter(theme, dong.c, S.obstacles); // 배치는 기기와 무관 (D-131)
   for (const p of layout) {
-    const g = BUILDERS[p.kind](p, std, { S, dong }); g.userData.propId = p.id; E.add(g);
+    if (!BUILDERS[p.kind]) continue; // 그리는 법을 모르는 종류는 건너뜀 (충돌 사각형도 안 넣음)
+    const g = BUILDERS[p.kind](p, std, { S, dong, narrow }); g.userData.propId = p.id; E.add(g);
     const K = PROP_KINDS[p.kind];
     S.obstacles.push({ id: p.id, x: p.x, z: p.z, hx: K.hx, hz: K.hz, rot: p.rot || 0 });
   }

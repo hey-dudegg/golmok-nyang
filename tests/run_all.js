@@ -4,6 +4,7 @@
 const path = require('path');
 const { spawn } = require('child_process');
 const { startServer } = require('./lib/static_server');
+const { cleanup } = require('./lib/cleanup');
 
 const ALL = [
   ['syntax', 'check_syntax.js'],
@@ -22,6 +23,7 @@ const ALL = [
   ['props', 'props.js'],
   ['props_b', 'props_b.js'],
   ['props_gift', 'props_gift.js'],
+  ['props_tower', 'props_tower.js'],
   ['compare', 'compare.js'],
   ['core', 'core_ref.js'],
 ];
@@ -42,6 +44,7 @@ function run(argv, env) { // 비동기 실행(서버가 같은 프로세스에�
 }
 const rows = [];
 async function main() {
+  await cleanup(); // 남은 시험 서버·브라우저 정리 (M8-4)
   let server = null;
   const env = { ...process.env };
   if (!env.BASE_URL) { server = await startServer(); env.BASE_URL = server.baseUrl; console.log('# 시험 서버', server.baseUrl); } // D-61

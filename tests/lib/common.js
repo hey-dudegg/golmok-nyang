@@ -36,13 +36,18 @@ function chromePath() {
   return hit;
 }
 
-function launch() {
-  return puppeteer.launch({
+// 시험이 close 를 못 한 채 끝나도 브라우저를 남기지 않는다 (M8-4)
+const opened = new Set();
+process.on('exit', () => { for (const b of opened) { try { b.process() && b.process().kill('SIGKILL'); } catch (e) { /* 무시 */ } } });
+async function launch() {
+  const b = await puppeteer.launch({
     executablePath: chromePath(),
     headless: process.env.HEADLESS === '0' ? false : 'new',
     args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'],
     protocolTimeout: 180000 * SLOW,
   });
+  opened.add(b); b.on('disconnected', () => opened.delete(b));
+  return b;
 }
 
 // 콘솔 오류·페이지 오류 모으기. 404(파비콘 등)는 뺀다.

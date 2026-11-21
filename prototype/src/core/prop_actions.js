@@ -3,7 +3,7 @@
 // 4A 규칙: 접근점까지 걸어서 간다 / 높이(a.y) 변화는 도약(a.hop) 뿐 / 반응은 그 자리에서 / 쿨다운 90초 / 최근 3개 행동 반복 금지.
 import { ACTIONS, REACTIONS, STEP } from './behavior.js';
 import { REACT_META } from './touch_rules.js';
-import { CRATE, GIFT, PROP_ACTION_KEYS, PROP_COOLDOWN, propClaim, propOccupant, propRelease, propSlots } from './props.js';
+import { CRATE, GIFT, PROP_ACTION_KEYS, PROP_COOLDOWN, PROP_KINDS, TOWER_KEYS, propClaim, propOccupant, propRelease, propSlots, slotWorld } from './props.js';
 import { clamp, damp, lerp } from './util.js';
 
 export const HOP = { slow: 1, speed: 0.7, fastSpeed: 1.0 }; // slow: 어드민 "느리게 보기" 배수(1=보통, 4=4배 느리게)
@@ -17,6 +17,8 @@ export function pickSlot(a, action, opt) {
   const all = propSlots(action).filter((s) => s.prop.look !== 'gift' || g), list = g ? [...all.filter((s) => s.prop.look === 'gift'), ...all.filter((s) => s.prop.look !== 'gift')] : all;
   for (const s of list) {
     if (opt && opt.gift && s.prop.look !== 'gift') continue;
+    if (TOWER_KEYS.has(key) && m && m.recent.some((k) => TOWER_KEYS.has(k))) continue; // 같은 캣타워 묶음: 최근 3개 행동 안에 하나만 (M8-1, 설계 3.3)
+    if (s.slot.via && s.slot.via.some((v) => propOccupant(s.prop.id + ':' + v))) continue; // 올라갈 단(via)이 차 있으면 못 오른다 (mid 점유 중 top 불가, 3.1)
     if (s.slot.mode === 'on' && a.kitten) continue; // 새끼는 높은 곳(본네트 0.58m·담 0.80m)에 못 오른다
     const occ = propOccupant(s.key); if (occ && occ !== a) continue;
     if (m && ((m.cool[s.key] || 0) > a.time || m.recent.includes(key))) continue;
@@ -66,22 +68,28 @@ function wallTop(S) { const dx = S.x - S.ax, dz = S.z - S.az, d = Math.hypot(dx,
 // 상자 안 꼬리: 세워 올려 벽 위로만 나오게 한다(앉은 몸 뒤로 눕히면 뒷벽 밖으로 샌다)
 const CRATE_TAIL = { tb: 2.0, tc: 0.0, tcs: 0.1 }; // sit 은 엉덩이가 눕는 자세(hp -0.62)라 그만큼 더 세워야 수직에 가깝다
 const CRATE_TAIL_LOAF = { tb: 1.3, tc: 0.05, tcs: 0.1 };
+// 올라갈 때 거치는 단(via)의 월드 좌표 (낮은 단부터). 캣타워 top 은 mid 를 거친다 (M8-2, 설계 3.1)
+const viaWorld = (S) => (S.slot.via || []).map((id) => slotWorld(S.prop, PROP_KINDS[S.prop.kind].slots.find((q) => q.id === id)));
+const hopsIn = (S) => S.slot.mode === 'in' && S.prop.kind === 'crate'; // 상자만 벽을 넘어 들어간다. 캣타워 칸은 입구로 걸어 들어간다
 const lowPose = (S) => (S.slot.mode === 'in' ? 'crouch' : 'hideLow'); // 들어가고 나올 때의 낮은 걸음 자세 (상자 안은 웅크림)
 export const PS = {
   check(S) { return { start(a) { if (Math.hypot(a.x - S.ax, a.z - S.az) > 0.3) abort(a, S.key); }, tick() { return true; } }; },
   // 위(on) 올라가기: 웅크리기 -> 도약 호 -> 착지
   mount(S) { return { start(a) {
-    this.ph = 0; this.t = 0; this.dead = false;
+    this.ph = 0; this.t = 0; this.dead = false; this.i = 0; this.path = [...viaWorld(S), S]; this.wait = 0.4 * HOP.slow;
     if (!propClaim(S.key, a)) { this.dead = true; abort(a, S.key); return; }
     a.slot = { key: S.key, action: S.slot.action, S, state: 'rising' };
-    a.yawTarget = Math.atan2(S.x - a.x, S.z - a.z); a.setPose('crouch', { pupil: 0.9 });
+    a.yawTarget = Math.atan2(this.path[0].x - a.x, this.path[0].z - a.z); a.setPose('crouch', { pupil: 0.9 });
   }, tick(a, dt) {
     if (this.dead) return true;
     if (!a.slot || a.slot.S !== S) return true;
     this.t += dt;
-    if (this.ph === 0 && this.t >= 0.4 * HOP.slow) { this.ph = 1; startHop(a, S.x, S.z, S.y, false, () => { a.slot.state = 'on'; pmOf(a).log.push({ t: a.time, ev: 'mount', key: S.key }); }); }
-    else if (this.ph === 1 && !a.hop) { this.ph = 2; this.t = 0; a.setPose('crouch', { pupil: 0.8 }); a.yawTarget = S.yaw; }
-    else if (this.ph === 2 && this.t >= 0.3) return true;
+    const Q = this.path[this.i], last = this.i === this.path.length - 1;
+    if (this.ph === 0 && this.t >= this.wait) { this.ph = 1; startHop(a, Q.x, Q.z, Q.y, false, last ? () => { a.slot.state = 'on'; pmOf(a).log.push({ t: a.time, ev: 'mount', key: S.key }); } : null); }
+    else if (this.ph === 1 && !a.hop) { this.ph = 2; this.t = 0; a.setPose('crouch', { pupil: 0.8 }); a.yawTarget = last ? S.yaw : Math.atan2(this.path[this.i + 1].x - a.x, this.path[this.i + 1].z - a.z); }
+    else if (this.ph === 2 && this.t >= 0.3) { // 단 사이: 착지 웅크림 뒤 0.3~0.6초 멈췄다가 다음 단으로 (통짜 도약 금지, 3.1)
+      if (last) return true;
+      this.i++; this.ph = 0; this.t = 0; this.wait = a.r.range(0.3, 0.6) * HOP.slow; }
     return false;
   } }; },
   // 아래(under) 들어가기: 접근점에서 낮은 걸음으로 직선 이동 (충돌 무시 층)
@@ -90,11 +98,11 @@ export const PS = {
     this.dead = false; this.ph = 0; this.t = 0;
     if (S.prop.gone || !propClaim(S.key, a)) { this.dead = true; abort(a, S.key); return; } // 사라지는 중인 상자에는 들어가지 않는다 (M6-5)
     a.slot = { key: S.key, action: S.slot.action, S, state: 'entering' }; a.layer = S.prop.id;
-    if (S.slot.mode === 'in') { a.yawTarget = Math.atan2(S.x - a.x, S.z - a.z); a.setPose('crouch', { pupil: 0.9 }); return; }
+    if (hopsIn(S)) { a.yawTarget = Math.atan2(S.x - a.x, S.z - a.z); a.setPose('crouch', { pupil: 0.9 }); return; }
     a.setPose(lowPose(S)); a.moveTo(S.x, S.z, 0.45, { keepPose: true, timeout: 12 });
   }, tick(a, dt) {
     if (this.dead || !a.slot || a.slot.S !== S) return true;
-    if (S.slot.mode === 'in') {
+    if (hopsIn(S)) {
       if (this.ph === 0) { this.t += dt; if (this.t >= 0.4 * HOP.slow) { this.ph = 1; const W = wallTop(S);
         startHop(a, W.x, W.z, CRATE_TOP, false, () => { if (a.slot && a.slot.S === S) startHop(a, S.x, S.z, 0, false, null); }); } return false; }
       if (a.hop) return false;
@@ -107,14 +115,18 @@ export const PS = {
     const sl = a.slot; if (!sl) return true;
     if (a.hop) return false;
     const S = sl.S;
+    if (sl.state === 'rising' && a.y > 0) sl.state = 'on'; // 단 사이에서 멈춘 채 취소: 지금 높이에서 내려간다
     if (sl.state === 'rising') { if (this.ph === 0 && a.y === 0) { leaveDone(a); return true; } return false; } // 올라가기 전에 취소: 아직 지상
     if (sl.state === 'on') {
       this.t += dt;
-      if (this.ph === 0) { a.setPose('crouch', { pupil: 0.9 }); this.ph = 1; this.t = 0; }
-      else if (this.ph === 1 && this.t >= (fast ? 0.1 : 0.4) * HOP.slow) { this.ph = 2; startHop(a, S.ax, S.az, 0, !!fast, () => leaveDone(a)); }
+      if (this.ph === 0) { a.setPose('crouch', { pupil: 0.9 }); this.ph = 1; this.t = 0; this.i = 0; // 단마다 역순 hop. 빠른 내리기·단이 차 있으면(mid 점유) 한 번에 접근점으로 (3.1)
+        this.stops = fast ? [] : viaWorld(S).filter((q) => q.y < a.y - 0.05).reverse().filter((q) => !propOccupant(q.key) || propOccupant(q.key) === a); }
+      else if (this.ph === 1 && this.t >= (fast ? 0.1 : this.i ? 0.3 : 0.4) * HOP.slow) { this.ph = 2; const Q = this.stops[this.i];
+        if (Q) startHop(a, Q.x, Q.z, Q.y, false, () => { this.ph = 1; this.t = 0; this.i++; a.setPose('crouch', { pupil: 0.9 }); });
+        else startHop(a, S.ax, S.az, 0, !!fast, () => leaveDone(a)); }
       return false;
     }
-    if (S.slot.mode === 'in' && sl.state === 'under') { // 상자에서 나오기: 앞벽 위로 도약 -> 벽 밖 접근점으로 내려앉기
+    if (hopsIn(S) && sl.state === 'under') { // 상자에서 나오기: 앞벽 위로 도약 -> 벽 밖 접근점으로 내려앉기
       this.t += dt;
       if (this.ph === 0) { a.setPose('crouch', { pupil: 0.9, ...CRATE_TAIL }); a.yawTarget = Math.atan2(S.ax - a.x, S.az - a.z); this.ph = 1; this.t = 0; }
       else if (this.ph === 1 && this.t >= (fast ? 0.1 : 0.4) * HOP.slow) { this.ph = 2; const W = wallTop(S);
@@ -225,6 +237,33 @@ export const PROP_ACTIONS = {
       if (!P) return [STEP.pose('sit', 2)];
       const { S, ap } = P;
       return [...ap, PS.enter(S), STEP.pose('hideLow', 3), peek(r.range(10, 32)), STEP.pose('hideLow', 2), PS.dismount(false)];
+    } },
+  // 캣타워 (M8-1, 설계 3.2): 새 성격 값 없음(호기심은 장난기 대용). 이동은 기존 mount/enter 그대로, via 연속 hop 은 M8-2 에서 STEP.mount 가 slot.via 로 줄 세운다
+  towerLookout: { label: '캣타워 꼭대기에서 망보는 중',
+    score: (a) => { const S = pickSlot(a, 'towerLookout'); return S ? 0.20 + a.p.bold * 0.5 + a.p.playful * 0.4 + a.world.day * 0.3 : 0; },
+    steps: (a, r) => {
+      const look = (d) => STEP.pose('sit', d, null, (a, t) => { if (Math.floor(t / 8) !== a._lk) { a._lk = Math.floor(t / 8); a.lookRandom(); } if (a.r() < 0.004) a.slowBlink(); }); // 6~10초마다 두리번
+      if (a.slot && a.slot.action === 'towerLookout') return [look(r.range(8, 20)), PS.dismount(false)];
+      const P = pickApproach(a, 'towerLookout');
+      if (!P) return [STEP.pose('sit', 2)];
+      return [...P.ap, PS.mount(P.S), look(r.range(15, 40)), PS.dismount(false)];
+    } },
+  towerLie: { label: '캣타워에서 엎드린 중',
+    score: (a) => { const S = pickSlot(a, 'towerLie'); return S ? 0.25 + a.world.day * 0.4 + S.slot.warm * 0.4 + (1 - a.E) * 0.3 : 0; },
+    steps: (a, r) => {
+      if (a.slot && a.slot.action === 'towerLie') return [STEP.pose('lie', r.range(8, 20), null, lieFx), PS.dismount(false)];
+      const P = pickApproach(a, 'towerLie');
+      if (!P) return [STEP.pose('sit', 2)];
+      return [...P.ap, PS.mount(P.S), STEP.pose('lie', r.range(15, 40), null, lieFx), PS.dismount(false)];
+    } },
+  towerDen: { label: '캣타워 집에 숨은 중', // 새끼도 들어간다(높이 제한 없음)
+    score: (a) => { const S = pickSlot(a, 'towerDen'); return S ? 0.15 + (1 - a.p.bold) * 0.6 + (a.kitten ? 0.5 : 0) + (1 - a.world.day) * 0.3 : 0; },
+    steps: (a, r) => {
+      const peek = (d) => STEP.pose('peek', d, null, (a, t) => { if (Math.floor(t * 0.3) !== a._lk) { a._lk = Math.floor(t * 0.3); a.lookRandom(); } });
+      if (a.slot && a.slot.action === 'towerDen') return [peek(r.range(5, 15)), PS.dismount(false)];
+      const P = pickApproach(a, 'towerDen');
+      if (!P) return [STEP.pose('sit', 2)];
+      return [...P.ap, PS.enter(P.S), STEP.pose('loaf', r.range(10, 30), null, lieFx), peek(r.range(3, 8)), PS.dismount(false)];
     } },
 };
 export function registerPropActions(on) {

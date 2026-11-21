@@ -36,7 +36,16 @@ PROP_KINDS.crate = { label: '종이 상자', size: { l: CRATE.l, w: CRATE.w, h: 
   slots: [
     { id: 'in', mode: 'in', action: 'crateSit', pos: [0, 0.0], y: 0, poses: ['sit', 'loaf'], cap: 1, rest: 'sit', approach: [0, CRATE.w / 2 + 0.17], shade: 0.2, warm: 0.4, tag: 'hide' },
   ] };
-export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff']);
+// 캣타워 (M8-1, 캣타워_설계 1장): 바닥 칸(den) + 칸 지붕 중단(mid 0.36m) + 기둥 위 상단(top 0.72m). 앞(+z)이 카메라 쪽, 세 지점의 접근점은 칸 입구 앞 한 곳.
+export const TOWER = { l: 0.95, w: 0.56, h: 0.75, midY: 0.36, topY: 0.72 };
+PROP_KINDS.tower = { label: '캣타워', size: { l: TOWER.l, w: TOWER.w, h: TOWER.h }, hx: TOWER.l / 2, hz: TOWER.w / 2, themes: ['park', 'alley'],
+  slots: [
+    { id: 'den', mode: 'in', action: 'towerDen', pos: [-0.20, 0.0], y: 0, poses: ['loaf', 'hideLow', 'peek'], cap: 1, rest: 'loaf', clear: 0.30, approach: [-0.20, 0.40], shade: 0.7, warm: 0.6, tag: 'hide' },
+    { id: 'mid', mode: 'on', action: 'towerLie', pos: [-0.20, 0], y: TOWER.midY, poses: ['lie'], cap: 1, inset: 0.10, approach: [-0.20, 0.40], shade: 0, warm: 0.6, tag: 'rest', shadowMax: 0.22 },
+    { id: 'top', mode: 'on', action: 'towerLookout', pos: [0.25, 0], y: TOWER.topY, poses: ['sit', 'lie'], cap: 1, inset: 0.08, via: ['mid'], approach: [-0.20, 0.40], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.18 },
+  ] };
+export const TOWER_KEYS = new Set(['towerDen', 'towerLie', 'towerLookout']); // 같은 오브젝트 묶음: 최근 3개 행동 안에 하나만 (3.3)
+export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff', ...TOWER_KEYS]);
 export const PROP_COOLDOWN = 90; // 같은 고양이·같은 지점 재진입 쿨다운(초, 4A-2)
 
 // 전역 상태: 지금 장면의 배치와 점유 (장면은 한 번에 하나라 모듈 단위로 둔다. 순수 상태라 node 시험 가능)
@@ -85,8 +94,8 @@ export function shapesOverlap(a, b, gap = OBJ_GAP) {
 }
 export const isFree = (me, obstacles, gap = OBJ_GAP) => !obstacles.some((o) => shapesOverlap(me, o, gap));
 // 원하는 자리(x, z)에서 가장 가까운 빈 자리 (결정적: 격자 0.05m, 거리 순·같으면 x 작은 쪽). 범위 밖이거나 없으면 null
-export function nearestFree(me, obstacles, x, z, box = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 0.6 }, step = 0.05, gap = OBJ_GAP) {
-  const t = (px, pz) => isFree({ ...me, x: px, z: pz }, obstacles, gap);
+export function nearestFree(me, obstacles, x, z, box = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 0.6 }, step = 0.05, gap = OBJ_GAP, ok = null) { // ok(px, pz): 추가 조건(없으면 생략)
+  const t = (px, pz) => isFree({ ...me, x: px, z: pz }, obstacles, gap) && (!ok || ok(px, pz));
   if (x >= box.x0 && x <= box.x1 && z >= box.z0 && z <= box.z1 && t(x, z)) return { x, z };
   let best = null, bd = Infinity;
   for (let px = box.x0; px <= box.x1 + 1e-9; px += step) for (let pz = box.z0; pz <= box.z1 + 1e-9; pz += step) {
@@ -104,7 +113,34 @@ export function layoutFor({ theme, code, obstacles = [], force }) {
   for (const w of walls) obs.push({ ...PROP_KINDS.lowwall, x: w.x, z: w.z, rot: w.rot });
   // 상자는 낮은 담 앞 접근점(wallLoaf 지점의 approach) 반경 CRATE_KEEP 안에 두지 않는다 (M5-4). 점 장애물은 원 r + OBJ_GAP 이라 r 에서 간격을 뺀다
   for (const w of walls) for (const s of PROP_KINDS.lowwall.slots) if (s.action === 'wallLoaf') { const q = slotWorld(w, s); obs.push({ x: q.ax, z: q.az, r: CRATE_KEEP - OBJ_GAP }); }
-  return [...cars, ...walls, ...crateLayout({ theme, code, obstacles: obs, force })];
+  const crates = crateLayout({ theme, code, obstacles: obs, force });
+  for (const c of crates) obs.push({ ...PROP_KINDS.crate, x: c.x, z: c.z, rot: c.rot });
+  return [...cars, ...walls, ...crates, ...towerLayout({ theme, code, obstacles: obs, force, cars, walls, crates })];
+}
+// 캣타워 (M8-1, 설계 2장): 맨 끝에 별도 난수로 놓아 기존 차·담·상자 배치는 그대로. 공원 70%, 골목 25%(차 없을 때만), 시장 0. 뒷줄 z -1.3~-0.7, x -1.6~1.6
+// 담 접근점·상자 접근점 둘레 TOWER_KEEP 과 캣타워 자신의 접근점 둘레는 비워 둔다. force.tower = { x, z } 면 그 자리 그대로, 차 고정(force.x·z) 시험은 놓지 않는다
+export const TOWER_KEEP = 0.2;
+const TOWER_BOX = { x0: -1.6, x1: 1.6, z0: -1.3, z1: -0.7 };
+function towerLayout({ theme, code, obstacles, force, cars, walls, crates }) {
+  const kind = PROP_KINDS.tower, r = makeRng('props:tower:' + ((force && force.code) || code));
+  const ft = force && force.tower && typeof force.tower === 'object' ? force.tower : null;
+  if (ft) return [{ id: 'tower0', kind: 'tower', x: ft.x, z: ft.z, rot: 0, dir: 1 }];
+  if (force && force.x !== undefined && force.z !== undefined) return [];
+  if (!kind.themes.includes(theme) || r() >= (theme === 'park' ? 0.7 : 0.25) || (theme === 'alley' && cars.length)) return [];
+  const x = r.range(TOWER_BOX.x0, TOWER_BOX.x1), z = r.range(TOWER_BOX.z0, TOWER_BOX.z1), obs = [...obstacles], keep = { r: TOWER_KEEP - OBJ_GAP };
+  for (const c of crates) for (const s of PROP_KINDS.crate.slots) { const q = slotWorld(c, s); obs.push({ ...keep, x: q.ax, z: q.az }); }
+  const okAp = (px, pz) => { // 자신의 접근점: 무대 안, 둘레 TOWER_KEEP 에 다른 것이 없다
+    const q = slotWorld({ x: px, z: pz, rot: 0, dir: 1 }, kind.slots[0]);
+    return q.ax >= BOUNDS.x0 && q.ax <= BOUNDS.x1 && q.az <= BOUNDS.z1 && isFree({ ...keep, x: q.ax, z: q.az }, obs, OBJ_GAP);
+  };
+  const wc = walls.length ? walls[0].x : 0;
+  // 공원은 담 중심과 반대쪽 반을 먼저 시도
+  const left = { ...TOWER_BOX, x1: 0 }, right = { ...TOWER_BOX, x0: 0 }, order = wc > 0 ? [left, right] : [right, left], tryBoxes = theme === 'park' && walls.length ? [...order, TOWER_BOX] : [TOWER_BOX];
+  for (const box of tryBoxes) {
+    const f = nearestFree({ hx: kind.hx, hz: kind.hz, rot: 0 }, obs, Math.max(box.x0, Math.min(box.x1, x)), z, box, 0.05, OBJ_GAP, okAp);
+    if (f) return [{ id: 'tower0', kind: 'tower', x: f.x, z: f.z, rot: 0, dir: 1 }];
+  }
+  return [];
 }
 // 종이 상자 (M5-2): 차·담과 별도 난수라 기존 배치는 그대로. 골목 1~2, 시장 2~3, 공원 1. 바닥 z -1.2~-0.2 안, 앞 접근점이 무대 안
 // force: 차 위치를 못 박은 시험은 상자를 놓지 않고(force.crate = { x, z } 일 때만 그 자리 그대로), 어드민 다시 배치(code)는 항상 놓는다
@@ -184,6 +220,7 @@ const GIFT_STAGES = [{ z0: 0, z1: 0.8, gap: GIFT_GAP }, { z0: -0.5, z1: 0.8, gap
 export function giftSpot({ code, seed, obstacles = [], props = [] }) {
   const kind = PROP_KINDS.crate, r = makeRng('gift:' + code + ':' + seed);
   const obs = [...obstacles, ...props.filter((p) => p && footOf(p.kind)).map((p) => ({ ...footOf(p.kind), x: p.x, z: p.z, rot: p.rot || 0 }))];
+  for (const p of props) if (p && p.kind === 'tower') { const q = slotWorld(p, PROP_KINDS.tower.slots[0]); obs.push({ x: q.ax, z: q.az, r: TOWER_KEEP - OBJ_GAP }); } // 캣타워 접근점 둘레 0.2m (M8-1)
   for (const st of GIFT_STAGES) for (let i = 0; i < 20; i++) {
     const z = r.range(st.z0, st.z1), xm = giftXMax(z);
     if (xm < 0) continue;
