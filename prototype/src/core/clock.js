@@ -4,6 +4,7 @@
 import { clamp, lerp, smooth, hashStr, makeRng } from './util.js';
 import { DAY, sunPosition } from './time.js';
 import { ACTIONS } from './behavior.js';
+import './explore_actions.js'; // 햇볕·냄새·뺨·꼬리 쫓기를 ACTIONS 에 넣는다 (M12-2)
 import { PROPS, PROP_ACTION_KEYS, TOWER_KEYS, propHome, propSlots } from './props.js';
 import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, underShelterPick, wxBias } from './weather_rules.js';
 // ───────────────────────── 세계 시계 (D-19) ─────────────────────────
@@ -23,6 +24,7 @@ export const EMO_BIAS = {
   hissAt: { grumpy: 0.9, wary: 0.5 }, greet: { happy: 0.4, lonely: 0.5 },
   wallLoaf: { curious: 0.6, calm: 0.4, scared: -0.7 }, hoodLoaf: { calm: 0.6, happy: 0.3, wary: -0.6, scared: -0.9 }, underHide: { scared: 1.0, wary: 0.8, calm: -0.2, playful: -0.4 }, crateSit: { calm: 0.4, playful: 0.3 }, // 오브젝트 행동 (M3-6)
   shake: { playful: 0.3 }, tailFlick: { grumpy: 0.9, curious: 0.4 }, lookUp: { curious: 1.0, calm: 0.2 }, freeze: { scared: 1.2, grumpy: 0.5 }, sneeze: { calm: 0.2 }, // 작은 동작·탐색·경계 (M11-2)
+  sunbathe: { calm: 0.5, happy: 0.3, scared: -0.5 }, sniffProp: { curious: 0.9, scared: -0.5 }, cheekRub: { happy: 0.6, calm: 0.3, wary: -0.5 }, tailChase: { playful: 1.0, happy: 0.3 }, crateNap: { calm: 0.5, scared: 0.3 }, // M12-2
   giftPeek: { curious: 0.6, playful: 0.3 }, giftSniff: { curious: 0.8 }, // 선물 상자 (M6-5)
   towerLookout: { curious: 0.6, wary: 0.3, calm: 0.2, scared: -0.8 }, towerLie: { calm: 0.5, happy: 0.3, scared: -0.7 }, towerDen: { scared: 0.9, wary: 0.6, calm: 0.2, playful: -0.4 }, // 캣타워 (M8-1)
 };
@@ -125,8 +127,10 @@ export function createClock(store) {
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
       if (wx && needShelter(wx) && SHELTER[ws.theme] && PASSIVE_KEYS.has(key) && !PROP_ACTION_KEYS.has(key) && shelterChance(wx, cat.id, slot)) { // 비 피할 자리 (4-1): 앞 칸과 같은 자리는 피한다
         if (PROPS.on && ACTIONS.underHide && propSlots('underHide').length && bOK('underHide') && !recent.includes('underHide') && underShelterPick(cat.id, slot)) { ent.key = 'underHide'; ent.label = ACTIONS.underHide.label; ent.U = 1; out.push(ent); t += n * CLOCK.SLOT; continue; } // 차 밑이 비 피할 자리 (M4-4): 쿨다운(최근 5개 행동에 없을 때)·점유는 지점 규칙, 처마 자리와 한 칸에 하나만
-        const last = out.length ? out[out.length - 1].S : prev.length ? prev[prev.length - 1].S : null;
-        ent.S = { ...pickShelter(ws.theme, cat.id, slot, last && last.th === ws.theme ? last.i : -1), th: ws.theme };
+        const last = out.length ? out[out.length - 1].S : null;
+        let av = last && last.th === ws.theme ? last.i : -1;
+        if (!out.length) { let sl = Math.round((t0 - CLOCK.BLOCK) / CLOCK.SLOT), sL = sl; while (sl < Math.round(t0 / CLOCK.SLOT)) { sL = sl; sl += makeRng('clock:' + cat.id + ':' + sl).pick([1, 2, 3, 4]); } const q = pickShelter(ws.theme, cat.id, sL); av = [q.i, (q.i + 1) % SHELTER[ws.theme].length]; } // 구간 첫 칸: prev는 depth-1 일정이라 실제 앞 칸과 다를 수 있다 -> 앞 구간 끝 칸(이력 무관)이 가질 수 있는 자리 둘을 모두 피한다
+        ent.S = { ...pickShelter(ws.theme, cat.id, slot, av), th: ws.theme };
       }
       out.push(ent);
       t += n * CLOCK.SLOT;

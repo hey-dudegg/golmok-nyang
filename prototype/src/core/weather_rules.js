@@ -68,12 +68,12 @@ export const SHELTER_ROOFS = {
   park: [{ x: -1.7, z: -1.0, w: 1.9, d: 1.5, y: 0.95, tilt: 0.12, col: '#8a5d3a', post: -1.75 }, { x: 1.7, z: -1.0, w: 1.9, d: 1.5, y: 0.95, tilt: 0.12, col: '#8a5d3a', post: -1.75 }],
 };
 export const needShelter = (wx) => !!wx && (wx.kind === 'rain' || wx.kind === 'storm') && wx.amt >= 0.2;
-export function pickShelter(theme, catId, slot, avoid = -1) { // (고양이 id, 칸 번호)로 결정적. avoid: 앞 칸과 같은 자리 번호면 다음 자리로. 자리 없으면 null
+export function pickShelter(theme, catId, slot, avoid = -1) { // (고양이 id, 칸 번호)로 결정적. avoid: 피할 자리 번호(하나 또는 목록)면 다음 자리로. 자리 없으면 null
   const list = SHELTER[theme];
   if (!list || !list.length) return null;
   const r = mulberry32(hashStr(`shelter:${catId}:${slot}`));
   let i = Math.floor(r() * list.length);
-  if (i === avoid && list.length > 1) i = (i + 1) % list.length;
+  const av = [].concat(avoid); for (let j = 0; j < list.length - 1 && av.includes(i); j++) i = (i + 1) % list.length;
   return { x: list[i][0], z: list[i][1], i };
 }
 // 비 올 때 이 칸을 비 피할 자리에서 보낼지 (세기가 셀수록 자주). 결정적

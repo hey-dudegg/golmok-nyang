@@ -206,6 +206,16 @@ export const PROP_ACTIONS = {
       const { S, ap } = P;
       return [...ap, PS.enter(S), STEP.pose('sit', 3, CRATE_TAIL), sit(r.range(10, 35)), PS.dismount(false)];
     } },
+  crateNap: { label: '상자 안에서 자는 중', // 상자 안 잠 (M12-2): crateSit 자리 규칙(pickSlot·쿨다운)을 그대로 따른다. 이미 들어가 있으면 이어서 잔다
+    score: (a) => { const S = a.slot && a.slot.action === 'crateSit' ? { slot: {} } : pickSlot(a, 'crateSit', { as: 'crateNap' }); return S ? 0.08 + (a.kitten ? 0.1 : 0) + (1 - a.E) * 0.3 + (1 - a.world.day) * 0.1 : 0; },
+    steps: (a, r) => {
+      const nap = (d) => [STEP.pose('loaf', 2, CRATE_TAIL_LOAF), STEP.pose(r() < 0.5 ? 'curl' : 'loaf', d, CRATE_TAIL_LOAF, (a, t, dt) => { a.E = Math.min(1, a.E + dt * 0.04); }), STEP.pose('loaf', 1.2, CRATE_TAIL_LOAF)];
+      if (a.slot && a.slot.action === 'crateSit') return [...nap(r.range(15, 35)), PS.dismount(false)];
+      const P = pickApproach(a, 'crateSit', { as: 'crateNap' });
+      if (!P) return [STEP.pose('sit', 2)];
+      const { S, ap } = P;
+      return [...ap, PS.enter(S), STEP.pose('sit', 2, CRATE_TAIL), ...nap(r.range(18, 40)), PS.dismount(false)];
+    } },
   // 선물 상자 (M6-5, 상자_놓기_설계 5-3): 호기심은 성격값이 없어 장난기로 대신한다(감정 편향은 EMO_BIAS curious)
   giftPeek: { label: '상자에서 빼꼼 내다보는 중',
     score: (a) => (pickSlot(a, 'crateSit', { gift: true, as: 'giftPeek' }) ? 0.2 + a.p.playful * 0.6 + (1 - a.p.bold) * 0.4 : 0),

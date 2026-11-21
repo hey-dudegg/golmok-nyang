@@ -45,7 +45,7 @@ PROP_KINDS.tower = { label: '캣타워', size: { l: TOWER.l, w: TOWER.w, h: TOWE
     { id: 'top', mode: 'on', action: 'towerLookout', pos: [0.25, 0], y: TOWER.topY, poses: ['sit', 'lie'], cap: 1, inset: 0.08, via: ['mid'], approach: [-0.20, 0.40], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.18 },
   ] };
 export const TOWER_KEYS = new Set(['towerDen', 'towerLie', 'towerLookout']); // 같은 오브젝트 묶음: 최근 3개 행동 안에 하나만 (3.3)
-export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff', ...TOWER_KEYS]);
+export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'crateNap', 'giftPeek', 'giftSniff', ...TOWER_KEYS]);
 export const PROP_COOLDOWN = 90; // 같은 고양이·같은 지점 재진입 쿨다운(초, 4A-2)
 
 // 전역 상태: 지금 장면의 배치와 점유 (장면은 한 번에 하나라 모듈 단위로 둔다. 순수 상태라 node 시험 가능)
@@ -253,7 +253,7 @@ export function propSlots(action) {
 export function propHome(action) {
   if (!PROPS.on || !PROP_ACTION_KEYS.has(action)) return null;
   const gift = action === 'giftPeek' || action === 'giftSniff'; // 선물 상자 행동은 상자 지점(crateSit)의 gift 쪽 접근점에서 시작
-  const s = propSlots(gift ? 'crateSit' : action).filter((q) => !gift || q.prop.look === 'gift')[0];
+  const s = propSlots(gift || action === 'crateNap' ? 'crateSit' : action).filter((q) => !gift || q.prop.look === 'gift')[0];
   return s ? { x: s.ax, z: s.az } : null;
 }
 // 점유 (cap 은 지점 정의, O1 은 모두 1)
