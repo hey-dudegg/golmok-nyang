@@ -60,6 +60,9 @@ begin
     execute $q$delete from public.box_log where created_at < now() - interval '2 days'$q$;
     get diagnostics n_box = row_count;
   end if;
+  if to_regprocedure('public.rotate_logs()') is not null then   -- 로그 일별 교체·30일 초과 삭제(11_log, 설계 로그_설계 6장). 내부에서 실패를 삼키므로 정리를 막지 않는다
+    perform public.rotate_logs();
+  end if;
   return jsonb_build_object('users', n_users, 'posts', n_posts, 'names', n_names, 'reports', n_reports, 'box', n_box);
 end $$;
 revoke all on function public.daily_cleanup() from public, anon;

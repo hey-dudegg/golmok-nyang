@@ -3,11 +3,12 @@ import { Feedback } from './feedback.js';
 import { LocalMock } from './local_mock.js';
 import { SUPABASE_CONFIG, FEATURES_DEFAULT } from '../config.js';
 import { getCaptchaToken } from './turnstile.js';
+import { createLogger } from './logger.js';
 import { pickSupabaseConfig, loadSupabaseClient, createSupabaseCaps, ensureSession, loadFeatures } from './supabase.js';
 
 // ───────────────────────── 회원 · 저장소 · AI (런타임 기능, 없으면 이 브라우저 안에서 체험) ─────────────────────────
 // mode: 'artifact' | 'supabase' | 'mock' | 'static' (설계 5-1). notice: 화면이 한 번 보여 줄 안내(연결 실패 등, 없으면 '')
-export const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false, room: null, lock: null, box: null, mode: 'static', notice: '', features: { ...FEATURES_DEFAULT }, feedback: Feedback }; // feedback: 의견 보내기(R-16). 전송 방법은 어댑터 안에서 고른다
+export const Caps = { user: null, db: null, sample: null, downloads: null, uid: null, ready: false, shared: false, sampleOff: false, writeOff: false, mock: false, room: null, lock: null, box: null, log: createLogger('mock'), mode: 'static', notice: '', features: { ...FEATURES_DEFAULT }, feedback: Feedback }; // feedback: 의견 보내기(R-16). 전송 방법은 어댑터 안에서 고른다
 export const SUPABASE_FAIL_NOTICE = '지금은 서버에 연결되지 않아 이 기기에만 저장돼요';
 
 // opts 는 시험용: { win, hostname, cfg, loadClient }
@@ -25,6 +26,7 @@ export async function initCaps(opts = {}) {
         const c = createSupabaseCaps(client, sb, features);
         Object.assign(Caps, { user: c.user, db: c.db, room: c.room, lock: c.lock, box: c.box });
         Caps.features = c.features; Caps.shared = !!Caps.db;
+        Caps.log = createLogger('supabase', { client, anonId: Caps.uid }); // 실전 로그 전송(L-3). 실패는 조용히 무시
       } catch (e) { // 못 받았거나 로그인·첫 읽기 실패: 이 브라우저 체험 모드로 (설계 5-2)
         console.warn('[supabase] 연결 실패', e?.message || e); // 원인만 남김(키·uid 없음)
         Caps.mode = 'static'; Caps.uid = null; Caps.user = null; Caps.db = null; Caps.shared = false; Caps.features = { ...FEATURES_DEFAULT }; Caps.notice = SUPABASE_FAIL_NOTICE;

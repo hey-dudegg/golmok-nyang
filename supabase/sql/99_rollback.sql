@@ -3,6 +3,21 @@
 -- 주의: members·bonds·posts·names2·app_config·admins 등의 데이터가 모두 사라진다. 익명·회원 계정(auth.users)은 지우지 않는다.
 --       버킷 captures 와 그 파일은 SQL 로 지울 수 없다(저장소가 막음). 필요하면 대시보드 Storage 에서 지운다.
 
+-- 11_log (맨 앞의 맨 앞): 로그 함수·표(일일 교체 표 log_all_yymmdd·log_err_yymmdd 포함)·소금 표 삭제
+do $log$
+declare r record;
+begin
+  for r in select tablename from pg_catalog.pg_tables where schemaname = 'public' and tablename ~ '^log_(all|err)_[0-9]{6}$' loop
+    execute format('drop table if exists public.%I', r.tablename);
+  end loop;
+end $log$;
+drop function if exists public.rotate_logs();
+drop function if exists public.log_write(jsonb);
+drop function if exists public.gn_log_mask(text);
+drop function if exists public.gn_log_make_tables();
+drop table if exists public.log_all;
+drop table if exists public.log_err;
+drop table if exists public.log_salt;
 -- 10_box (맨 앞): 상자 함수·표 삭제. reports 의 box 신고를 지우고 kind 제약을 05 모양으로 되돌린다(reports 는 아래에서 다시 지워지지만 부분 되돌리기 대비).
 do $box$
 begin

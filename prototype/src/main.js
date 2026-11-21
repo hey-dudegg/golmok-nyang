@@ -338,6 +338,11 @@ class App {
 // 나눈 부분(놀러가기·교감)을 App 에 붙인다. 메서드 속성(열거 안 됨)을 그대로 옮겨 class 안에 있던 것과 같게 한다
 for (const Part of [AppVisit, AppInteract, AppProps]) for (const k of Object.getOwnPropertyNames(Part.prototype)) if (k !== 'constructor') Object.defineProperty(App.prototype, k, Object.getOwnPropertyDescriptor(Part.prototype, k));
 Recipes.notify = (msg) => toast(msg);
+// 전역 오류 → 로그(L-3). 이 경로가 다시 던져도 앱은 멈추지 않는다. 메시지·파일명은 logger가 마스킹, 글·id는 싣지 않는다
+const logErr = (code, msg, ctx) => { try { Caps.log.error('client', code, msg, ctx); } catch (e) {} };
+window.addEventListener('error', (e) => logErr('js_error', e && e.message, { file: e && e.filename ? String(e.filename).split('/').pop().split('?')[0] : undefined }));
+window.addEventListener('unhandledrejection', (e) => logErr('js_error', 'unhandled: ' + ((e && e.reason && e.reason.message) || (e && e.reason) || '')));
+if (isTestHost(location.hostname)) window.__log = { buffer: () => Caps.log.buffer(), clear: () => Caps.log.clear(), error: logErr }; // 시험용 모의 버퍼 읽기
 const app = new App();
 if (isTestHost(location.hostname)) { window.__app = app; if (new URLSearchParams(location.search).has('admin')) { window.__trips = Trips; window.__TRIP = TRIP; window.__inter = { Names, NAME_RULE, dongPopulation, resolveRule, ruleReaction, REACT_META, THOUGHTS, EMO_POL, TOUCH_TYPES, touchType, petPolarityWeights, makeGenome, makeRng, REACTIONS, makePersonality }; window.__recipe = { validateRecipe, parseRecipeText, Recipes, RecipeStore, recipePrompt, RV, RLIM, RECIPE_SAMPLES, ACTIONS, Clock, STEP }; window.__pose = { CatView, makeGenome, makeRng, POSES, poseTarget, catDims, buildRig, applyPose, GROUND_SINK }; window.__lm = { LandmarkData, landmarkFor, landmarkLabel, VIEW_MODES }; } // 시험용 노출은 ?admin일 때만
 window.__advance = (n) => { TEST.still = (app.frames || 0) + n; window.__still = false; app.last = performance.now(); requestAnimationFrame((t) => app.frame(t)); }; }
