@@ -2,7 +2,7 @@
 // 사용: node tests/find_cat.js   (스크린샷: tests/out/find_*.png)
 const fs = require('fs');
 const path = require('path');
-const { launch, open, run, wait, OUT } = require('./lib/common');
+const { launch, open, run, wait, OUT, SLOW } = require('./lib/common');
 
 run('find_cat (고양이 찾기)', async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -10,6 +10,7 @@ run('find_cat (고양이 찾기)', async () => {
   const t = (name, ok, info = '') => { res.push(ok); console.log((ok ? 'ok   ' : 'FAIL ') + name + (info ? '  ' + info : '')); };
   for (const [w, h] of [[390, 800], [1280, 800]]) {
     const p = await open(b, '?pr=0.5&shells=6', { width: w, height: h, errs, settle: 2500 });
+    await p.waitForFunction(() => window.__app && window.__app.agents && window.__app.agents.some((x) => !x.hidden), { timeout: 20000 * SLOW }); // 느린 환경: 고정 settle 뒤 고양이가 아직 없을 수 있음
     const frames = (n) => p.evaluate((k) => new Promise((ok) => { const f0 = window.__app.frames; const q = () => (window.__app.frames >= f0 + k ? ok() : setTimeout(q, 50)); q(); }), n); // 느린 환경 대비: 시간 대신 프레임으로 기다린다
     const vis = () => p.evaluate(() => { const e = document.querySelector('#findCat'); return !!e && !e.hidden && getComputedStyle(e).display !== 'none'; });
     await p.evaluate(() => { const a = window.__app, S = a.s; a.selected = null; const c = a.agents.find((x) => !x.hidden); const d = S.camera.position.clone().sub(S.controls.target); S.controls.target.set(c.x, 0.2, c.z); S.camera.position.copy(S.controls.target).add(d); });

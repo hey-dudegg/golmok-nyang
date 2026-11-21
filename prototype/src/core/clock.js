@@ -109,18 +109,21 @@ export function createClock(store) {
     const prev = depth > 0 ? this.block(cat, b - 1, depth - 1) : [];
     const t0 = b * CLOCK.BLOCK, end = t0 + CLOCK.BLOCK, out = [];
     let t = t0;
+    const tl = []; for (let u = t0; u < end; ) { const sl = Math.round(u / CLOCK.SLOT); tl.push(sl); u += makeRng('clock:' + cat.id + ':' + sl).pick([1, 2, 3, 4]) * CLOCK.SLOT; } // 칸 나눔은 이력과 무관 -> 이 구간의 행동 수를 미리 안다
+    const hb = (k, bb) => hashStr(cat.id + '|' + (TOWER_KEYS.has(k) ? 'tower' : k) + '|' + bb) % 6; // 경계 bb에서 지점 행동 k가 막히는 이 구간 첫 칸 수 h (앞 구간은 끝 5-h칸)
+    const bOK = (k) => out.length >= hb(k, b) && tl.length - out.length > 5 - hb(k, b + 1); // 경계 양쪽 거리 합이 6 이상 -> 최근 5개 쿨다운이 앞 구간 실제 일정과 무관하게 지켜진다 (M9-1)
     while (t < end) {
       const slot = Math.round(t / CLOCK.SLOT), rs = makeRng('clock:' + cat.id + ':' + slot);
       const n = rs.pick([1, 2, 3, 4]); // 30~120초 (D-40)
       const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
       const st = this.state(cat, t, recent, false, wx);
       const lastE = out.length ? out[out.length - 1] : prev[prev.length - 1]; this._gfirst = !!(gs && lastE && lastE.t0 < gs.placed); // 상자가 놓인 뒤 첫 결정
-      const cand = this.weights(cat, t, st, recent, wx).filter((x) => out.length >= 2 || !TOWER_KEYS.has(x.key)).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
-      this._gfirst = false; // 위 filter: 구간 첫 2칸은 tower 금지 (M8-6). prev는 depth-1 일정이라 실제 앞 구간과 다를 수 있어, 경계 너머 묶음 반복을 이력 없이 막는다
+      const cand = this.weights(cat, t, st, recent, wx).filter((x) => !PROP_ACTION_KEYS.has(x.key) || bOK(x.key)).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
+      this._gfirst = false; // 위 filter bOK: prev는 depth-1 일정이라 실제 앞 구간과 달라, 경계 너머 지점 쿨다운·tower 묶음을 이력 없이 막는다 (M8-6 -> M9-1)
       const key = cand.length ? rs.weighted(cand) : 'sit';
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
       if (wx && needShelter(wx) && SHELTER[ws.theme] && PASSIVE_KEYS.has(key) && !PROP_ACTION_KEYS.has(key) && shelterChance(wx, cat.id, slot)) { // 비 피할 자리 (4-1): 앞 칸과 같은 자리는 피한다
-        if (PROPS.on && ACTIONS.underHide && propSlots('underHide').length && !recent.includes('underHide') && underShelterPick(cat.id, slot)) { ent.key = 'underHide'; ent.label = ACTIONS.underHide.label; ent.U = 1; out.push(ent); t += n * CLOCK.SLOT; continue; } // 차 밑이 비 피할 자리 (M4-4): 쿨다운(최근 5개 행동에 없을 때)·점유는 지점 규칙, 처마 자리와 한 칸에 하나만
+        if (PROPS.on && ACTIONS.underHide && propSlots('underHide').length && bOK('underHide') && !recent.includes('underHide') && underShelterPick(cat.id, slot)) { ent.key = 'underHide'; ent.label = ACTIONS.underHide.label; ent.U = 1; out.push(ent); t += n * CLOCK.SLOT; continue; } // 차 밑이 비 피할 자리 (M4-4): 쿨다운(최근 5개 행동에 없을 때)·점유는 지점 규칙, 처마 자리와 한 칸에 하나만
         const last = out.length ? out[out.length - 1].S : prev.length ? prev[prev.length - 1].S : null;
         ent.S = { ...pickShelter(ws.theme, cat.id, slot, last && last.th === ws.theme ? last.i : -1), th: ws.theme };
       }

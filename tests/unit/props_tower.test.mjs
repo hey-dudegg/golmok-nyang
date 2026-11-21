@@ -85,6 +85,26 @@ test('M8-6 세계 시계: 구간(10분) 경계를 넘어서도 최근 3개 안 t
   assert.ok(towers > 50, 'tower 행동 ' + towers);
 }));
 
+test('M9-1 세계 시계: 구간 경계를 넘어서도 지점 행동 재진입 쿨다운(최근 5개)·tower 묶음 지킴 (결정적)', () => withProps(() => {
+  const lay = [], seen = new Set();
+  for (const th of ['park', 'alley', 'market', 'residential']) for (let i = 0; i < 300; i++) for (const p of layoutFor({ theme: th, code: th + i, obstacles: [] })) if (!seen.has(p.kind)) { seen.add(p.kind); lay.push(p); }
+  PROPS.layout = lay; registerPropActions(true);
+  let props = 0;
+  for (let c = 0; c < 20; c++) {
+    const Clock = createClock({ get: (k, d) => d, set() {} }), cat = { id: 'mz' + c, mother: null, g: { ...makeGenome(makeRng('mz' + c), { sex: c % 2 ? 'f' : 'm', months: 30 }) }, geo: { lat: 37.5, lng: 127 } };
+    cat.g.personality = makePersonality(makeRng('pz' + c), false);
+    const b0 = Math.floor(Date.UTC(2026, 9, 10, 0, 0) / CLOCK.BLOCK), L = [];
+    for (let b = b0; b < b0 + 24; b++) for (const e of Clock.block(cat, b)) L.push(e.key);
+    for (let i = 0; i < L.length; i++) {
+      const k = L[i], r = L.slice(Math.max(0, i - 5), i); if (!PROP_ACTION_KEYS.has(k)) continue; props++;
+      assert.ok(!r.includes(k) && !(TOWER_KEYS.has(k) && r.some((x) => TOWER_KEYS.has(x))), cat.id + ': ' + [...r, k].join(' > '));
+    }
+    Clock.cache.clear(); const again = []; for (let b = b0 + 23; b >= b0; b--) again.unshift(...Clock.block(cat, b).map((e) => e.key));
+    assert.deepEqual(again, L, '역순 계산해도 같은 일정');
+  }
+  assert.ok(props > 500, '지점 행동 ' + props);
+}));
+
 // M8-8: 자연 배치 4개 이하. layoutFor는 화면 폭을 입력으로 받지 않아 기기와 무관하게 같은 배치 (D-131, D-19)
 test('모든 지역 코드 자연 배치 4개 이하', async () => {
   const { readFileSync } = await import('node:fs');
