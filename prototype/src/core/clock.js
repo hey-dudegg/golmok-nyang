@@ -13,7 +13,7 @@ import { SHELTER, WX_EMO, needShelter, pickShelter, shelterChance, underShelterP
 //  · 욕구·감정은 시각의 함수. 교감으로 생기는 변화(츄르 먹은 시각 등)는 일정에 쓰지 않고 표시용 상태에만 반영한다.
 export const CLOCK = { SLOT: 30000, BLOCK_SLOTS: 20, DEPTH: 3 };
 CLOCK.BLOCK = CLOCK.SLOT * CLOCK.BLOCK_SLOTS;
-export const PASSIVE_KEYS = new Set(['sit', 'loaf', 'nap', 'sideNap', 'belly', 'groom', 'stretch', 'yawn', 'watch', 'hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff']);
+export const PASSIVE_KEYS = new Set(['sit', 'loaf', 'nap', 'sideNap', 'belly', 'groom', 'stretch', 'yawn', 'sneeze', 'tailFlick', 'lookUp', 'watch', 'hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'giftPeek', 'giftSniff']);
 export const NEED_DEFS = [['sleep', '졸림'], ['hunger', '배고픔'], ['play', '놀고 싶음'], ['social', '관심이 고픔']];
 export const EMO_DEFS = [['calm', '편안'], ['happy', '기쁨'], ['playful', '장난'], ['curious', '호기심'], ['wary', '경계'], ['scared', '겁'], ['grumpy', '짜증'], ['lonely', '외로움']];
 // 감정이 행동 점수를 얼마나 밀어 주는지 (감정 0.5가 기준)
@@ -22,6 +22,7 @@ export const EMO_BIAS = {
   groom: { calm: 0.4 }, wander: { curious: 0.7 }, hunt: { playful: 0.9 }, zoom: { playful: 1, scared: -0.6 }, watch: { curious: 0.6, lonely: 0.6, wary: 0.3 },
   hissAt: { grumpy: 0.9, wary: 0.5 }, greet: { happy: 0.4, lonely: 0.5 },
   wallLoaf: { curious: 0.6, calm: 0.4, scared: -0.7 }, hoodLoaf: { calm: 0.6, happy: 0.3, wary: -0.6, scared: -0.9 }, underHide: { scared: 1.0, wary: 0.8, calm: -0.2, playful: -0.4 }, crateSit: { calm: 0.4, playful: 0.3 }, // 오브젝트 행동 (M3-6)
+  shake: { playful: 0.3 }, tailFlick: { grumpy: 0.9, curious: 0.4 }, lookUp: { curious: 1.0, calm: 0.2 }, freeze: { scared: 1.2, grumpy: 0.5 }, sneeze: { calm: 0.2 }, // 작은 동작·탐색·경계 (M11-2)
   giftPeek: { curious: 0.6, playful: 0.3 }, giftSniff: { curious: 0.8 }, // 선물 상자 (M6-5)
   towerLookout: { curious: 0.6, wary: 0.3, calm: 0.2, scared: -0.8 }, towerLie: { calm: 0.5, happy: 0.3, scared: -0.7 }, towerDen: { scared: 0.9, wary: 0.6, calm: 0.2, playful: -0.4 }, // 캣타워 (M8-1)
 };
