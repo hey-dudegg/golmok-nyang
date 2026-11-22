@@ -1,5 +1,6 @@
 // 어드민 패널 (R-15, 설계 9장)
 import { ACTIONS, REACTIONS } from '../core/behavior.js';
+import { PROP_ACTIONS, pickSlot } from '../core/prop_actions.js';
 import { CLOCK, EMO_DEFS, NEED_DEFS } from '../core/clock.js';
 import { fmtKST } from '../core/format.js';
 import { TRAITS } from '../core/genome.js';
@@ -22,6 +23,8 @@ import { buildPropsSection } from './props_admin.js';
 import { renderRanking } from './names_panel.js';
 import { buildRecipeSection } from './recipe_panel.js';
 import { Live, Promo } from './together.js';
+// 어드민 행동 버튼: 오브젝트 행동을 지금 실행할 수 있는지 (이어 가기 또는 점수>0, giftSniff 는 '처음 15분' 조건 없이 선물 상자 자리만 본다, R-24)
+const propReady = (a, k) => { const A = PROP_ACTIONS[k]; if (a.slot && (a.slot.action === k || (A.stay && A.stay(a)))) return true; return k === 'giftSniff' ? !!pickSlot(a, 'crateSit', { gift: true, as: k }) : A.score(a) > 0; };
 
 // ───────────────────────── 어드민 (R-15, 설계 9장) ─────────────────────────
 // 주소 뒤에 ?admin. 소유자만 열린다 (로컬에서는 모의 어댑터가 소유자로 취급, D-21). 가입 없이 모든 기능을 쓴다 (D-16).
@@ -59,6 +62,7 @@ export const AdminPanel = {
     const rep = h('input', { type: 'checkbox', id: 'adRep' });
     const playBtn = (k, label) => h('button', { type: 'button', class: 'btn ghost adbtn', title: k, text: label, onclick: () => {
       const a = self.agent(); if (!a) return;
+      if (PROP_ACTIONS[k] && !propReady(a, k)) { toast(k.startsWith('gift') ? '선물 상자가 없거나 쉬는 중이라 실행할 수 없어요 (오브젝트: 선물 상자 놓기)' : '쓸 수 있는 자리가 없어 실행할 수 없어요 (상자 없음·쿨다운·최근 행동)'); return; } // 그냥 앉는 대체 동작 대신 알림 (R-24)
       a.repeatKey = rep.checked ? k : null; a.play(k); self.refresh();
     } });
     const resume = h('button', { type: 'button', class: 'btn', text: '일정으로 복귀', onclick: () => { const a = self.agent(); if (a) { a.resumeSchedule(); self.refresh(); } } });

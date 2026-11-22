@@ -15,9 +15,10 @@ const mix = (a, b, t) => a + (b - a) * t;
 // from(현재 값)에서 to(목표)로 가는 단계들. [{T, hold}] — 마지막 단계의 T 는 to 그 자체(같은 객체)
 export function planPose(from, to) {
   const d = bodyDelta(from, to);
+  if (to.sink) return planSink(from, to, d);
   if (d <= ROT_LIMIT) return [{ T: to, hold: 0 }];
-  const n = Math.ceil(d / ROT_LIMIT), hold = Math.max(STAGE_MIN, (d / n) / 1.2);
   const fold = LOW(from) !== LOW(to) || LOW(to); // 눕는 자세가 낀 전환은 다리를 접은 채 몸을 돌린다
+  const n = Math.max(Math.ceil(d / ROT_LIMIT), fold ? Math.ceil(tailDelta(from, to) / TAIL_LIMIT) : 1), hold = Math.max(STAGE_MIN, (d / n) / 1.2); // 접는 전환은 꼬리 변화량으로도 단계 수(M19-8)
   const out = [];
   if (fold && !LOW(from)) out.push({ T: { ...from, ...TUCK, plant: 'none' }, hold: FOLD_HOLD });
   for (let k = 1; k < n; k++) {
@@ -26,6 +27,22 @@ export function planPose(from, to) {
     // 꼬리도 몸 회전에 맞춰 나눈다(먼저 목표로 튀면 엉덩이 기울기와 어긋나 상자 벽 밖으로 샌다)
     if (fold) { Object.assign(s, TUCK); s.plant = 'none'; s.h = mix(from.h, to.h, t); for (const key of TAIL_KEYS) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); } else { for (const key of Object.keys(to)) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); }
     out.push({ T: s, hold });
+  }
+  out.push({ T: to, hold: 0 });
+  return out;
+}
+
+// E1 가라앉기 전환: 다리를 접지 않고 발을 디딘 채 전 키를 섞어 내려간다. 앉음에서 오면 뒷다리 4키는 처음부터 목표값
+const HIND_KEYS = ['hls', 'hlk', 'hrs', 'hrk'];
+const TAIL_LIMIT = 0.55; // 가라앉기 한 단계에서 꼬리 키가 움직이는 상한(라디안). 꼬리 변화가 크면 단계 수를 늘린다
+function tailDelta(a, b) { let m = 0; for (const k of TAIL_KEYS) if (typeof a[k] === 'number' && typeof b[k] === 'number') m = Math.max(m, Math.abs(a[k] - b[k])); return m; }
+function planSink(from, to, d) {
+  const n = Math.max(2, Math.ceil(d / ROT_LIMIT), Math.ceil(tailDelta(from, to) / TAIL_LIMIT)), hold = Math.max(STAGE_MIN, (d / n) / 1.2), out = [];
+  for (let k = 1; k < n; k++) {
+    const t = k / n, s = { ...to };
+    for (const key of Object.keys(to)) if (typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t);
+    if (from.plant === 'sit') for (const key of HIND_KEYS) if (typeof to[key] === 'number') s[key] = to[key];
+    s.plant = 'min'; out.push({ T: s, hold });
   }
   out.push({ T: to, hold: 0 });
   return out;
@@ -41,7 +58,7 @@ export function blendPose(P, T, keys, dt, fast, damp) {
 export class PoseQueue {
   constructor(P) { this.P = P; this.T = { ...P }; this.goal = this.T; this.q = []; this.wait = 0; }
   set(to) {
-    const st = planPose(this.P, to);
+    const st = planPose({ ...this.P, plant: this.goal.plant }, to); // E3: P.plant 는 안 바뀌므로 직전 목표의 plant 를 쓴다
     this.goal = to; this.T = st[0].T; this.wait = st[0].hold; this.q = st.slice(1);
   }
   tick(dt) {

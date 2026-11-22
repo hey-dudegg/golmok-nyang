@@ -89,3 +89,22 @@ test('planPose 중간 단계: 비눕기는 첫 단계가 변화량의 절반 이
   }
   assert.ok(plain > 0 && fold > 0, `시험 대상 plain=${plain} fold=${fold}`);
 });
+
+// M19-2a 공유 엔진 E1(sink)·E2(STEP.track)·E4(walk back)
+test('E1 sink: TUCK 없이 단계 2개 이상, 중간은 plant min, 앉음에서 뒷다리는 처음부터 목표값', () => {
+  const a = poseTarget(DIMS[0], 'sit'), b = { ...poseTarget(DIMS[0], 'loaf'), sink: true };
+  const st = planPose(a, b);
+  assert.ok(st.length >= 2 && st[st.length - 1].T === b);
+  for (const s of st.slice(0, -1)) { assert.equal(s.T.plant, 'min'); for (const k of ['hls', 'hlk', 'hrs', 'hrk']) assert.equal(s.T[k], b[k]); assert.notEqual(s.T.fle, -2.5); }
+});
+test('E2 STEP.track: 구간 smoothstep 보간·period 반복', async () => {
+  const { STEP } = await import('../../prototype/src/core/behavior.js');
+  const a = { ov: {}, setPose() {} }, s = STEP.track('sit', 5, null, { hdp: [[0, 0], [1, 1]] }, { period: 2 });
+  s.start(a); s.tick(a, 0.5); assert.ok(Math.abs(a.ov.hdp - 0.5) < 1e-9);
+  s.tick(a, 0.5); assert.equal(a.ov.hdp, 1);
+  s.tick(a, 1.5); assert.ok(Math.abs(a.ov.hdp - 0.5) < 1e-9); // t=2.5 -> 0.5 (반복)
+});
+test('E4 walk back: 몸 방향(yawTarget) 유지', async () => {
+  const src = (await import('node:fs')).readFileSync(new URL('../../prototype/src/sim/agent.js', import.meta.url), 'utf8');
+  assert.ok(/!M\.crab && !M\.back/.test(src) && /move\.stride/.test(src));
+});

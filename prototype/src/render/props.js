@@ -19,7 +19,7 @@ export function buildCar(p, std) {
     for (let i = 0; i < q.count; i++) { const t = q.getY(i) / h + 0.5; q.setXYZ(i, q.getX(i) * (bl + (tl - bl) * t), q.getY(i), q.getZ(i) * (bw + (tw - bw) * t)); }
     geo.computeVertexNormals(); return geo; };
   add(F(cabLen - 0.04, roofLen + 0.02, w * 0.9, w * 0.66, ch), glass, cx, hoodY + ch / 2, 0); // 그린하우스(창): 앞유리·뒷유리·옆창이 모두 기운다 (D-128)
-  add(F(roofLen + 0.06, roofLen - 0.02, w * 0.68, w * 0.62, 0.05), body, cx, roofY - 0.025, 0); // 지붕판
+  add(F(roofLen + 0.06, roofLen - 0.02, w * 0.68, w * 0.62, 0.05), body, cx, roofY - 0.02, 0); // 지붕판 (윗면을 창 윗면보다 5mm 올려 같은 높이 겹침(z-fighting) 깜빡임을 없앤다, R-24)
   add(F(cabLen - 0.5, roofLen + 0.04, w * 0.9, w * 0.66, 0.05), body, cx, hoodY + 0.025, 0); // 벨트라인(창 아래 띠)
   add(B(0.08, 0.1, w + 0.02), dark, l / 2 + 0.02, bottom + 0.08, 0); // 앞 범퍼
   add(B(0.08, 0.1, w + 0.02), dark, -l / 2 - 0.02, bottom + 0.08, 0); // 뒤 범퍼

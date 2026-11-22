@@ -81,7 +81,7 @@ export class CatAgent {
     const st = Clock.stateAt(this.cat, entry.t0, false);
     this.E = 1 - st.needs.sleep; this.B = st.needs.play;
     this.action = entry.key; this.lastAction = entry.key;
-    const keep = !!this.slot && this.slot.action === entry.key; // 반응 뒤 같은 지점 행동을 이어 감(내려왔다 다시 오르지 않는다)
+    const keep = !!this.slot && (this.slot.action === entry.key || !!(A.stay && A.stay(this))); // stay: runAction 과 같은 조건(R-24). 반응 뒤 같은 지점 행동을 이어 감(내려왔다 다시 오르지 않는다)
     this.steps = keep ? [] : leaveSteps(this, false); this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0; this.jump = null;
     const walk = !keep && (this.steps.length > 0 || Math.hypot(H.x - this.x, H.z - this.z) > 0.15);
     this.label = walk ? '골목 산책 중' : A.label;
@@ -165,7 +165,7 @@ export class CatAgent {
   runAction(k, isReaction) {
     const A = isReaction ? REACTIONS[k] : ACTIONS[k];
     this.action = k; this.lastAction = k; this.label = A.label; this.isReaction = !!isReaction;
-    const keep = !isReaction && this.slot && this.slot.action === k;
+    const keep = !isReaction && this.slot && (this.slot.action === k || !!(A.stay && A.stay(this))); // stay: 다른 키로 같은 자리를 이어 가는 행동(crateNap·giftPeek, R-24)
     this.steps = [...(keep ? [] : leaveSteps(this, false)), ...A.steps(this, this.r)]; if (!isReaction) noteAct(this, k);
     this.step = null; this.move = null; this.arrived = true; this.lookAtYou = 0;
     this.world.onLabel && this.world.onLabel(this);
@@ -219,10 +219,10 @@ export class CatAgent {
       const dx = M.x - this.x, dz = M.z - this.z, dist = Math.hypot(dx, dz);
       if (dist < 0.05) { this.arrived = true; }
       else {
-        if (!M.crab) this.yawTarget = Math.atan2(dx, dz);
+        if (!M.crab && !M.back) this.yawTarget = Math.atan2(dx, dz);
         const err = Math.abs(angDiff(this.yaw, this.yawTarget));
         const base = 0.26 * (0.65 + 0.35 * this.scale) * M.speed;
-        speedNow = M.crab ? base : base * clamp(1.2 - err, 0, 1);
+        speedNow = M.crab || M.back ? base : base * clamp(1.2 - err, 0, 1);
         const step = Math.min(dist, speedNow * dt);
         let nx = this.x + (dx / dist) * step, nz = this.z + (dz / dist) * step;
         const pushed = this.world.resolve(this, nx, nz);
@@ -235,7 +235,7 @@ export class CatAgent {
     this.gaitAmt = damp(this.gaitAmt, speedNow > 0.01 ? 1 : 0, 10, dt);
     this.runAmt = damp(this.runAmt, runK, 6, dt);
     const stride = 0.2 * this.scale * (1 + this.runAmt * 0.8);
-    this.gait += (speedNow * dt) / stride;
+    this.gait += (speedNow * dt) / (stride * (this.move && this.move.stride || 1)) * (this.move && this.move.back && !this.arrived ? -1 : 1);
     this.yaw = dampAngle(this.yaw, this.yawTarget, this.move && !this.arrived ? 7 : 4, dt);
     // 다른 고양이와 겹침 방지 (멈춰 있을 때 살살 밀기)
     // 자세 보간
