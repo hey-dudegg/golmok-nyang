@@ -7,6 +7,8 @@
 ## 로컬 확인 (CLAUDE.md에서 옮김, T7)
 - 저장소 루트에서 `node tests/lib/static_server.js` → http://127.0.0.1:8000/prototype/ (포트는 인자로 지정, 기본 8000, Ctrl+C로 종료. Node만 있으면 되고 별도 설치는 없다.)
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
+- 촬영 도구(M15-1): `tests/lib/capture.js`의 `fixCamera(page,{target,dist,yaw,pitch})`(앱 루프가 덮어쓰지 못하게 controls.update를 갈아 끼움, target 생략 시 마스코트 따라가기)·`hidePanels(page)`(어드민·명단 숨김)·`shoot(page,경로)`(직접 그려 저장; `?still=N`이어도 됨). `app.s.controls`만 바꾸면 앱 루프가 덮어쓰고 still이면 다시 그려지지도 않는다.
+- 촬영 때 고양이는 `a.update()` 후 `a.v.root.position`을 기준으로 잡는다(a.x와 어긋날 수 있음). 자동차 등 정적 소품이 시야를 막으면 yaw·pitch를 바꾼다.
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
 - 자세 전환 확인판(M4-6): `prototype/pose_check.html`(localhost만). 모든 전환을 격자로 반복 재생, 칸마다 몸 회전 최대 속도(도/초) 표시.
