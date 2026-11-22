@@ -10,7 +10,10 @@ run('props_tower (캣타워 TC1~TC5·T1~T8·기기 폭 일정)', async () => {
   for (const w of [1280, 390]) {
     const p0 = await open(b, Q, { width: w, height: 800, errs, settle: 2000 }); sched[w] = {};
     for (const hh of ['28', '31', '43', '47']) { // 28 공원(탑 없음)·31·43 공원 탑·47 골목 탑
-      await p0.evaluate((q) => { location.hash = '#' + q; }, hh); await new Promise((r) => setTimeout(r, 700));
+      await p0.evaluate((q) => { location.hash = '#' + q; }, hh);
+      // 지역 전환 완료를 조건으로 기다림(고정 700ms 대체, M13-3b): 현재 지역 코드 일치 + 고양이·씬 준비, 제한 5초
+      await p0.waitForFunction((q) => { const a = window.__app; return !!(a && a.dong && String(a.dong.c) === q && a.mascot && a.mascot.cat && a.s && a.s.env); }, { timeout: 5000 }, hh);
+      await new Promise((r) => setTimeout(r, 200));
       for (const mode of ['natural', 'forced']) sched[w][hh + mode] = await p0.evaluate((mode) => { const app = window.__app, X = window.__props;
         app.propsSet(true, mode === 'forced' ? { x: -2.5, z: 0.9, dir: 1, tower: { x: 0, z: -1.0 } } : undefined); X.Clock.cache.clear();
         const t0 = Date.UTC(2026, 9, 10, 0, 0), L = X.Clock.between(app.mascot.cat, t0, t0 + 86400000);

@@ -1,7 +1,7 @@
 // core/props.js: 오브젝트(자동차) 정의·배치·지점 좌표·점유 (M3-6 O1, 설계 docs/design/오브젝트_상호작용_설계.md 2장)
 // core 규칙: three·DOM 없음. 기능 스위치(PROPS.on)는 개발 중 꺼짐 (D-120): 꺼져 있으면 배치는 항상 빈 배열이라 기존 화면·행동이 그대로다.
 import { makeRng } from './util.js';
-import { BOUNDS } from './behavior.js';
+import { BOUNDS, LOOK } from './behavior.js';
 
 // ── 차 크기 상수 (D-128: 소형 세단 비율. 전체 길이 3.0m 유지, 보닛 0.85 + 캐빈 1.3 + 트렁크 0.85. 이 값만 바꾸면 지점이 따라간다) ──
 export const CAR_HOOD_LEN = 0.85; // 보닛 길이(m). 성체 몸길이 약 0.4m 가 엎드려 앞유리 앞에 들어간다
@@ -40,7 +40,7 @@ PROP_KINDS.crate = { label: '종이 상자', size: { l: CRATE.l, w: CRATE.w, h: 
 export const TOWER = { l: 0.95, w: 0.56, h: 0.75, midY: 0.36, topY: 0.72 };
 PROP_KINDS.tower = { label: '캣타워', size: { l: TOWER.l, w: TOWER.w, h: TOWER.h }, hx: TOWER.l / 2, hz: TOWER.w / 2, themes: ['park', 'alley'],
   slots: [
-    { id: 'den', mode: 'in', action: 'towerDen', pos: [-0.20, 0.0], y: 0, poses: ['loaf', 'hideLow', 'peek'], cap: 1, rest: 'loaf', clear: 0.30, approach: [-0.20, 0.40], shade: 0.7, warm: 0.6, tag: 'hide' },
+    { id: 'den', mode: 'in', action: 'towerDen', pos: [-0.20, -0.04], y: 0, poses: ['loaf', 'hideLow', 'peek'], cap: 1, rest: 'loaf', clear: 0.30, approach: [-0.20, 0.40], shade: 0.7, warm: 0.6, tag: 'hide' },
     { id: 'mid', mode: 'on', action: 'towerLie', pos: [-0.20, 0], y: TOWER.midY, poses: ['lie'], cap: 1, inset: 0.10, approach: [-0.20, 0.40], shade: 0, warm: 0.6, tag: 'rest', shadowMax: 0.22 },
     { id: 'top', mode: 'on', action: 'towerLookout', pos: [0.25, 0], y: TOWER.topY, poses: ['sit', 'lie'], cap: 1, inset: 0.08, via: ['mid'], approach: [-0.20, 0.40], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.18 },
   ] };
@@ -243,6 +243,11 @@ export function propsEnter(theme, code, obstacles) {
   PROPS.layout = PROPS.on ? layoutFor({ theme, code, obstacles, force: PROPS.force }) : [];
   return PROPS.layout;
 }
+LOOK.tower = (x, z) => { // lookUp 방향: 켜진 캣타워가 2.5m 안이면 그쪽 yaw (M13-1)
+  if (!PROPS.on) return null;
+  const s = propSlots('towerLookout')[0]; if (!s || Math.hypot(s.x - x, s.z - z) > 2.5) return null;
+  return Math.atan2(s.x - x, s.z - z);
+};
 // 행동 키에 맞는 지점들 (월드 좌표 포함)
 export function propSlots(action) {
   const out = [];

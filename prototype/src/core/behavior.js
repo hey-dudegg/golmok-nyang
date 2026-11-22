@@ -2,6 +2,7 @@
 // 표의 함수는 넘겨받은 고양이(CatAgent) 객체만 다룬다. 레시피(R-14)가 ACTIONS 에 rcp_* 행동을 더하고 지운다(같은 객체를 공유).
 import { angDiff } from './util.js';
 // 고양이가 다닐 수 있는 무대 범위(장면 좌표, m). 원래 50_scene 구역에 있던 값 (D-33 단계 3)
+export const LOOK = { tower: null }; // props.js가 넣는 훅: (x, z) => 가까운 켜진 캣타워 쪽 yaw | null (M13-1, 순환 import 피함)
 export const BOUNDS = { x0: -2.55, x1: 2.55, z0: -1.55, z1: 1.2 };
 // ───────────────────────── 행동 엔진 (효용 기반) ─────────────────────────
 export const STEP = {
@@ -51,7 +52,7 @@ export const ACTIONS = {
   shake: { label: '몸 털기', score: (a) => 0.1 + a.p.playful * 0.05, steps: (a, r) => [STEP.pose('stand', 0.4), STEP.pose('stand', r.range(0.6, 0.9), null, (a, t) => { const k = Math.min(1, t / 0.1) * Math.max(0, 1 - t / 0.9); a.ov.hy = Math.sin(t * 42) * 0.11 * k; a.ov.hr = Math.sin(t * 42 + 1.2) * 0.05 * k; a.ov.hdy = Math.sin(t * 42 + 2) * 0.12 * k; }), STEP.pose('stand', 0.8)] },
   tailFlick: { label: '꼬리 탁탁', score: (a) => (a.kitten ? 0 : 0.08 + a.p.grumpy * 0.1), steps: (a, r) => [STEP.pose(r.chance(0.5) ? 'sit' : 'loaf', r.range(2.5, 4), null, (a, t) => { const k = Math.min(1, t / 0.3); a.ov.tw = 0.32 * k; a.ov.twf = 4.6 * k; })] },
   sneeze: { label: '재채기', score: (a) => 0.03, steps: (a, r) => [STEP.pose(r.chance(0.6) ? 'sit' : 'stand', 0.7), STEP.pose('sit', 0.4, { eye: 0.03 }, (a, t) => { const s = Math.sin(Math.min(1, t / 0.3) * Math.PI); a.ov.hdp = 0.35 * s; a.ov.mouth = 0.5 * s; }), STEP.call((a) => a.say('에취!')), STEP.pose('sit', 1.4)] },
-  lookUp: { label: '높은 곳 올려다보기', score: (a) => 0.1 + a.p.bold * 0.05, steps: (a, r) => [STEP.face(Math.PI + r.range(-0.4, 0.4)), STEP.pose('sit', 0.6), STEP.pose('alert', r.range(2.5, 4.5), { np: 0.1, hdp: 0.3 }, (a, t) => { a.ov.hdp = -0.5 * Math.min(1, t / 0.5); a.ov.hdr = Math.sin(t * 1.3) * 0.08; }), STEP.pose('sit', 1)] },
+  lookUp: { label: '높은 곳 올려다보기', score: (a) => 0.1 + a.p.bold * 0.05, steps: (a, r) => [STEP.face(((LOOK.tower && LOOK.tower(a.x, a.z)) ?? Math.PI) + r.range(-0.4, 0.4)), STEP.pose('sit', 0.6), STEP.pose('alert', r.range(2.5, 4.5), { np: 0.1, hdp: 0.3 }, (a, t) => { a.ov.hdp = -0.5 * Math.min(1, t / 0.5); a.ov.hdr = Math.sin(t * 1.3) * 0.08; }), STEP.pose('sit', 1)] },
   freeze: { label: '얼어붙기', score: (a) => 0.04 + (1 - a.p.bold) * 0.04, steps: (a, r) => [STEP.pose('crouch', r.range(1.5, 3), { eL: 0.75, eR: 0.75, tb: -0.3, tw: 0, twf: 0, pupil: 1 }), STEP.pose('sit', 1.2, { eL: 0.4, eR: 0.4 })] },
 };
 

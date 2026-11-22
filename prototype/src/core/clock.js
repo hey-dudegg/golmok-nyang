@@ -83,7 +83,14 @@ export function createClock(store) {
     const g = this.giftSrc && this.giftSrc();
     return g && ms >= g.placed && ms < g.until ? { placed: g.placed, until: g.until, spot: g.spot, id: g.id, age: ms - g.placed, first: !!this._gfirst } : null;
   },
-  weights(cat, ms, st, recent, wx) { // 행동 후보와 점수 (잡음 전). recent: 최근 행동 키, 최신이 앞
+  rainAfter(cat, t0) { // 비 갠 뒤 경과(분 단위 10칸): 이력 없이 wxSrc를 과거 시각으로 다시 읽는다. 지금이 비면 0(해당 없음). 60분 안에 비가 있었으면 가장 가까운 d(10~50)
+    const src = this.wxSrc; if (!src) return 0;
+    const rainy = (ms) => { const w = src(cat, ms), k = w && w.wx && w.wx.kind; return k === 'rain' || k === 'storm'; };
+    if (rainy(t0)) return 0;
+    for (let d = 10; d < 60; d += 10) if (rainy(t0 - d * 60000)) return d;
+    return 0;
+  },
+  weights(cat, ms, st, recent, wx, after = 0) { // 행동 후보와 점수 (잡음 전). recent: 최근 행동 키, 최신이 앞
     const c = this.ctx(cat, ms, st), out = [];
     for (const [k, A] of Object.entries(ACTIONS)) {
       if (k === 'followMom' && !cat.mother) continue;
@@ -95,6 +102,7 @@ export function createClock(store) {
       if (c.kitten && (k === 'sideNap' || k === 'hissAt')) s *= 0.3;
       const bias = EMO_BIAS[k];
       if (bias) { let m = 1; for (const [ek, w] of Object.entries(bias)) m += w * (st.emo[ek] - 0.5) * 2; s *= clamp(m, 0.4, 1.8); }
+      if (after && (k === 'shake' || k === 'groom')) s *= 1 + 1.5 * (1 - after / 60); // 비 갠 뒤 60분: 몸 털기·그루밍 ×~2.25 → ×1 (M13-1)
       if (wx) s *= wxBias(wx, k, c.kitten); // 날씨 배수 (4-1). wx 없음·clear면 곱하지 않는다
       if (s > 0) out.push({ key: k, label: A.label, w: s });
     }
@@ -106,7 +114,7 @@ export function createClock(store) {
   },
   block(cat, b, depth = CLOCK.DEPTH) { // 10분 구간 b의 일정. depth만큼 앞 구간을 이어 반복 방지에 쓴다
     const gs = this.giftSrc && this.giftSrc(), src = this.wxSrc, ws = src ? src(cat, b * CLOCK.BLOCK) : null, wx = ws && ws.wx && ws.wx.kind !== 'clear' ? ws.wx : null; // 한 구간(10분)은 한 정시 안이라 날씨가 같다
-    const ck = cat.id + '|' + b + '|' + depth + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme + (PROPS.on && propSlots('underHide').length ? 'u' : '') : '') + (gs ? '|g' + gs.placed + ':' + gs.until + ':' + gs.id : '');
+    const ra = this.rainAfter(cat, b * CLOCK.BLOCK), ck = cat.id + '|' + b + '|' + depth + (ra ? '|ra' + ra : '') + (wx ? '|' + wx.kind + wx.amt.toFixed(2) + ws.theme + (PROPS.on && propSlots('underHide').length ? 'u' : '') : '') + (gs ? '|g' + gs.placed + ':' + gs.until + ':' + gs.id : '');
     const hit = this.cache.get(ck); if (hit) return hit;
     if (this.cache.size > 400) this.cache.clear();
     const prev = depth > 0 ? this.block(cat, b - 1, depth - 1) : [];
@@ -121,7 +129,7 @@ export function createClock(store) {
       const recent = [...out.map((e) => e.key).reverse(), ...prev.map((e) => e.key).reverse()].slice(0, 5);
       const st = this.state(cat, t, recent, false, wx);
       const lastE = out.length ? out[out.length - 1] : prev[prev.length - 1]; this._gfirst = !!(gs && lastE && lastE.t0 < gs.placed); // 상자가 놓인 뒤 첫 결정
-      const cand = this.weights(cat, t, st, recent, wx).filter((x) => !PROP_ACTION_KEYS.has(x.key) || bOK(x.key)).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
+      const cand = this.weights(cat, t, st, recent, wx, ra).filter((x) => !PROP_ACTION_KEYS.has(x.key) || bOK(x.key)).map((x) => [x.key, x.w * (0.7 + rs() * 0.6)]).sort((a, c) => c[1] - a[1]).slice(0, 5);
       this._gfirst = false; // 위 filter bOK: prev는 depth-1 일정이라 실제 앞 구간과 달라, 경계 너머 지점 쿨다운·tower 묶음을 이력 없이 막는다 (M8-6 -> M9-1)
       const key = cand.length ? rs.weighted(cand) : 'sit';
       const ent = { key, label: ACTIONS[key].label, slot, t0: t, t1: Math.min(t + n * CLOCK.SLOT, end), seed: 'clock:' + cat.id + ':' + slot + ':run' };
