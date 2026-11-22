@@ -43,7 +43,7 @@
 예 (PowerShell): `$env:BASE_URL='http://localhost:8765/prototype/'; npm test`
 예 (bash): `BASE_URL=http://localhost:8765/prototype/ TEST_SLOW=2 npm test`
 
-**출력 모양 (`npm test`, run_all.js)**: 기본은 요약이다. 통과한 시험은 통과표 한 줄(약 1KB), 실패한 시험은 그 시험 출력의 끝 30줄만 낸다. 전체 출력은 `npm test -- --verbose` 또는 `TEST_VERBOSE=1`. 일부만: `node tests/run_all.js reg pose`. check_imports의 모듈 그래프는 문제가 있을 때만 나오고, 늘 보려면 `node tests/check_imports.js --graph`.
+**출력 모양 (`npm test`, run_all.js)**: 기본은 요약이다. 통과한 시험은 통과표 한 줄(약 1KB), 실패한 시험은 그 시험 출력의 끝 30줄만 낸다. 전체 출력은 `npm test -- --verbose` 또는 `TEST_VERBOSE=1`. 일부만: `node tests/run_all.js reg pose`. check_imports의 모듈 그래프는 문제가 있을 때만 나오고, 늘 보려면 `node tests/check_imports.js --graph`. 실패한 시험이 있으면 맨 끝 통과표 아래 "실패 항목" 절에 그 시험 출력 중 `FAIL`·`✗`가 든 줄을 자르지 않고 모두 낸다(tests/lib/fail_lines.js).
 첫 화면 열기(`open`)는 60초 안에 안 뜨거나 서버가 연결을 거부하면 최대 3번 다시 연다(자료 받기 지연·연결 거부 대비, 합격 기준과 무관). load_fail의 정상 열기는 로딩 화면이 사라질 때까지 기다린다.
 
 ## 시험 목록 (하나씩 단독으로 돌린다. 동시에 돌리지 않는다)

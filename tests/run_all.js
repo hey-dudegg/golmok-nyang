@@ -5,6 +5,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { startServer } = require('./lib/static_server');
 const { cleanup } = require('./lib/cleanup');
+const { failLines } = require('./lib/fail_lines');
 
 const ALL = [
   ['syntax', 'check_syntax.js'],
@@ -43,6 +44,7 @@ function run(argv, env) { // 비동기 실행(서버가 같은 프로세스에�
   });
 }
 const rows = [];
+const fails = []; // [시험 이름, 실패 줄들]
 async function main() {
   await cleanup(); // 남은 시험 서버·브라우저 정리 (M8-4)
   let server = null;
@@ -59,6 +61,7 @@ for (const [name, file, ...args] of list) {
   const out = (r.stdout || '') + (r.stderr || '');
   const tap = file === '--test' ? `node --test ${(out.match(/# pass \d+/) || ['?'])[0]} ${(out.match(/# fail \d+/) || ['?'])[0]}` : null; // node --test 는 RESULT 줄 대신 요약을 쓴다
   const res = tap || (out.match(/RESULT (PASS|FAIL)[^\n]*/g) || ['RESULT FAIL (결과 줄 없음)']).pop();
+  if (r.status !== 0) fails.push([name, failLines(out)]);
   if (verbose) process.stdout.write(out);
   else if (r.status !== 0) {
     const lines = out.replace(/\s+$/, '').split('\n');
@@ -71,6 +74,10 @@ for (const [name, file, ...args] of list) {
 } finally { await stop(); }
 console.log('\n== 통과표 ==');
 for (const r of rows) console.log(r[0].padEnd(9), r[1].padEnd(5), r[2].padStart(7), ' ', r[3]);
+if (fails.length) { // 끝 30줄 밖으로 잘린 실패 줄도 여기서 모두 보인다
+  console.log("\n== 실패 항목 ==");
+  for (const [n, ls] of fails) { console.log('[' + n + ']' + (ls.length ? '' : ' (FAIL·✗ 줄 없음)')); for (const l of ls) console.log('  ' + l); }
+}
 process.exit(rows.every((r) => r[1] === 'PASS') ? 0 : 1);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
