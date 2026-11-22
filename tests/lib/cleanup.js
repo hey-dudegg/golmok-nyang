@@ -1,5 +1,5 @@
 // 남은 시험 서버·시험 브라우저 정리 (M8-4). 사용자의 일반 Chrome은 건드리지 않는다.
-// 대상: (1) 명령줄에 puppeteer_dev_chrome_profile 이 든 chrome (2) 명령줄이 tests/lib/static_server.js 인 node(자기·부모 제외)
+// 대상: (1) 명령줄에 puppeteer_dev_chrome_profile 이 든 chrome (2) 명령줄이 tests/lib/static_server.js ... --test 인 node(자기·부모 제외). 표시(--test) 없는 사용자 서버는 둔다
 // 사용: require('./lib/cleanup').cleanup() 또는 node tests/lib/cleanup.js. 실패해도 던지지 않고 경고만.
 const { execFile } = require('child_process');
 
@@ -39,7 +39,7 @@ async function cleanup({ quiet = false } = {}) {
     const procs = await list();
     const skip = new Set([process.pid, process.ppid]);
     const isChrome = (p) => /chrome/i.test(p.name) && p.cmd.includes('puppeteer_dev_chrome_profile');
-    const isSrv = (p) => /node/i.test(p.name) && /tests[\/]lib[\/]static_server\.js/.test(p.cmd) && !skip.has(p.pid);
+    const isSrv = (p) => /node/i.test(p.name) && /tests[/\/]lib[/\/]static_server\.js(\s.*)?\s--test(\s|$)/.test(p.cmd) && !skip.has(p.pid);
     const targets = procs.filter((p) => isChrome(p) || isSrv(p));
     for (const p of targets) { await kill(p.pid); if (isChrome(p)) chrome++; else server++; }
   } catch (e) {

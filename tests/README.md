@@ -9,12 +9,14 @@
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 촬영 도구(M15-1): `tests/lib/capture.js`의 `fixCamera(page,{target,dist,yaw,pitch})`(앱 루프가 덮어쓰지 못하게 controls.update를 갈아 끼움, target 생략 시 마스코트 따라가기)·`hidePanels(page)`(어드민·명단 숨김)·`shoot(page,경로)`(직접 그려 저장; `?still=N`이어도 됨). `app.s.controls`만 바꾸면 앱 루프가 덮어쓰고 still이면 다시 그려지지도 않는다.
 - 촬영 때 고양이는 `a.update()` 후 `a.v.root.position`을 기준으로 잡는다(a.x와 어긋날 수 있음). 자동차 등 정적 소품이 시야를 막으면 yaw·pitch를 바꾼다.
+- 행동 판정 촬영(M20-2): `node tests/lib/shoot_action.js --action loaf --at 0.5,2 --view side|front|back|top|3q --dist 2.4 [--props car@0,-1.1] [--cat 0.6,0.2] [--kitten] [--you 0,1.16] [--skipwalk] [--port 8789] [--measure]`.
+  행동 시작=0초, 시각마다 1장. 사진은 저장소 밖(기본 OS 임시 폴더/golmok_shots, `--out`이 저장소 안이면 거부), 파일명 `<행동>_<시각>_<view>.png`. 소품이 필요한 행동(cheekRub 등)에 `--props`가 없으면 오류로 끝난다. `--measure`는 컷마다 한 줄.
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
 - 자세 전환 확인판(M4-6): `prototype/pose_check.html`(localhost만). 모든 전환을 격자로 반복 재생, 칸마다 몸 회전 최대 속도(도/초) 표시.
   `?from=belly&to=side` 로 좁히고 `?page=n`·`?cols=&rows=` 로 넘김. `?still` 이면 시간을 멈추고 `__posecheck.advance(초)`로 진행(캡쳐용).
   자동 검사: `npm run test:unit`의 `pose_motion.test.mjs` (모든 자세 쌍의 회전 속도·프레임 변화 한계).
-- `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요: 위 `node tests/lib/static_server.js`를 켜 둔 채 실행한다.
+- `npm install` 뒤 `npm test`는 서버 없이 된다(빈 포트에 자체 서버). 개별 `npm run test:<이름>`·`compare`는 서버 필요: 위 `node tests/lib/static_server.js`를 켜 둔 채 실행한다. 시험이 띄우는 서버는 `--test` 인자로 표시하고, `cleanup`은 그 표시가 있는 서버(와 puppeteer chrome)만 끈다. 표시 없이 직접 띄운 서버는 남는다.
 
 ## 준비
 
