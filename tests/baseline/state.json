@@ -38,8 +38,8 @@
    "recipes": {
     "saved": 0,
     "enabled": 0,
-    "actions": 24,
-    "actionsHash": 4118559839
+    "actions": 26,
+    "actionsHash": 800645688
    },
    "cat": {
     "id": "11-m",
@@ -58,7 +58,7 @@
     "genomeHash": 900598442
    },
    "clockAtFixed": {
-    "entry": "sideNap",
+    "entry": "loaf",
     "state": {
      "needs": {
       "sleep": 0.6759,
@@ -80,8 +80,8 @@
    },
    "schedule6h": {
     "entries": 295,
-    "hash": 4089536472,
-    "head": "11-m:sit:1792281600000;11-m:loaf:1792281690000;11-m:sideNap:1792281720000;11-m:wander:1792281840000;"
+    "hash": 452458902,
+    "head": "11-m:loaf:1792281600000;11-m:nap:1792281690000;11-m:sit:1792281720000;11-m:wander:1792281840000;11-m"
    },
    "trips3h": {
     "n": 34,
@@ -150,8 +150,8 @@
    "recipes": {
     "saved": 0,
     "enabled": 0,
-    "actions": 24,
-    "actionsHash": 4118559839
+    "actions": 26,
+    "actionsHash": 800645688
    },
    "cat": {
     "id": "26-m",
@@ -170,7 +170,7 @@
     "genomeHash": 914849196
    },
    "clockAtFixed": {
-    "entry": "loaf",
+    "entry": "sit",
     "state": {
      "needs": {
       "sleep": 0.5751,
@@ -192,8 +192,8 @@
    },
    "schedule6h": {
     "entries": 297,
-    "hash": 3768057095,
-    "head": "26-m:wander:1792281600000;26-m:sit:1792281630000;26-m:groom:1792281690000;26-m:loaf:1792281780000;26"
+    "hash": 4268426090,
+    "head": "26-m:wander:1792281600000;26-m:sit:1792281630000;26-m:nap:1792281690000;26-m:wander:1792281780000;26"
    },
    "trips3h": {
     "n": 34,
@@ -255,8 +255,8 @@
    "recipes": {
     "saved": 0,
     "enabled": 0,
-    "actions": 24,
-    "actionsHash": 4118559839
+    "actions": 26,
+    "actionsHash": 800645688
    },
    "cat": {
     "id": "41-m",
@@ -275,19 +275,19 @@
     "genomeHash": 3388918020
    },
    "clockAtFixed": {
-    "entry": "loaf",
+    "entry": "sit",
     "state": {
      "needs": {
       "sleep": 0.543,
       "hunger": 0.2364,
-      "play": 0.3876,
+      "play": 0.5076,
       "social": 0.3135
      },
      "emo": {
-      "calm": 0.5127,
+      "calm": 0.4827,
       "happy": 0.6984,
-      "playful": 0.2358,
-      "curious": 0.3037,
+      "playful": 0.2632,
+      "curious": 0.3517,
       "wary": 0.3626,
       "scared": 0.3564,
       "grumpy": 0.4174,
@@ -297,8 +297,8 @@
    },
    "schedule6h": {
     "entries": 319,
-    "hash": 3689083045,
-    "head": "41-m:loaf:1792281600000;41-m:sideNap:1792281630000;41-m:loaf:1792281690000;41-m:sit:1792281720000;41"
+    "hash": 297232285,
+    "head": "41-m:loaf:1792281600000;41-m:sideNap:1792281630000;41-m:loaf:1792281690000;41-m:wander:1792281720000"
    },
    "trips3h": {
     "n": 34,

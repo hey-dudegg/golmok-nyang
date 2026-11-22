@@ -21,6 +21,8 @@ const freeSpot = (a, r) => { // 오브젝트가 없는 자리(햇볕 자리)
 };
 // 뺨 비비기 한 번: 모서리 쪽으로 천천히 전진하며 머리를 옆으로 기울이고 문지른다
 const rubStep = (x, z, dur, sgn) => ({ start(a) { this.t = 0; a.moveTo(x, z, 0.3, { keepPose: true, timeout: dur + 1 }); }, tick(a, dt) { this.t += dt; const k = Math.sin(Math.min(1, this.t / dur) * Math.PI); a.ov.hdr = 0.42 * sgn * k; a.ov.hy = Math.sin(this.t * 7) * 0.1 * k; a.ov.hdp = 0.1 * k; return this.t >= dur; } });
+// 박치기 한 번: 이마를 모서리로 밀어 넣는다(hdp·np 만, 좌우 흔들기 없음)
+const bumpStep = (x, z, dur) => ({ start(a) { this.t = 0; a.moveTo(x, z, 0.3, { keepPose: true, timeout: dur + 1 }); }, tick(a, dt) { this.t += dt; const k = Math.sin(Math.min(1, this.t / dur) * Math.PI); a.ov.hdp = 0.12 * k; a.ov.np = 0.1 * k; return this.t >= dur; } });
 const spinStep = (turns, spd) => ({ start(a) { this.left = turns * Math.PI * 2; }, tick(a, dt) { const d = Math.min(this.left, spd * dt); a.yaw += d; a.yawTarget = a.yaw; this.left -= d; a.ov.tw = 0.5; a.ov.twf = 6; return this.left <= 0; } });
 
 export const EXPLORE_ACTIONS = {
@@ -36,6 +38,15 @@ export const EXPLORE_ACTIONS = {
       if (o) { p = edgePoint(o, a, 0.28, true); q = edgePoint(o, a, 0.12, true); } else { const sx = a.x < 0 ? BOUNDS.x0 + 0.3 : BOUNDS.x1 - 0.3; p = { x: sx, z: BOUNDS.z0 + 0.3 }; q = { x: sx + (sx < 0 ? -0.12 : 0.12), z: BOUNDS.z0 + 0.15 }; }
       const n = r.int(2, 3), s = [STEP.walk(p.x, p.z, 0.8), STEP.face(Math.atan2(q.x - p.x, q.z - p.z)), STEP.pose('stand', 0.4, { eye: 0.4 })];
       for (let i = 0; i < n; i++) s.push(rubStep(q.x, q.z, 0.9, i % 2 ? -1 : 1), rubStep(p.x, p.z, 0.7, i % 2 ? -1 : 1));
+      s.push(STEP.pose('sit', 1.8, { eye: 0.5 })); return s; } },
+  knead: { label: '꾹꾹이', score: (a) => 0.06 + ((1 - a.p.energy) * 0.5 + a.p.social * 0.5) * 0.03,
+    steps: (a, r) => { const n = r.int(6, 12), s = [STEP.pose('sit', 0.6)];
+      for (let i = 0; i < n; i++) s.push(STEP.pose(i % 2 ? 'kneadR' : 'kneadL', r.range(0.35, 0.5)));
+      s.push(STEP.pose(r.chance(0.5) ? 'loaf' : 'sit', r.range(1.5, 3))); return s; } },
+  headBump: { label: '모서리에 머리 박치기', score: (a) => (nearProp(a) ? 0.06 + a.p.social * 0.03 : 0),
+    steps: (a, r) => { const o = nearProp(a); if (!o) return [STEP.wait(0.1)]; const p = edgePoint(o, a, 0.28, true), q = edgePoint(o, a, 0.12, true), n = r.int(2, 3);
+      const s = [STEP.walk(p.x, p.z, 0.8), STEP.face(Math.atan2(q.x - p.x, q.z - p.z)), STEP.pose('headBump', 0.4)];
+      for (let i = 0; i < n; i++) s.push(bumpStep(q.x, q.z, 0.5), bumpStep(p.x, p.z, 0.6));
       s.push(STEP.pose('sit', 1.8, { eye: 0.5 })); return s; } },
   tailChase: { label: '꼬리 쫓기', score: (a) => (a.kitten ? 0.08 + a.p.playful * 0.04 : 0),
     steps: (a, r) => [STEP.pose(r.chance(0.5) ? 'stand' : 'crouch', 0.5), spinStep(r.range(2, 4), r.range(5, 7)), STEP.pose('stand', 0.4), STEP.pose('sit', r.range(1.5, 2.5))] },

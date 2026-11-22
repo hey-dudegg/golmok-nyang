@@ -45,3 +45,15 @@ test('M12-2 crateNap 상자 없으면 점수 0, 있으면 자리 null 아님·�
   withProps([], () => assert.equal(PROP_ACTIONS.crateNap.score(agent()), 0));
   withProps([{ kind: 'crate', id: 'c1', x: 1, z: 0.3, rot: 0 }], () => { const a = agent({ time: 0, pm: { cool: {}, recent: [], rej: 0, touchT: -1e9, log: [] } }); assert.ok(PROP_ACTIONS.crateNap.score(a) > 0); a.pm.cool['c1:in'] = 90; assert.equal(PROP_ACTIONS.crateNap.score(a), 0); a.pm.cool = {}; a.pm.recent = ['crateNap']; assert.equal(PROP_ACTIONS.crateNap.score(a), 0); });
 });
+// M17-2: knead(꾹꾹이)·headBump(머리 박치기)
+test('M17-2 knead·headBump 등록·steps·물건 없으면 박치기 0·kneadL/R 모두', () => {
+  for (const k of ['knead', 'headBump']) assert.ok(ACTIONS[k] && ACTIONS[k].label);
+  assert.ok(ACTIONS.knead.score(adult()) > 0);
+  withProps([], () => assert.equal(ACTIONS.headBump.score(agent()), 0));
+  withProps([{ kind: 'crate', id: 'c1', x: 1, z: 0.3, rot: 0 }], () => {
+    assert.ok(ACTIONS.headBump.score(agent()) > 0);
+    const a = agent(); const st = ACTIONS.headBump.steps(a, a.r); assert.ok(st.length > 0); run(a, st); assert.ok(Number.isFinite(a.x) && Number.isFinite(a.z));
+  });
+  const poses = []; const a = agent({ setPose(n) { poses.push(n); } }); run(a, ACTIONS.knead.steps(a, a.r));
+  assert.ok(poses.includes('kneadL') && poses.includes('kneadR'));
+});

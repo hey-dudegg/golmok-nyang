@@ -20,6 +20,12 @@ export const POSES = {
   crouch: (d) => ({ plant: 'all', hp: 0.0, cp: 0.04, np: 0.15, hdp: -0.12, fls: 0.95, fle: -1.75, frs: 0.95, fre: -1.75, fsp: 0.08,
     hls: -1.05, hlk: 1.75, hrs: -1.05, hrk: 1.75, hsp: 0.06, tb: -0.12, tc: 0.03, tw: 0.08, twf: 2.6, pupil: 0.95, eL: 0.05, eR: 0.05 }),
   groom: (d) => ({ ...POSES.sit(d), fls: -0.5, fle: -1.25, ny: 0.15, np: 0.55, hdp: 0.62, hdr: 0.15, eye: 0.3 }),
+  // 꾹꾹이: sit 바탕, 한쪽 앞발 들기 (행동에서 kneadL/kneadR 번갈아). 눈 반쯤 감음
+  kneadL: (d) => ({ ...POSES.sit(d), fls: -0.35, fle: -0.9, np: 0.5, hdp: 0.5, eye: 0.4 }),
+  kneadR: (d) => ({ ...POSES.sit(d), frs: -0.35, fre: -0.9, np: 0.5, hdp: 0.5, eye: 0.4 }),
+  // 머리 박치기: 서서 몸 앞으로 기울이고 이마를 앞으로. 눈 감은 듯
+  headBump: (d) => ({ plant: 'all', hp: 0.0, cp: 0.2, np: 0.35, hdp: 0.05, fls: 0.3, fle: -0.45, frs: 0.3, fre: -0.45,
+    hls: -0.3, hlk: 0.45, hrs: -0.3, hrk: 0.45, tb: 0.55, tc: 0.05, tw: 0.1, twf: 1.0, eye: 0.3 }),
   hiss: (d) => ({ plant: 'all', hp: -0.28, cp: 0.34, np: 0.05, hdp: -0.05, fls: -0.08, fle: 0.02, frs: -0.08, fre: 0.02, fsp: 0.05,
     hls: 0.12, hlk: 0.0, hrs: 0.12, hrk: 0.0, hsp: 0.05, tb: 1.2, tc: -0.06, tw: 0.04, twf: 3.0, eL: 1, eR: 1, mouth: 1, puff: 1, pupil: 1, eye: 1 }),
   yawn: (d) => ({ ...POSES.sit(d), np: 0.1, hdp: -0.15, mouth: 1, eye: 0.08, eL: 0.35, eR: 0.35 }),
