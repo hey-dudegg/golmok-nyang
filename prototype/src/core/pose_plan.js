@@ -17,6 +17,7 @@ const mix = (a, b, t) => a + (b - a) * t;
 export function planPose(from, to) {
   const d = bodyDelta(from, to);
   if (to.sink || (LOW(from) && !LOW(to) && d > ROT_LIMIT && d <= RISE_MAX)) return planSink(from, to, d); // 일어서기(식빵·웅크림 → 앉음)도 다리 펴기와 몸 올리기를 같이 섞는다(M20-3)
+  if (LOW(from) && !LOW(to) && d > RISE_MAX) return planRise(from, to, d); // 크게 누운 자세(옆·발라당·햇볕)에서 일어남(M21-2)
   if (d <= ROT_LIMIT) return [{ T: to, hold: 0 }];
   const fold = LOW(from) !== LOW(to) || LOW(to); // 눕는 자세가 낀 전환은 다리를 접은 채 몸을 돌린다
   const n = Math.max(Math.ceil(d / ROT_LIMIT), fold ? Math.ceil(tailDelta(from, to) / TAIL_LIMIT) : 1), hold = Math.max(STAGE_MIN, (d / n) / 1.2); // 접는 전환은 꼬리 변화량으로도 단계 수(M19-8)
@@ -47,6 +48,20 @@ function planSink(from, to, d) {
   }
   out.push({ T: to, hold: 0 });
   return out;
+}
+
+// 크게 누운 자세에서 일어나기(M21-2): 다리를 접은 채 몸만 돌리는 구간은 남은 회전이 RISE_MIX 가 될 때까지만 두고,
+// 그다음부터는 planSink 로 다리 펴기·몸 올리기·남은 회전을 같이 섞는다(끝까지 접어 두었다가 한 번에 펴면 로봇처럼 보인다)
+const RISE_MIX = 0.9;
+function planRise(from, to, d) {
+  const tm = (d - RISE_MIX) / d, n = Math.max(1, Math.ceil((d - RISE_MIX) / ROT_LIMIT)), hold = Math.max(STAGE_MIN, ((d - RISE_MIX) / n) / 1.2), out = [];
+  // 앉기 목표(M21-3): 앞다리만 접고 뒷다리·hsp 는 앉은 값, hp 는 구르는 동안 시작값 고정(앉은 hp 로 기울이면 꼬리가 바닥 밑으로 내려가 최저점이 됨) — 엉덩이가 먼저 깔려 있어 구르는 동안 다리가 엉덩이 바닥 아래로 나오지 않는다
+  const sitT = to.plant === 'sit', L = { ...TUCK };
+  if (sitT) for (const key of HIND_KEYS.concat('hsp')) if (typeof to[key] === 'number') L[key] = to[key];
+  if (sitT) out.push({ T: { ...from, ...L, hp: from.hp, plant: 'none' }, hold: FOLD_HOLD });
+  const at = (t) => { const s = { ...to, ...L, plant: 'none' }; if (sitT) s.hp = from.hp; for (const key of Object.keys(to)) if (!(key in L) && !(sitT && key === 'hp') && typeof to[key] === 'number' && typeof from[key] === 'number') s[key] = mix(from[key], to[key], t); return s; };
+  for (let k = 1; k <= n; k++) out.push({ T: at(tm * k / n), hold });
+  return out.concat(planSink(out[out.length - 1].T, to, bodyDelta(out[out.length - 1].T, to)));
 }
 
 // 보간 속도 (agent 와 시험이 같이 쓴다)
