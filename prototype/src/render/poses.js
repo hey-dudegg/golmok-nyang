@@ -32,6 +32,9 @@ export const POSES = {
     hls: -0.3, hlk: 0.45, hrs: -0.3, hrk: 0.45, tb: 0.55, tc: 0.05, tw: 0.1, twf: 1.0, eye: 0.3 }),
   hiss: (d) => ({ plant: 'all', hp: -0.28, cp: 0.34, np: 0.05, hdp: -0.05, fls: -0.08, fle: 0.02, frs: -0.08, fre: 0.02, fsp: 0.05,
     hls: 0.12, hlk: 0.0, hrs: 0.12, hrk: 0.0, hsp: 0.05, tb: 1.2, tc: -0.06, tw: 0.04, twf: 3.0, eL: 1, eR: 1, mouth: 1, puff: 1, pupil: 1, eye: 1 }),
+  // 등 세우기(M23-4a): hiss 보다 등을 더 굽히고 다리를 곧게 펴 몸을 키움. 입은 닫고 털 세움
+  arch: (d) => ({ plant: 'all', hp: -0.42, cp: 0.50, np: 0.10, hdp: 0.15, fls: -0.10, fle: 0.05, frs: -0.10, fre: 0.05, fsp: 0.06,
+    hls: -0.10, hlk: 0.20, hrs: -0.10, hrk: 0.20, hsp: 0.06, tb: 1.35, tc: 0.04, tw: 0.02, twf: 0.5, eL: 0.7, eR: 0.7, mouth: 0, puff: 1, pupil: 1, eye: 1 }),
   yawn: (d) => ({ ...POSES.sit(d), np: 0.1, hdp: -0.15, mouth: 1, eye: 0.08, eL: 0.35, eR: 0.35 }),
   eat: (d) => ({ plant: 'all', hp: 0.0, cp: 0.12, np: 0.55, hdp: 0.42, fls: 0.35, fle: -0.55, frs: 0.35, fre: -0.55, hls: -0.75, hlk: 1.15, hrs: -0.75, hrk: 1.15, tb: 0.3, tc: 0.1, tw: 0.15, twf: 1.2, eye: 0.55 }),
   alert: (d) => ({ ...POSES.sit(d), np: 0.25, hdp: 0.3, eL: 0, eR: 0, pupil: 0.7 }),

@@ -4,7 +4,7 @@
 `prototype/index.html`은 HTML 뼈대·import map(인라인 script는 이것 하나, CSP 해시)만. 진입 안내·로더(모듈 못 받으면 안내)는 `src/boot.js`(일반 script). 코드는 `prototype/src/` ES 모듈, 시작은 `src/main.js`.
 import 방향은 한쪽만: core ← adapters ← state ← render·sim ← ui ← app·main (순환 금지, `npm run test:imports`가 검사).
 - `src/core/` 순수 계산(three·DOM 없음, node 단위 시험): util·time·color·genome·regions·behavior(행동표·BOUNDS)·clock·trips·
-  touch_rules(교감 규칙)·recipe_rules(레시피 검증)·recipe_action(레시피→행동)·name_rules·format(표기)·sido_map(시/도 지도)·
+  prop_common(지점 행동 공용: 도약·PS·접근, M23)·prop_actions·prop_actions_more(지점 행동 표)·touch_rules(교감 규칙)·recipe_rules(레시피 검증)·recipe_action(레시피→행동)·name_rules·format(표기)·sido_map(시/도 지도)·
   feedback_rules(의견 글자 정리·링크 차단·쿨다운, R-16)·text_filter(글·이름 필터 정규식, 서버 gn_text_check 와 같은 결과, M2-6b)·landmarks(명소 고르기·주차 순환·상속·자료 검증·시즌/시간대/날씨 변주, R-17)
 - `src/adapters/` 바깥 세상: store(localStorage·Local)·caps(Caps·initCaps)·local_mock(모의 room·lock)·regions_data(경계 fetch)·recipe_store·feedback(의견 전송 모의/Web3Forms 자리·쿨다운 기록, R-16)·landmarks_data(명소 자료 fetch·캐시·실패 시 null, R-17)·supabase(client 입구·익명 세션·user·features)·supabase_db(Caps.db 경로 6개를 표로 번역, 60초 다시 읽기)·capture_pack(캡쳐 그림 규격, 화면에서 아직 안 부름)
 - `src/state/` 상태: members(Member·Bonds)·gate(GATE·Admin·SHARE_ENABLED·PROMO)·board·names·recipes·clock(세계 시계 인스턴스)

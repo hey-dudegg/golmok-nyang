@@ -1,6 +1,6 @@
 // 행동 판정 촬영 공용 도구(M20-2, R-25). 사진은 저장소 밖(기본 OS 임시 폴더/golmok_shots)에만 저장한다.
 // CLI: node tests/lib/shoot_action.js --action loaf --at 0.5,2 --view side|front|back|top|3q --dist 2.4
-//        [--props car@0,-1.1] [--cat 0.6,0.2] [--kitten] [--you 0,1.16] [--skipwalk] [--port 8789] [--out 폴더] [--measure]
+//        [--props car@0,-1.1] [--cat 0.6,0.2] [--kitten] [--you 0,1.16] [--other x,z] [--bolt 0|1] [--skipwalk] [--port 8789] [--out 폴더] [--measure]
 //   시각: 행동 시작=0초(--skipwalk면 걷기가 끝난 시점=0초). 카메라는 컷마다 마스코트 화면 위치를 따라간다(fixCamera 기본).
 //   서버: --port면 static_server를 그 포트로 띄우고 끝나면 끈다. 아니면 BASE_URL(…/prototype/)을 쓴다.
 //   --poses side,sit: 행동 대신 자세 전환(from,to)을 시험. AI 는 manual 로 멈추고 --at 은 전환 전체 시간의 비율(기본 0.4,0.7). --measure 에 전환 구간 minPart(+바닥보정)·엉덩이 높이 범위·출렁임 기록(M21-3)
@@ -10,12 +10,12 @@ const path = require('path'), os = require('os'), fs = require('fs');
 const ROOT = path.resolve(__dirname, '..', '..');
 const VIEWS = { side: [0, 3], front: [90, 3], back: [-90, 3], top: [0, 80], '3q': [45, 20] };
 // 소품이 있어야 의미 있는 행동(없으면 앱이 벽 쪽 대체 동작을 해서 오판 위험, AD2)
-const NEEDS = { cheekRub: 'car', sniffProp: 'car', underHide: 'car', crateNap: 'crate', giftPeek: 'gift', headBump: 'car', giftSniff: 'gift' }; // headBump 는 물건 모서리(차), giftSniff 는 선물 상자. 도구는 상자를 따로 못 놓고 --props gift@x,z 로만 받는다
+const NEEDS = { cheekRub: 'car', sniffProp: 'car', underHide: 'car', fleeHide: 'car', crateNap: 'crate', giftPeek: 'gift', headBump: 'car', giftSniff: 'gift' }; // headBump 는 물건 모서리(차), giftSniff 는 선물 상자. 도구는 상자를 따로 못 놓고 --props gift@x,z 로만 받는다
 const num = (s) => String(s).split(',').map(Number);
 
 async function shootAction(o) {
   const { poses = null } = o; // at 기본값이 poses 를 보므로 먼저 꺼낸다
-  const { at = poses ? [0.4, 0.7] : [0], view = 'side', dist = 2.4, props = [], cat = [0, 0], kitten = false, you = null, skipwalk = false, port, out, measure = false } = o;
+  const { at = poses ? [0.4, 0.7] : [0], view = 'side', dist = 2.4, props = [], cat = [0, 0], kitten = false, you = null, other = null, bolt = null, skipwalk = false, port, out, measure = false } = o;
   const action = poses ? poses.join('_to_') : o.action;
   if (!action) throw new Error('--action 필요');
   if (!VIEWS[view]) throw new Error('--view 는 ' + Object.keys(VIEWS).join('|'));
@@ -32,11 +32,11 @@ async function shootAction(o) {
   try {
     const errs = [];
     const p = await open(b, '?admin&props=1&still=2&pr=0.3&shells=2&hour=13#11', { width: 390, height: 800, errs, settle: 2000 });
-    const r0 = await p.evaluate(async (action, props, cat, kitten, you, skipwalk, poses) => {
+    const r0 = await p.evaluate(async (action, props, cat, kitten, you, skipwalk, poses, other, bolt) => {
       const app = window.__app, X = window.__props;
-      for (const pr of props) if (!['car', 'gift', 'crate'].includes(pr.kind)) return { err: '소품 종류는 car·gift·crate 만 배치 가능: ' + pr.kind };
-      const car = props.find((q) => q.kind === 'car'), cr = props.find((q) => q.kind === 'crate'), gf = props.find((q) => q.kind === 'gift');
-      const force = { x: car ? car.x : 0, z: car ? car.z : -1.1, dir: 1 }; if (cr) force.crate = { x: cr.x, z: cr.z };
+      for (const pr of props) if (!['car', 'gift', 'crate', 'wall', 'tower'].includes(pr.kind)) return { err: '소품 종류는 car·gift·crate·wall·tower 만 배치 가능: ' + pr.kind };
+      const car = props.find((q) => q.kind === 'car'), cr = props.find((q) => q.kind === 'crate'), gf = props.find((q) => q.kind === 'gift'), wl = props.find((q) => q.kind === 'wall'), tw = props.find((q) => q.kind === 'tower');
+      const force = { x: car ? car.x : 0, z: car ? car.z : -1.1, dir: 1 }; if (cr) force.crate = { x: cr.x, z: cr.z }; if (wl) force.wall = { x: wl.x, z: wl.z }; if (tw) force.tower = { x: tw.x, z: tw.z }; X.HOP.bolt = bolt; // wall=낮은 담, tower=캣타워, bolt=상자 뛰쳐나오기 고정(null=확률)
       if (!poses) app.propsSet(true, force);
       const a = app.mascot; window.__A = a; // propsSet 이 마스코트를 새로 만들므로 그 뒤에 잡는다(먼저 잡으면 장면 밖 옛 고양이를 움직여 컷이 모두 같았음, M21-3)
       if (gf) { const n = X.Box.now(); X.Box.set({ code: '11', id: 'gshoot', placed: n - 1000, until: n + 3600000, seed: 7, name: null, mine: false }, 'recv'); } // 선물 상자: props_gift.js 와 같은 가짜 수신 경로 (자리는 앱이 정함)
@@ -53,10 +53,11 @@ async function shootAction(o) {
         try { a.runAction(action, false); } catch (e) { return { err: action + ' 실행 실패(소품·자세 조건 확인): ' + e.message }; }
         if (!a.steps.length || a.action !== action) return { err: action + ' 시작 안 됨: 필요한 소품(예: --props car@x,z)이 고양이 근처에 있는지 확인' };
       }
+      if (other) app.world.agents.push({ x: other[0], z: other[1], hidden: false, cat: { id: 'other_shoot', mother: null }, update() {} }); // 이웃 고양이 자리(--other): 가짜 에이전트, 거리·가족 판정용(M23-4b)
       a.override = true;
       if (skipwalk) for (let i = 0; i < 900 && (a.move || a.arrived === false); i++) a.update(1 / 30);
       return { ok: 1, props: (X.PROPS.layout || []).length };
-    }, action, props, cat, kitten, you, skipwalk, poses);
+    }, action, props, cat, kitten, you, skipwalk, poses, other, bolt);
     if (r0.err) throw new Error(r0.err);
     await hidePanels(p);
     const [yaw, pitch] = VIEWS[view]; let t = 0;
@@ -89,7 +90,7 @@ function parse(argv) {
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--action') o.action = g(i++); else if (k === '--poses') o.poses = g(i++).split(','); else if (k === '--at') o.at = num(g(i++)); else if (k === '--view') o.view = g(i++);
-    else if (k === '--dist') o.dist = +g(i++); else if (k === '--cat') o.cat = num(g(i++)); else if (k === '--you') o.you = num(g(i++));
+    else if (k === '--dist') o.dist = +g(i++); else if (k === '--cat') o.cat = num(g(i++)); else if (k === '--you') o.you = num(g(i++)); else if (k === '--other') o.other = num(g(i++)); else if (k === '--bolt') o.bolt = +g(i++);
     else if (k === '--port') o.port = g(i++); else if (k === '--out') o.out = g(i++); else if (k === '--kitten') o.kitten = true;
     else if (k === '--measure') o.measure = true; else if (k === '--skipwalk') o.skipwalk = true; else if (k === '--admin') { /* 항상 admin */ }
     else if (k === '--props') for (const s of g(i++).match(/[a-z]+@-?[\d.]+,-?[\d.]+|[a-z]+(?!@)/g) || []) { const [kind, xz] = s.split('@'), [x, z] = num(xz || '0,0'); o.props.push({ kind, x, z }); }

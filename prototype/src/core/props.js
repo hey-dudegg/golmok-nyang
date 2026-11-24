@@ -15,7 +15,7 @@ export const WALL = { l: 1.8, w: 0.22, h: 0.80, cap: 0.05 };
 export const PROP_KINDS = {
   car: { label: '자동차', size: { l: CAR.l, w: CAR.w, h: CAR.roofY }, hx: CAR.l / 2, hz: CAR.w / 2, themes: ['alley'],
     slots: [
-      { id: 'hood', mode: 'on', action: 'hoodLoaf', pos: [CAR.l / 2 - CAR.hood / 2, 0], y: CAR.hoodY, poses: ['lie'], cap: 1, inset: 0.12,
+      { id: 'hood', mode: 'on', action: 'hoodLoaf', pos: [CAR.l / 2 - CAR.hood / 2, 0], y: CAR.hoodY, poses: ['lie', 'sit'], cap: 1, inset: 0.12,
         approach: [CAR.l / 2 - CAR.hood / 2, CAR.w / 2 + 0.17], shade: 0, warm: 0.8, tag: 'rest', shadowMax: 0.3 },
       { id: 'under', mode: 'under', action: 'underHide', pos: [0, 0.12], y: 0, poses: ['hideLow', 'peek'], cap: 1, clear: CAR.bottom,
         approach: [0, CAR.w / 2 + 0.17], shade: 0.7, warm: 0.2, tag: 'hide' },
@@ -23,9 +23,9 @@ export const PROP_KINDS = {
   // 낮은 담: 위(top) 두 곳 + 뒤 그늘(behind, 지점만 정의하고 행동은 아직 없음). 앞뒤·좌우 대칭이라 dir 은 쓰지 않는다
   lowwall: { label: '낮은 담', size: { l: WALL.l, w: WALL.w, h: WALL.h }, hx: WALL.l / 2, hz: WALL.w / 2, themes: ['alley', 'market', 'park'],
     slots: [
-      { id: 'top0', mode: 'on', action: 'wallLoaf', pos: [-0.45, 0], y: WALL.h, poses: ['lie'], cap: 1, inset: 0.1,
+      { id: 'top0', mode: 'on', action: 'wallLoaf', pos: [-0.45, 0], y: WALL.h, poses: ['lie', 'sit'], cap: 1, inset: 0.1,
         approach: [-0.45, WALL.w / 2 + 0.17], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.2 },
-      { id: 'top1', mode: 'on', action: 'wallLoaf', pos: [0.45, 0], y: WALL.h, poses: ['lie'], cap: 1, inset: 0.1,
+      { id: 'top1', mode: 'on', action: 'wallLoaf', pos: [0.45, 0], y: WALL.h, poses: ['lie', 'sit'], cap: 1, inset: 0.1,
         approach: [0.45, WALL.w / 2 + 0.17], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.2 },
       { id: 'behind', mode: 'beside', action: null, pos: [0, -0.3], y: 0, poses: ['loaf'], cap: 1, approach: [0, WALL.w / 2 + 0.17], shade: 0.6, warm: 0.2, tag: 'rest' },
     ] },
@@ -41,11 +41,11 @@ export const TOWER = { l: 0.95, w: 0.56, h: 0.75, midY: 0.36, topY: 0.72 };
 PROP_KINDS.tower = { label: '캣타워', size: { l: TOWER.l, w: TOWER.w, h: TOWER.h }, hx: TOWER.l / 2, hz: TOWER.w / 2, themes: ['park', 'alley'],
   slots: [
     { id: 'den', mode: 'in', action: 'towerDen', pos: [-0.20, -0.04], y: 0, poses: ['loaf', 'hideLow', 'peek'], cap: 1, rest: 'loaf', clear: 0.30, approach: [-0.20, 0.40], shade: 0.7, warm: 0.6, tag: 'hide' },
-    { id: 'mid', mode: 'on', action: 'towerLie', pos: [-0.20, 0], y: TOWER.midY, poses: ['lie'], cap: 1, inset: 0.10, approach: [-0.20, 0.40], shade: 0, warm: 0.6, tag: 'rest', shadowMax: 0.22 },
+    { id: 'mid', mode: 'on', action: 'towerLie', pos: [-0.20, 0], y: TOWER.midY, poses: ['lie', 'sit'], cap: 1, inset: 0.10, approach: [-0.20, 0.40], shade: 0, warm: 0.6, tag: 'rest', shadowMax: 0.22 },
     { id: 'top', mode: 'on', action: 'towerLookout', pos: [0.25, 0], y: TOWER.topY, poses: ['sit', 'lie'], cap: 1, inset: 0.08, via: ['mid'], approach: [-0.20, 0.40], shade: 0, warm: 0.5, tag: 'perch', shadowMax: 0.18 },
   ] };
 export const TOWER_KEYS = new Set(['towerDen', 'towerLie', 'towerLookout']); // 같은 오브젝트 묶음: 최근 3개 행동 안에 하나만 (3.3)
-export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'crateSit', 'crateNap', 'giftPeek', 'giftSniff', ...TOWER_KEYS]);
+export const PROP_ACTION_KEYS = new Set(['hoodLoaf', 'underHide', 'wallLoaf', 'wallSit', 'crateSit', 'crateNap', 'giftPeek', 'giftSniff', 'fleeHide', ...TOWER_KEYS]);
 export const PROP_COOLDOWN = 90; // 같은 고양이·같은 지점 재진입 쿨다운(초, 4A-2)
 
 // 전역 상태: 지금 장면의 배치와 점유 (장면은 한 번에 하나라 모듈 단위로 둔다. 순수 상태라 node 시험 가능)

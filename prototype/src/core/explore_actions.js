@@ -32,6 +32,24 @@ const bumpStep = (x, z, dur, o = {}) => ({ start(a) { this.t = 0; a.moveTo(x, z,
 const spinStep = (turns, spd, sg = 1, sw = []) => ({ start(a) { this.left = turns * Math.PI * 2; this.rot = 0; this.t = 0; }, tick(a, dt) { this.t += dt; const d = Math.min(this.left, spd * dt); a.yaw += sg * d; a.yawTarget = a.yaw; this.left -= d; this.rot += d; const s = 0.3 * Math.sin(this.rot * 4); a.ov.fls = s; a.ov.hrs = s; a.ov.frs = -s; a.ov.hls = -s;
   for (const w of sw) { const u = this.t - w; if (u >= 0 && u < 0.3) a.ov[sg > 0 ? 'fls' : 'frs'] += -0.7 * (u < 0.12 ? u / 0.12 : 1 - (u - 0.12) / 0.18); } return this.left <= 0; } });
 
+const kin = (a, o) => o.cat.mother === a.cat.id || a.cat.mother === o.cat.id; // hissAt 과 같은 가족 조건
+const crabStep = (ang, d, sp) => STEP.call((a) => a.moveTo(a.x + Math.sin(ang) * d, a.z + Math.cos(ang) * d, sp, { keepPose: 'arch', crab: true }));
+const sideLegs = { fsp: [[0, 0.06], [0.25, 0.16], [0.5, 0.06]], hsp: [[0, 0.16], [0.25, 0.06], [0.5, 0.16]] }; // 옆걸음 발 벌림 번갈아
+function archThreat(a, r, o) {
+  const sg = r.chance(0.5) ? 1 : -1, away = () => a.yawTo(o) + Math.PI, hiss = r.chance(0.3 + a.p.grumpy * 0.5);
+  const dist = r.range(0.3, 0.45), toward = a.p.bold > 0.6;
+  const s = [STEP.call((a) => { a.yawTarget = a.yawTo(o) + sg * Math.PI / 2; a.lookAt = o; }), STEP.track('arch', 0.8, null, { puff: [[0, 0.4], [0.3, 0]] }),
+    STEP.call((a) => { const d = toward ? Math.min(dist, Math.max(0, Math.hypot(o.x - a.x, o.z - a.z) - 0.6)) : dist, g = toward ? away() + Math.PI : away(); a.moveTo(a.x + Math.sin(g) * d, a.z + Math.cos(g) * d, 0.35, { keepPose: 'arch', crab: true }); }),
+    STEP.track('arch', r.range(1.8, 2.6), null, sideLegs, { period: 0.5 })];
+  if (hiss) s.push(STEP.call((a) => a.say('하악!')), STEP.pose('hiss', 1.2));
+  s.push(STEP.call((a) => { a.lookAt = null; }), STEP.call((a) => a.moveTo(a.x + Math.sin(away()) * 0.8, a.z + Math.cos(away()) * 0.8, 1.1)), STEP.wait(0.8), STEP.pose('sit', 2, { eL: 0.4, eR: 0.4, puff: 0.3 }));
+  return s;
+}
+function archPlay(a, r) { // 새끼 놀이형: 좌우 번갈아 2회 뒤 웅크림, 50% 로 질주
+  const y = r.range(-Math.PI, Math.PI), s = [STEP.call((a) => { a.yawTarget = y; }), STEP.track('arch', 0.8, null, { puff: [[0, 0.4], [0.3, 0]] })];
+  for (let i = 0; i < 2; i++) s.push(crabStep(y + Math.PI / 2 * (i ? -1 : 1), 0.25, 0.6), STEP.track('arch', 1.0, null, sideLegs, { period: 0.5 }));
+  s.push(STEP.pose('crouch', 0.6)); if (r.chance(0.5)) s.push(...ACTIONS.zoom.steps(a, r)); return s;
+}
 export const EXPLORE_ACTIONS = {
   sunbathe: { label: '햇볕 쬐며 눕기', score: (a) => 0.01 + a.world.day * 0.12 + (1 - a.E) * 0.03,
     steps: (a, r) => { const p = freeSpot(a, r); const hold = r.range(18, 40), sg = (a) => { if (r() < 0.003) a.slowBlink(); };
@@ -65,5 +83,7 @@ export const EXPLORE_ACTIONS = {
       s.push(STEP.pose('sit', 1.8, { eye: 0.5 })); return s; } },
   tailChase: { label: '꼬리 쫓기', score: (a) => (a.kitten ? 0.08 + a.p.playful * 0.04 : 0),
     steps: (a, r) => { const sg = r.chance(0.5) ? 1 : -1, turns = r.range(2, 4), spd = r.range(5, 7), sw = []; for (let x = r.range(0.8, 1.3); x < turns * 6.2832 / spd; x += r.range(0.8, 1.3)) sw.push(x); return [STEP.pose('chase', 0.6, sg > 0 ? null : { hy: -0.5, cy: -1.5, ny: -1.6, hdy: -0.5, ts: 2.3, tcs: 0.1 }), spinStep(turns, spd, sg, sw), STEP.pose('stand', 0.4), STEP.pose('sit', r.range(1.5, 2.5))]; } },
+  archSide: { label: '등 세우고 옆걸음', score: (a) => { const o = a.nearestCat(1.2); if (o && !kin(a, o)) return (a.p.bold * 0.5 + a.p.grumpy * 0.4) * 0.5; return a.kitten ? a.p.playful * 0.15 : 0; }, // 이웃 있으면 위협형, 없으면 새끼 놀이형 (M23-4b)
+    steps: (a, r) => { const o = a.nearestCat(1.2); return o && !kin(a, o) ? archThreat(a, r, o) : archPlay(a, r); } },
 };
 Object.assign(ACTIONS, EXPLORE_ACTIONS);

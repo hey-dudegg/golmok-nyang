@@ -9,7 +9,7 @@
   (`file://`로 직접 열면 fetch가 막혀 안내 문구만 뜬다. `window.claude`가 없으면 로그인·DB만 빠진다.)
 - 촬영 도구(M15-1): `tests/lib/capture.js`의 `fixCamera(page,{target,dist,yaw,pitch})`(앱 루프가 덮어쓰지 못하게 controls.update를 갈아 끼움, target 생략 시 마스코트 따라가기)·`hidePanels(page)`(어드민·명단 숨김)·`shoot(page,경로)`(직접 그려 저장; `?still=N`이어도 됨). `app.s.controls`만 바꾸면 앱 루프가 덮어쓰고 still이면 다시 그려지지도 않는다.
 - 촬영 때 고양이는 `a.update()` 후 `a.v.root.position`을 기준으로 잡는다(a.x와 어긋날 수 있음). 자동차 등 정적 소품이 시야를 막으면 yaw·pitch를 바꾼다.
-- 행동 판정 촬영(M20-2): `node tests/lib/shoot_action.js --action loaf --at 0.5,2 --view side|front|back|top|3q --dist 2.4 [--props car@0,-1.1,gift@0.5,-0.8,crate@-0.6,-0.9 (소품 car·gift·crate, gift 자리는 앱이 정함)] [--cat 0.6,0.2] [--kitten] [--you 0,1.16] [--skipwalk] [--port 8789] [--measure]`. `--poses 시작,끝 --measure` 는 자세 전환의 minPart·엉덩이 범위·최대되내림·보정되내림(최대되내림 − max(0, H시작 − H끝), 합격 ≤0.02)을 출력(M21-3).
+- 행동 판정 촬영(M20-2): `node tests/lib/shoot_action.js --action loaf --at 0.5,2 --view side|front|back|top|3q --dist 2.4 [--props car@0,-1.1,gift@0.5,-0.8,crate@-0.6,-0.9 (소품 car·gift·crate·wall·tower, gift 자리는 앱이 정함)] [--cat 0.6,0.2] [--kitten] [--you 0,1.16] [--other x,z] [--bolt 0|1 (상자 뛰쳐나오기 고정)] [--skipwalk] [--port 8789] [--measure]`. `--poses 시작,끝 --measure` 는 자세 전환의 minPart·엉덩이 범위·최대되내림·보정되내림(최대되내림 − max(0, H시작 − H끝), 합격 ≤0.02)을 출력(M21-3).
   행동 시작=0초, 시각마다 1장. 사진은 저장소 밖(기본 OS 임시 폴더/golmok_shots, `--out`이 저장소 안이면 거부), 파일명 `<행동>_<시각>_<view>.png`. 소품이 필요한 행동(cheekRub 등)에 `--props`가 없으면 오류로 끝난다. `--measure`는 컷마다 한 줄.
 - 명소 자료는 `prototype/data/landmarks.json`(약 22KB, 시/도 16곳 후보·부품, R-17). 못 받으면 배경 없이 기본 테마.
 - 행정구역 경계 `prototype/data/regions.json`(약 1.3MB, 한 줄)은 모듈이 최상위 await `fetch`로 읽는다. 통째로 읽거나 출력하지 않는다. 스타일은 `prototype/style*.css`(style·sheets·share-admin·feedback, index.html link 순서가 캐스케이드).
