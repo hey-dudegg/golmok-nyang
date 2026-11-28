@@ -63,6 +63,7 @@ class App {
       agents: this.agents, night: 0, day: 1, camPos: new THREE.Vector3(),
       youPoint() { return app.youPoint(); },
       blocked: (x, z, r) => this.blocked(x, z, r),
+      get obstacles() { return app.s.obstacles; },
       resolve: (a, x, z) => this.resolve(a, x, z),
       say: (a, text) => this.say(a, text),
       dropBubble: (a) => this.dropBubble(a),

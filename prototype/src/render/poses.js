@@ -1,6 +1,19 @@
 // 자세 사전 (standPose 대비 바꿀 값)
 import { standPose } from './cat_model.js';
 
+// 좌우 도우미: 든 다리 쪽 키(hl*/hr*, eL/eR)를 sg로 고른다
+function sideKeys(sg, lift, rest) {
+  return sg > 0 ? { hls: lift[0], hlk: lift[1], ...rest } : { hrs: lift[0], hrk: lift[1], ...rest };
+}
+function groomHindPose(d, sg) {
+  return { ...POSES.sit(d), ...sideKeys(sg, [-2.0, 0.2], {}), hr: 0.25 * sg, cy: 0.20 * sg, hsp: 0.45, fls: 0.95, frs: 1.10, fsp: 0.12,
+    np: 0.85, ny: 0.5 * sg, hdp: 0.6, hdr: 0.2 * sg, tb: 0.2, tw: 0.02, eye: 0.3, mouth: 0.1 };
+}
+function earScratchPose(d, sg) {
+  return { ...POSES.sit(d), ...sideKeys(sg, [-2.3, -1.5], sg > 0 ? { eL: 0.6 } : { eR: 0.6 }), cp: -0.30, hr: 0.15 * sg, cy: 0.35 * sg, hsp: 0.5,
+    np: 0.55, ny: 0.9 * sg, hdp: 0.35, hdr: 0.55 * sg, eye: 0.25, mouth: 0.1, tb: 0.1, tw: 0.0 };
+}
+
 // ───────────────────────── 자세 사전 ─────────────────────────
 // 각 자세는 standPose 대비 바꿀 값만. plant: 'all' | 'front' | 'hind' | 'min' | 'sit'(앞발 + 엉덩이 깔기) | 'none' (발을 땅에 붙일지)
 export const POSES = {
@@ -24,6 +37,15 @@ export const POSES = {
   // 꼬리 쫓기: crouch 바탕으로 몸을 C자로 굽혀 머리·꼬리를 마주 보게 (머리 +x, 꼬리 끝도 +x 라 ts·tcs 는 −) (M19-3)
   chase: (d) => ({ ...POSES.crouch(d), hy: 0.5, cy: 1.5, ny: 1.6, hdy: 0.5, hdp: 0.1, ts: -2.3, tcs: -0.1, tb: 0, tc: 0, tw: 0, eL: 0, eR: 0, pupil: 0.95 }),
   groom: (d) => ({ ...POSES.sit(d), fls: -0.5, fle: -1.25, ny: 0.15, np: 0.55, hdp: 0.62, hdr: 0.15, eye: 0.3 }),
+  // 뒷다리 그루밍 / 귀 긁기 (M24-4a): sit 바탕, 한쪽 뒷다리 들기. sg=+1 L, -1 R (좌우 키·부호 뒤집기)
+  groomHindL: (d) => groomHindPose(d, 1),
+  groomHindR: (d) => groomHindPose(d, -1),
+  earScratchL: (d) => earScratchPose(d, 1),
+  earScratchR: (d) => earScratchPose(d, -1),
+  // 긁기 (M24-4a): 서서 앞발을 높이 뻗어 담·상자 면에 댐. 뒷발만 바닥(plant 'hind'). scratchLow 는 상자(0.28)용으로 덜 세움
+  scratch: (d) => ({ plant: 'hind', hp: -0.85, cp: -0.35, hls: 0.55, hlk: 0.35, hrs: 0.55, hrk: 0.35, hsp: 0.08, fls: -0.65, fle: -0.25, frs: -0.65, fre: -0.25, fsp: 0.10,
+    np: 0.55, hdp: 0.45, tb: 0.5, tc: 0.05, tw: 0.05, twf: 0.8, eye: 0.7, eL: 0.1, eR: 0.1 }),
+  scratchLow: (d) => ({ ...POSES.scratch(d), hp: -0.50, cp: -0.15, hls: 0.30, hrs: 0.30, fls: -0.55, frs: -0.55 }),
   // 꾹꾹이: sit 바탕, 한쪽 앞발 들기 (행동에서 kneadL/kneadR 번갈아). 눈 반쯤 감음
   kneadL: (d) => { const s = POSES.sit(d); return { ...s, fls: s.fls - 0.16, fle: -0.45, np: 0.5, hdp: 0.5, eye: 0.4 }; },
   kneadR: (d) => { const s = POSES.sit(d); return { ...s, frs: s.frs - 0.16, fre: -0.45, np: 0.5, hdp: 0.5, eye: 0.4 }; },

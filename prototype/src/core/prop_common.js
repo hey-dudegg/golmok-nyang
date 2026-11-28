@@ -1,6 +1,7 @@
 // core/prop_actions.js 와 prop_actions_more.js 가 함께 쓰는 지점 행동 공용 도우미 (M23 순환 import 해소: 도약·지점 고르기·단계 PS·접근)
 // 에이전트(CatAgent) 객체만 만진다(three 없음). 단계 PS 는 도약 호·점유·쿨다운을 다룬다 (4A 규칙은 prop_actions.js 머리말).
 import { STEP } from './behavior.js';
+import { detour } from './detour.js';
 import { CRATE, PROP_COOLDOWN, PROP_KINDS, TOWER_KEYS, propClaim, propOccupant, propRelease, propSlots, slotWorld } from './props.js';
 import { clamp, lerp } from './util.js';
 
@@ -121,8 +122,10 @@ export const PS = {
 
 export function approach(a, S, speed = 1.1) {
   if (a.world.blocked(S.ax, S.az, 0.2)) { pmOf(a).cool[S.key] = a.time + PROP_COOLDOWN; return null; }
-  const d = Math.hypot(S.ax - a.x, S.az - a.z), to = d / (0.26 * (0.65 + 0.35 * a.scale) * speed) * 2 + 3; // 제한 시간(4A-1)
-  return [STEP.walk(S.ax, S.az, speed, { timeout: to }), PS.check(S)];
+  const k = 0.26 * (0.65 + 0.35 * a.scale) * speed, tmo = (p, q) => Math.hypot(q.x - p.x, q.z - p.z) / k * 2 + 3; // 제한 시간(4A-1)
+  const wps = detour(a.world.obstacles || [], a, { x: S.ax, z: S.az }, { skip: a.layer, ok: (x, z) => !a.world.blocked(x, z, 0.2) }) || []; // 소품 모서리 우회 (M24-2b)
+  const pts = [a, ...wps, { x: S.ax, z: S.az }];
+  return [...pts.slice(1).map((p, i) => STEP.walk(p.x, p.z, speed, { timeout: tmo(pts[i], p) })), PS.check(S)];
 }
 // 막힌 접근점은 approach()가 쿨다운을 걸어 pickSlot에서 빠지므로, 다음 지점으로 넘어가 다시 고른다 (M5-4). 모두 막히면 null
 export function pickApproach(a, action, opt) {

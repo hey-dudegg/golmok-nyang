@@ -16,6 +16,15 @@ function edgePoint(p, a, m, corner) {
   const sx = Math.sign(nx), sz = Math.sign(nz); // da·db: 모서리에서 두 변을 따라 몸 쪽으로 가는 단위 방향(월드)
   return { x: clamp(p.x + nx * c + nz * s, BOUNDS.x0, BOUNDS.x1), z: clamp(p.z - nx * s + nz * c, BOUNDS.z0, BOUNDS.z1), da: { x: -sx * c, z: sx * s }, db: { x: -sz * s, z: -sz * c } };
 }
+// 담·상자 긁기(M24-5b): 담은 카메라 쪽 면(로컬 +z) 고정, 상자는 가까운 변. 점유 관리 없음
+const SCRATCH_KINDS = new Set(['lowwall', 'crate']);
+const SCRATCH_GAP = (a, o) => (o.kind === 'crate' ? 0.12 : 0.09) + 0.06 * (a.scale || 1); // 측정: 담 앞발 0.02~0.06, 상자 0.01~0.03
+const nearScratch = (a) => { let best = null, bd = 2.5; for (const p of liveProps()) { if (!SCRATCH_KINDS.has(p.kind) || p.look === 'gift') continue; const d = Math.hypot(p.x - (a.x || 0), p.z - (a.z || 0)); if (d < bd) { bd = d; best = p; } } return best; };
+function facePoint(o, a, m) {
+  if (o.kind !== 'lowwall') return edgePoint(o, a, m, false);
+  const f = footOf(o.kind), c = Math.cos(o.rot || 0), s = Math.sin(o.rot || 0), dx = (a.x || 0) - o.x, dz = (a.z || 0) - o.z, lx = clamp(dx * c - dz * s, -f.hx + 0.15, f.hx - 0.15), lz = f.hz + m;
+  return { x: clamp(o.x + lx * c + lz * s, BOUNDS.x0, BOUNDS.x1), z: clamp(o.z - lx * s + lz * c, BOUNDS.z0, BOUNDS.z1) };
+}
 const freeSpot = (a, r) => { // 오브젝트가 없는 자리(햇볕 자리)
   for (let i = 0; i < 12; i++) { const p = a.randomPoint(r, 2.0); if (!liveProps().some((o) => rectHit({ ...footOf(o.kind), x: o.x, z: o.z, rot: o.rot }, p.x, p.z, 0.3))) return p; }
   return null;
@@ -85,5 +94,22 @@ export const EXPLORE_ACTIONS = {
     steps: (a, r) => { const sg = r.chance(0.5) ? 1 : -1, turns = r.range(2, 4), spd = r.range(5, 7), sw = []; for (let x = r.range(0.8, 1.3); x < turns * 6.2832 / spd; x += r.range(0.8, 1.3)) sw.push(x); return [STEP.pose('chase', 0.6, sg > 0 ? null : { hy: -0.5, cy: -1.5, ny: -1.6, hdy: -0.5, ts: 2.3, tcs: 0.1 }), spinStep(turns, spd, sg, sw), STEP.pose('stand', 0.4), STEP.pose('sit', r.range(1.5, 2.5))]; } },
   archSide: { label: '등 세우고 옆걸음', score: (a) => { const o = a.nearestCat(1.2); if (o && !kin(a, o)) return (a.p.bold * 0.5 + a.p.grumpy * 0.4) * 0.5; return a.kitten ? a.p.playful * 0.15 : 0; }, // 이웃 있으면 위협형, 없으면 새끼 놀이형 (M23-4b)
     steps: (a, r) => { const o = a.nearestCat(1.2); return o && !kin(a, o) ? archThreat(a, r, o) : archPlay(a, r); } },
+  groomHind: { label: '뒷다리 그루밍', score: (a) => 0.12, // 앉아서 뒷다리 핥기, 35% 반대 다리 한 번 더 (M24-5a)
+    steps: (a, r) => { const sg = r.chance(0.5) ? 1 : -1, nm = (g) => (g > 0 ? 'groomHindL' : 'groomHindR'), lick = (a, t) => { const w = Math.sin(t * 9); a.ov.hdp = w * 0.08; a.ov.np = w * 0.04; a.ov.mouth = 0.1 + w * 0.08; };
+      const s = [STEP.pose('sit', 1.0), STEP.pose(nm(sg), r.range(4, 8), null, lick)];
+      if (r.chance(0.35)) s.push(STEP.pose('sit', 0.6), STEP.pose(nm(-sg), r.range(3, 5), null, lick));
+      return [...s, STEP.pose('sit', 1.2)]; } },
+  earScratch: { label: '뒷발로 귀 긁기', score: (a) => 0.05 + (a.kitten ? 0.02 : 0), // 실제로는 목 옆 긁기로 수용 (M24-5a)
+    steps: (a, r) => { const sg = r.chance(0.5) ? 1 : -1, L = sg > 0, pn = L ? 'earScratchL' : 'earScratchR', w = Math.PI * 14, kick = (a, t) => { const v = Math.sin(t * w); a.ov[L ? 'hlk' : 'hrk'] = v * 0.35; a.ov[L ? 'hls' : 'hrs'] = v * 0.08; a.ov.hdr = v * 0.04 * sg; };
+      const s = [STEP.pose('sit', 0.8), STEP.pose(pn, 0.4)];
+      for (let i = 0, n = r.int(1, 2); i < n; i++) { if (i) s.push(STEP.pose(pn, 0.4)); s.push(STEP.pose(pn, r.range(1.2, 2.2), null, kick)); }
+      s.push(STEP.pose('sit', 1.0)); if (r.chance(0.3)) s.push(STEP.pose('sit', 0.5, null, (a, t) => { a.ov.hdr = Math.sin(t * 30) * 0.25 * (1 - t / 0.5); }));
+      return s; } },
+  scratch: { label: '담·상자 긁기', score: (a) => (nearScratch(a) ? 0.05 + a.p.energy * 0.03 + a.p.bold * 0.02 : 0), // 서서 앞발로 면 긁기 (M24-5b)
+    steps: (a, r) => { const o = nearScratch(a); if (!o) return [STEP.wait(0.1)]; const m = SCRATCH_GAP(a, o), p = facePoint(o, a, m), q = facePoint(o, a, 0);
+      const st = { fls: [[0, 0], [0.18, 0.25], [0.36, 0]], frs: [[0, 0.25], [0.18, 0], [0.36, 0.25]], hr: [[0, 0.03], [0.18, -0.03], [0.36, 0.03]] };
+      const s = [STEP.walk(p.x, p.z, 0.8), STEP.face(Math.atan2(q.x - p.x, q.z - p.z)), STEP.pose('stand', 0.4), STEP.track(o.kind === 'crate' ? 'scratchLow' : 'scratch', r.range(2.5, 4.5), null, st, { period: 0.36 })];
+      if (r.chance(0.4)) s.push(STEP.pose('stretch', 2.0));
+      return [...s, STEP.pose('stand', 0.5), STEP.pose('sit', 1.5)]; } },
 };
 Object.assign(ACTIONS, EXPLORE_ACTIONS);

@@ -5,13 +5,13 @@
 > 채팅으로 알려 주셔도 되는 값은 **Project URL, Publishable key, Turnstile Site Key** 세 가지뿐입니다.
 
 ## 1. 기존 도쿄 프로젝트 2개 일시정지
-- [ ] 각 프로젝트에서 Project Settings → General → **Pause project**를 누릅니다. **삭제는 하지 않습니다.**
+- [x] 각 프로젝트에서 Project Settings → General → **Pause project**를 누릅니다. **삭제는 하지 않습니다.**
 - 무료 요금제는 켜 둘 수 있는 프로젝트가 2개까지입니다. 새로 만들 때 개수 제한 안내가 뜨면 팀장에게 알려 주세요.
 
 ## 2. 서울 지역에 새 프로젝트 2개 만들기
-- [ ] New project를 누릅니다. 이름 예: 운영 `golmok-nyang`, 테스트 `golmok-nyang-test` (실명·회사명 금지)
-- [ ] **Region: Northeast Asia (Seoul)**
-- [ ] DB 비밀번호는 **영문·숫자만**으로 만들고, 비밀번호 관리자에 보관합니다.
+- [x] New project를 누릅니다. 이름 예: 운영 `golmok-nyang`, 테스트 `golmok-nyang-test` (실명·회사명 금지)
+- [x] **Region: Northeast Asia (Seoul)**
+- [x] DB 비밀번호는 **영문·숫자만**으로 만들고, 비밀번호 관리자에 보관합니다.
 
 ## 3. 새 프로젝트 각각 설정 (두 프로젝트 모두)
 - [ ] Authentication → Sign In / Providers: **Allow anonymous sign-ins 켬**, Email은 끔. 캡차는 **아직 끈 채로** 둡니다.
@@ -83,4 +83,4 @@
 - [ ] Actions → **keepalive** → Run workflow로 수동 실행해, 두 줄 모두 HTTP 200인지 봅니다.
 
 ## 13. 정리 (운영이 잘 동작한 뒤)
-- [ ] 일시정지해 둔 도쿄 프로젝트 2개를 삭제합니다(되돌릴 수 없음).
+- [x] (불필요) 도쿄 프로젝트는 2026-11-28에 이미 삭제함.
